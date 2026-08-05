@@ -1,0 +1,10 @@
+# Root-level analysis options to avoid analyzing Flutter subprojects from the repository root.
+# Individual Flutter projects should still run `flutter analyze` from their own folders.
+analyzer:
+  exclude:
+    - guardian-driver-app/**
+    - guardian-parent-app/**
+    - guardian-admin-web/**
+
+# Keep the file minimal — it prevents the workspace-level analyzer from attempting
+# to resolve `package:flutter/*` when run from the repository root.

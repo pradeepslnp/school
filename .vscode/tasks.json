@@ -1,0 +1,134 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Open guardian-admin-web Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/guardian-admin-web"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open guardian-backend Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/guardian-backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open guardian-docs Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/guardian-docs"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open guardian-driver-app Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/guardian-driver-app"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open guardian-infra Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/guardian-infra"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open guardian-parent-app Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/guardian-parent-app"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open All Project Terminals",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "Open guardian-admin-web Terminal",
+        "Open guardian-backend Terminal",
+        "Open guardian-docs Terminal",
+        "Open guardian-driver-app Terminal",
+        "Open guardian-infra Terminal",
+        "Open guardian-parent-app Terminal"
+      ]
+    },
+    {
+      "label": "Analyze guardian-driver-app",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["analyze"],
+      "options": { "cwd": "${workspaceFolder}/guardian-driver-app" },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Analyze guardian-parent-app",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["analyze"],
+      "options": { "cwd": "${workspaceFolder}/guardian-parent-app" },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Analyze guardian-admin-web",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["analyze"],
+      "options": { "cwd": "${workspaceFolder}/guardian-admin-web" },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    }
+  ]
+}

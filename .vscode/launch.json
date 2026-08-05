@@ -1,0 +1,73 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run guardian-driver-app (DEV)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/guardian-driver-app",
+      "args": ["--flavor", "dev", "--dart-define=ENVIRONMENT=dev", "--dart-define=API_BASE_URL=http://localhost:8080/api/v1"]
+    },
+    {
+      "name": "Run guardian-driver-app (PROD)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/guardian-driver-app",
+      "args": ["--flavor", "prod", "--dart-define=ENVIRONMENT=production", "--dart-define=API_BASE_URL=https://api.guardian.example/api/v1"]
+    },
+    {
+      "name": "Run guardian-parent-app (DEV)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/guardian-parent-app",
+      "args": ["--flavor", "dev", "--dart-define=ENVIRONMENT=dev", "--dart-define=API_BASE_URL=http://localhost:8080/api/v1"]
+    },
+    {
+      "name": "Run guardian-parent-app (PROD)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/guardian-parent-app",
+      "args": ["--flavor", "prod", "--dart-define=ENVIRONMENT=production", "--dart-define=API_BASE_URL=https://api.guardian.example/api/v1"]
+    },
+    {
+      "name": "Run guardian-admin-web (DEV) - Chrome",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/guardian-admin-web",
+      "deviceId": "chrome",
+      "args": ["--flavor", "dev", "--dart-define=ENVIRONMENT=dev", "--dart-define=API_BASE_URL=http://localhost:8080/api/v1"]
+    },
+    {
+      "name": "Run guardian-admin-web (PROD) - Chrome",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/guardian-admin-web",
+      "deviceId": "chrome",
+      "args": ["--flavor", "prod", "--dart-define=ENVIRONMENT=production", "--dart-define=API_BASE_URL=https://api.guardian.example/api/v1"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run All (DEV)",
+      "configurations": [
+        "Run guardian-driver-app (DEV)",
+        "Run guardian-parent-app (DEV)",
+        "Run guardian-admin-web (DEV) - Chrome"
+      ]
+    },
+    {
+      "name": "Run All (PROD)",
+      "configurations": [
+        "Run guardian-driver-app (PROD)",
+        "Run guardian-parent-app (PROD)",
+        "Run guardian-admin-web (PROD) - Chrome"
+      ]
+    }
+  ]
+}
