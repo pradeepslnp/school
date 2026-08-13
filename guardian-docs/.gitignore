@@ -1,0 +1,6 @@
+# Generated documentation output, if a site generator is ever added
+_site/
+.cache/
+
+*.log
+.DS_Store
