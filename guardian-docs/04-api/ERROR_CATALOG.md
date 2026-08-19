@@ -97,11 +97,17 @@ Envelope format: [`API_STANDARDS.md`](API_STANDARDS.md).
 | `DEVICE_ALREADY_ASSIGNED` | 409 | BR-FLEET-004 |
 | `DEVICE_NOT_REGISTERED` | 404 | BR-FLEET-006 | Also returned when the referenced device ID does not exist |
 | `STAFF_NOT_FOUND` | 404 | | Not found, or not visible to the caller at all |
+| `STAFF_EMPLOYEE_CODE_EXISTS` | 409 | | Data-integrity constraint (`uq_staff_school_employee_code`), not a documented BR — same treatment as a vehicle's registration number |
 | `STAFF_LICENCE_EXPIRED` | 422 | BR-STAFF-001 🔴 |
 | `STAFF_LICENCE_CLASS_INVALID` | 422 | BR-STAFF-001 🔴 |
 | `STAFF_NOT_VERIFIED` | 422 | BR-STAFF-002 🔴 |
 | `STAFF_VERIFICATION_LAPSED` | 422 | BR-STAFF-002 🔴 |
 | `STAFF_ALREADY_ON_ACTIVE_TRIP` | 409 | BR-STAFF-004 |
+| `ROUTE_CODE_ALREADY_EXISTS` | 409 | BR-ROUTE-001 |
+| `ROUTE_NOT_FOUND` | 404 | | Not found, or not visible to the caller at all |
+| `ROUTE_MINIMUM_STOPS_REQUIRED` | 422 | BR-ROUTE-001 |
+| `ROUTE_GEOFENCE_OUT_OF_BOUNDS` | 422 | BR-ROUTE-003 🔴 |
+| `ROUTE_STOP_TIMES_NOT_INCREASING` | 422 | BR-ROUTE-008 |
 | `ATTENDANT_REQUIRED` | 422 | BR-STAFF-005 |
 
 Each of these names the exact failing check. A generic "cannot start trip" at 6:30 AM is not actionable ([`MOD-05-06-fleet-staff.md`](../03-database/tables/MOD-05-06-fleet-staff.md)).
