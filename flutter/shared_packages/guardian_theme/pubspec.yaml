@@ -1,0 +1,22 @@
+name: guardian_theme
+description: >-
+  Guardian Platform — shared color theme for admin,
+  flutter/driver_attender_app, and flutter/parent_app.
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.12.2
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

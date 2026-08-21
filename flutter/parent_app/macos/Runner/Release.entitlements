@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- Outbound connections. Required in release too: the app is a read surface over a
+	     remote API, so without this a shipped macOS build cannot reach the platform.
+
+	     Note there is no network.server here, unlike DebugProfile.entitlements — that one
+	     exists only so the Flutter tool can attach for hot reload, and a released app has no
+	     reason to accept inbound connections. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+</dict>
+</plist>

@@ -1,0 +1,88 @@
+spring:
+  application:
+    name: guardian-api
+
+  datasource:
+    url: ${GUARDIAN_DB_URL:jdbc:postgresql://localhost:5432/guardian}
+    # The runtime role: NOT the table owner, and without BYPASSRLS. Running as the owner
+    # would silently defeat row-level security (docs/03-database/RLS_POLICIES.md).
+    username: ${GUARDIAN_DB_USERNAME:guardian_app}
+    password: ${GUARDIAN_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${GUARDIAN_DB_POOL_SIZE:20}
+      # Tenant context is set with SET LOCAL, so it expires with each transaction and
+      # cannot leak to the next borrower of a pooled connection.
+      auto-commit: false
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Schema is owned by Flyway, never by Hibernate. `validate` catches drift between
+      # the entity mappings and the migrations at startup rather than at runtime.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+        format_sql: false
+
+  flyway:
+    enabled: true
+    # Migrations run as the owner; the application runs as guardian_app.
+    #
+    # `url` is repeated here rather than inherited. With only user/password set, Spring Boot
+    # derives Flyway's DataSource from the application's — and the application's is wrapped by
+    # TenantAwareDataSource, which Boot cannot read a JDBC URL back out of. Startup then fails
+    # with "Unable to find suitable method for url", which names neither Flyway's derivation nor
+    # the wrapper. Configuring Flyway completely removes the derivation entirely.
+    url: ${GUARDIAN_DB_URL:jdbc:postgresql://localhost:5432/guardian}
+    user: ${GUARDIAN_DB_MIGRATION_USERNAME:guardian_owner}
+    password: ${GUARDIAN_DB_MIGRATION_PASSWORD:}
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    # V900__demo_data.sql (db/seed, demo profile only) is deliberately numbered high so it
+    # always runs last against a freshly-seeded local database. Without this, any real
+    # migration added afterward with a lower version (e.g. V13) is rejected by Flyway's
+    # default in-order check once V900 has already been applied.
+    out-of-order: true
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: ${GUARDIAN_PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: never
+
+guardian:
+  auth:
+    magic-otp: ${GUARDIAN_MAGIC_OTP:}
+
+  web:
+    # Origins permitted to call this API from a browser — the admin console (ADR-0003) only;
+    # the mobile apps are not subject to the same-origin policy.
+    #
+    # Defaults to the local development origin. `flutter run -d chrome` picks a fresh port each
+    # launch, hence the port wildcard; the scheme and host are still pinned to loopback, which no
+    # remote attacker can serve from. A deployment sets this to the console's real origin —
+    # comma-separated, e.g. https://admin.guardianplatform.io — and gets nothing by default.
+    # Quoted: the value contains `[` and `]`, which YAML would otherwise be entitled to read
+    # as flow-sequence syntax depending on the parser.
+    allowed-origins: "${GUARDIAN_ALLOWED_ORIGINS:http://localhost:[*]}"
+
+logging:
+  level:
+    root: INFO
+    com.guardian: ${GUARDIAN_LOG_LEVEL:INFO}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true

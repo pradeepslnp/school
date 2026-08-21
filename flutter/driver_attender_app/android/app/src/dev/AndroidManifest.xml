@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Dev-flavor manifest overlay.
+
+  Merged into the main manifest for the `dev` flavor only. It exists to point at the network
+  security config that permits cleartext to loopback addresses, so a debug build can reach a
+  backend running on the host machine over plain HTTP.
+
+  The prod flavor has no overlay and no such config, so a production build cannot make a
+  cleartext request even by misconfiguration — the guarantee is enforced by the absence of
+  the file rather than by remembering to flip a flag.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:networkSecurityConfig="@xml/network_security_config" />
+</manifest>

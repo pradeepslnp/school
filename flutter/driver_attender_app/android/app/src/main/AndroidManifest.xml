@@ -1,0 +1,62 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Required for every build, not just debug.
+         Flutter's template declares INTERNET only in the debug and profile manifests,
+         because the tool needs it for hot reload. A release build assembled from this
+         manifest alone therefore has no network access at all, and every request fails as a
+         transport error — which this app reports as "offline" and quietly queues, so the
+         failure looks like poor coverage rather than a missing permission. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Backups are disabled deliberately. Android auto-backup would copy this app's local
+         store off the device to the user's cloud account, and that store holds boarding
+         records and cached manifests — child PII (ADR-0008). Encryption at rest does not
+         help if the file is replicated somewhere the app's keychain-held key is not.
+         `fullBackupContent` and `dataExtractionRules` are not used instead: an allowlist
+         that a future release forgets to update is how this leaks. -->
+    <application
+        android:label="guardian_driver"
+        android:name="${applicationName}"
+        android:allowBackup="false"
+        android:fullBackupOnly="false"
+        android:icon="@mipmap/ic_launcher">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <!-- Required to query activities that can process text, see:
+         https://developer.android.com/training/package-visibility and
+         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+</manifest>

@@ -1,0 +1,37 @@
+{
+  // Two environments: dev and prod.
+  //
+  // These are --dart-define environments, NOT Flutter build flavors. Real flavors need Android
+  // productFlavors and iOS schemes, and neither is configured yet — passing --flavor today
+  // fails the build.
+  //
+  // Android emulator: localhost is the emulator itself, so dev needs 10.0.2.2 instead. Change
+  // API_BASE_URL below when running on an emulator, or use a LAN IP for a physical device.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Driver app — dev",
+      "request": "launch",
+      "type": "dart",
+      "program": "${workspaceFolder}/lib/main.dart",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--dart-define=ENVIRONMENT=dev",
+        "--dart-define=API_BASE_URL=http://localhost:8080/api/v1"
+      ]
+    },
+    {
+      "name": "Driver app — prod",
+      "request": "launch",
+      "type": "dart",
+      "program": "${workspaceFolder}/lib/main.dart",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--dart-define=ENVIRONMENT=production",
+        // No production host exists yet. Replace this before anyone runs a prod build —
+        // it is deliberately not a plausible-looking URL so it cannot be mistaken for one.
+        "--dart-define=API_BASE_URL=https://REPLACE-ME.invalid/api/v1"
+      ]
+    }
+  ]
+}

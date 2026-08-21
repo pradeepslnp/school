@@ -1,0 +1,53 @@
+name: guardian_parent
+description: "Guardian Platform — parent and guardian application."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Shared domain, errors, and time handling. Pure Dart by design (ADR-0003) — this app
+  # supplies the widgets; guardian_core supplies the meaning.
+  # guardian_core removed for local dev; re-add as a package or path when available
+
+  # Shared color theme (colors only — see guardian-theme/README.md). Local path dependency:
+  # this repo and guardian-theme are expected to sit as siblings under the same parent
+  # folder. Change a color in guardian-theme and it's picked up here on the next rebuild.
+  guardian_theme:
+    path: ../shared_packages/guardian_theme
+  # guardian_theme:
+  # git:
+  #   url: https://github.com/your-org/guardian-theme.git
+  #   ref: v0.1.0   # a tag or commit SHA, not "main"
+  # Presentation state. UI emits events, BLoC emits states; no decisions in widgets
+  # (ENGINEERING_PRINCIPLES.md §8).
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.7
+
+  # HTTP transport. Used only by core/network/RestClient — data providers call RestClient,
+  # never package:http directly, so timeouts, headers, and retries stay decided in one place.
+  http: ^1.5.0
+  # MediaType for multipart uploads. Direct rather than transitive: it is imported here.
+  http_parser: ^4.1.2
+
+  # P-12 Handover: renders the verification code as a QR symbol client-side from the code the
+  # server issued — no image asset or extra round trip.
+  qr_flutter: ^4.1.0
+  # P-12 is read outdoors, often in sunlight (docs/05-ui/PARENT_APP.md § P-12); this raises
+  # screen brightness only while that screen is visible and restores it on exit. Application
+  # brightness, not system — it needs no platform permission and cannot affect anything
+  # outside this app.
+  screen_brightness: ^2.1.11
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

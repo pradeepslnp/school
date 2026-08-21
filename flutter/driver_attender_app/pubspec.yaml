@@ -1,0 +1,73 @@
+name: guardian_driver
+description: "Guardian Platform — driver and attendant application. Offline-first (ADR-0008)."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Shared domain, errors, and time handling. Pure Dart by design (ADR-0003).
+  # guardian_core removed for local dev; re-add as a package or path when available
+
+  # Shared color theme (colors only — see guardian-theme/README.md). Local path dependency:
+  # this repo and guardian-theme are expected to sit as siblings under the same parent
+  # folder. Change a color in guardian-theme and it's picked up here on the next rebuild.
+  guardian_theme:
+    path: ../shared_packages/guardian_theme
+  # guardian_theme:
+  # git:
+  #   url: https://github.com/your-org/guardian-theme.git
+  #   ref: v0.1.0   # a tag or commit SHA, not "main"
+
+  # Presentation state. UI emits events, BLoC emits states; no decisions in widgets
+  # (ENGINEERING_PRINCIPLES.md §8).
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.7
+
+  # HTTP transport. Used only by core/network/RestClient — data providers call RestClient,
+  # never package:http directly.
+  http: ^1.5.0
+  # MediaType for multipart uploads (incident photos).
+  http_parser: ^4.1.2
+
+  # --- ADR-0008: offline-first ------------------------------------------------------------
+
+  # SQLite with SQLCipher. The local store holds boarding events, handover records, and
+  # cached manifests — that is child PII on a device that is often shared between shifts, so
+  # ADR-0008 requires encryption at rest rather than treating it as a hardening extra.
+  #
+  # Plain `sqflite` is deliberately not used. Swapping it in later would leave every record
+  # written before the swap in clear text on disk.
+  sqflite_sqlcipher: ^3.4.1
+
+  # Platform keychain / keystore. Holds the database key and the session tokens.
+  # CODING_STANDARDS_FLUTTER.md §Security: tokens never go in shared preferences.
+  flutter_secure_storage: ^11.0.0
+
+  # Client-generated record identity. Every queued safety record carries a v4 UUID that is
+  # both the idempotency key and the server's uniqueness guarantee (BR-BOARD-009), which is
+  # what makes retrying an offline queue safe.
+  uuid: ^4.6.0
+
+  # Path joining for the database file.
+  path: ^1.9.0
+
+  # Deliberately absent: connectivity_plus.
+  #
+  # The OS connectivity flag answers "is there a network interface", not "can this app reach
+  # the API" — a bus WiFi hotspot with no backhaul, or a captive portal, both report
+  # connected. The banner in this app must be truthful, so online/offline is derived from
+  # the outcome of real requests to our own API instead (core/offline/sync_engine.dart).
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

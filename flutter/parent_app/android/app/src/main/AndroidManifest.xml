@@ -1,0 +1,72 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- The app is a read surface over a remote API; without this it cannot reach the
+         platform at all.
+
+         It belongs HERE, not only in src/debug and src/profile. Those two are Flutter's
+         template, and they exist so the tool can attach for hot reload — they are merged
+         into debug and profile builds only. A release build merges just this file, so with
+         the permission left in the debug manifest the app works all through development and
+         then fails on the first release build, with every request surfacing as a generic
+         transport failure rather than as a missing permission. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Read before deciding whether to retry: the app distinguishes "offline" from "the
+         server said no" (ADR-0008, docs/05-ui/PARENT_APP.md), and the connection banner
+         needs this to say "Not connected" rather than blaming the school. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <!-- android:usesCleartextTraffic is deliberately absent, which on targetSdk 28+ means
+         cleartext is refused. TLS 1.2+ everywhere is a platform rule
+         (docs/04-api/API_STANDARDS.md), so a child's location must never be one
+         misconfigured build away from travelling in the clear.
+
+         Talking to a local backend over http is a development-only need, and it is met by a
+         debug-only overlay scoped to loopback — see
+         src/debug/res/xml/network_security_config.xml. Structural, not conditional: a
+         release build has no path to cleartext, in the same way a production build has no
+         path to the test account (lib/features/login/repository/test_account.dart). -->
+    <application
+        android:label="guardian_parent"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <!-- Required to query activities that can process text, see:
+         https://developer.android.com/training/package-visibility and
+         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+</manifest>

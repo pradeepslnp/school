@@ -1,0 +1,21 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The INTERNET permission is required for development. Specifically,
+         the Flutter tool needs it to communicate with the running application
+         to allow setting breakpoints, to provide hot reload, etc.
+
+         It is also declared in src/main, because a release build merges only that file and
+         would otherwise ship with no network access at all. Declaring it in both is harmless:
+         the manifest merger takes the union.
+    -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Points debug builds at the loopback-scoped cleartext exception
+         (res/xml/network_security_config.xml, alongside this file).
+
+         The attribute is attached here rather than in src/main so that a release build has
+         no reference to it at all — the file is not merged, the attribute is not set, and
+         cleartext stays refused. src/main declares no networkSecurityConfig, so there is
+         nothing for the merger to conflict with.
+    -->
+    <application android:networkSecurityConfig="@xml/network_security_config" />
+</manifest>

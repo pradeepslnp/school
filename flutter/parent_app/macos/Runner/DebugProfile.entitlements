@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<!-- Outbound connections. Without this the macOS app is sandboxed with no network at all
+	     and every request fails as a transport error, which reads exactly like a backend that
+	     is down — the commonest reason a Flutter macOS build "cannot reach the server" while
+	     curl on the same machine works fine.
+
+	     network.server below is a different thing: it lets the Flutter tool attach to the VM
+	     service for hot reload. It grants no outbound access, which is why its presence made
+	     this omission harder to spot. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
+	<true/>
+</dict>
+</plist>
