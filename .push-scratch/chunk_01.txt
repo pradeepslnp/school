@@ -1,0 +1,571 @@
+===FILE_START:.github/copilot-instructions.md===
+# GitHub Copilot Instructions (machine-friendly)
+
+Follow these rules when generating code, patches, or tasks for this repository:
+
+1. Read `documentation/INSTRUCTIONS.md` and `documentation/FLUTTER_APP_INSTRUCTIONS.md` before making code changes.
+2. Produce a 3–6 line plan before any non-trivial change: requirement summary, files to change, and verification steps.
+3. Prefer linking to existing documentation instead of copying it. Use markdown links to the files in `documentation/`.
+4. Do not introduce placeholder or pseudo-production code in repositories; return an implementation or a clearly documented TODO with an ADR.
+5. For Flutter changes: run `flutter analyze` locally; CI runs also check this. Do not add new widget tests unless requested by the maintainer.
+6. For architectural changes: add an ADR under `documentation/00-governance/adr/` and reference it in the PR description.
+7. When adding or changing tasks/workflows: include clear run steps in the PR description so reviewers can reproduce locally.
+
+If you are an automated agent, output only the minimal patch and a short summary that references the files you changed.
+
+===FILE_END===
+===FILE_START:.github/workflows/ci.yml===
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  flutter_analyze:
+    name: Flutter Analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+      - name: Analyze driver app
+        run: |
+          cd flutter/driver_attender_app
+          flutter analyze
+      - name: Analyze parent app
+        run: |
+          cd flutter/parent_app
+          flutter analyze
+      - name: Analyze admin web
+        run: |
+          cd admin
+          flutter analyze
+
+  backend_build:
+    name: Backend Build
+    runs-on: ubuntu-latest
+    needs: flutter_analyze
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Build backend
+        run: |
+          cd backend
+          ./gradlew build -x test
+
+===FILE_END===
+===FILE_START:.vscode/launch.json===
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run flutter/driver_attender_app (DEV)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/flutter/driver_attender_app",
+      "args": ["--flavor", "dev", "--dart-define=ENVIRONMENT=dev", "--dart-define=API_BASE_URL=http://localhost:8080/api/v1"]
+    },
+    {
+      "name": "Run flutter/driver_attender_app (PROD)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/flutter/driver_attender_app",
+      "args": ["--flavor", "prod", "--dart-define=ENVIRONMENT=production", "--dart-define=API_BASE_URL=https://api.guardian.example/api/v1"]
+    },
+    {
+      "name": "Run flutter/parent_app (DEV)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/flutter/parent_app",
+      "args": ["--flavor", "dev", "--dart-define=ENVIRONMENT=dev", "--dart-define=API_BASE_URL=http://localhost:8080/api/v1"]
+    },
+    {
+      "name": "Run flutter/parent_app (PROD)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/flutter/parent_app",
+      "args": ["--flavor", "prod", "--dart-define=ENVIRONMENT=production", "--dart-define=API_BASE_URL=https://api.guardian.example/api/v1"]
+    },
+    {
+      "name": "Run admin (DEV) - Chrome",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/admin",
+      "deviceId": "chrome",
+      "args": ["--flavor", "dev", "--dart-define=ENVIRONMENT=dev", "--dart-define=API_BASE_URL=http://localhost:8080/api/v1"]
+    },
+    {
+      "name": "Run admin (PROD) - Chrome",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/admin",
+      "deviceId": "chrome",
+      "args": ["--flavor", "prod", "--dart-define=ENVIRONMENT=production", "--dart-define=API_BASE_URL=https://api.guardian.example/api/v1"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run All (DEV)",
+      "configurations": [
+        "Run flutter/driver_attender_app (DEV)",
+        "Run flutter/parent_app (DEV)",
+        "Run admin (DEV) - Chrome"
+      ]
+    },
+    {
+      "name": "Run All (PROD)",
+      "configurations": [
+        "Run flutter/driver_attender_app (PROD)",
+        "Run flutter/parent_app (PROD)",
+        "Run admin (PROD) - Chrome"
+      ]
+    }
+  ]
+}
+
+===FILE_END===
+===FILE_START:.vscode/tasks.json===
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Open admin Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/admin"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open backend Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open documentation Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/documentation"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open flutter/driver_attender_app Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/flutter/driver_attender_app"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open infrastructure Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/infrastructure"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open flutter/parent_app Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/flutter/parent_app"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open All Project Terminals",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "Open admin Terminal",
+        "Open backend Terminal",
+        "Open documentation Terminal",
+        "Open flutter/driver_attender_app Terminal",
+        "Open infrastructure Terminal",
+        "Open flutter/parent_app Terminal"
+      ]
+    },
+    {
+      "label": "Analyze flutter/driver_attender_app",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["analyze"],
+      "options": { "cwd": "${workspaceFolder}/flutter/driver_attender_app" },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Analyze flutter/parent_app",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["analyze"],
+      "options": { "cwd": "${workspaceFolder}/flutter/parent_app" },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Analyze admin",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["analyze"],
+      "options": { "cwd": "${workspaceFolder}/admin" },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    }
+  ]
+}
+
+===FILE_END===
+===FILE_START:AGENTS.md===
+# AGENTS
+
+Purpose: Provide concise, discoverable instructions for AI coding agents and human contributors about how to behave when automating tasks in this repository.
+
+## Golden Rule — No Over-Engineering
+
+The most common failure mode for an AI agent in this workspace is doing *too much*: reading every governance doc for a one-line fix, writing a long impact analysis for a trivial change, adding architecture, ADRs, or tests nobody asked for, or editing files outside the scope of the request. That failure mode is explicitly called out and gated in `documentation/INSTRUCTIONS.md` STEP 0 — read it before starting any task.
+
+In short:
+
+1. Size the task first (Trivial / Standard / Architectural — `documentation/INSTRUCTIONS.md` STEP 0). Do only what that tier calls for.
+2. A typo, small bug fix, config tweak, or copy change gets a direct fix and a 1–2 line explanation — not a governance ritual.
+3. Stay inside the files the request actually touches. Don't refactor, rename, or "improve" anything else, even if it looks wrong — say something instead of fixing it.
+4. Don't add new abstractions, dependencies, docs, or tests unless the task needs them to be correct, or the user asked for them.
+5. Don't open more files, read more docs, or run more commands/tools than the task requires.
+6. If scope is unclear, ask a specific question rather than doing extra work "to be safe."
+
+This does not relax safety, security, or tenant-isolation requirements — those apply at every tier. It only stops process ceremony from being applied to work that doesn't need it.
+
+Contents
+- Why: Quick reference so automated agents follow the project's governance and engineering standards.
+- Where to look first: see `documentation/INSTRUCTIONS.md` and `documentation/FLUTTER_APP_INSTRUCTIONS.md`.
+- How to use: prefer linking to existing docs rather than copying them; be minimal and actionable.
+
+Minimal agent checklist
+
+1. Size the task (Trivial / Standard / Architectural — `documentation/INSTRUCTIONS.md` STEP 0). For Trivial work, skip straight to step 4 below.
+2. Read `documentation/INSTRUCTIONS.md` (governance) and `documentation/FLUTTER_APP_INSTRUCTIONS.md` (Flutter specifics) — Standard/Architectural tier only.
+3. Identify the affected project(s) under the workspace root (e.g., `flutter/driver_attender_app`, `flutter/parent_app`) and produce a short plan before making changes (requirement summary, docs referenced, impact analysis, implementation sketch) — Standard/Architectural tier only.
+4. When producing code: follow Clean Architecture, SOLID, DI, and the repo's `ENGINEERING_PRINCIPLES.md`, scaled to the tier — a one-line fix doesn't need a new layer of indirection to satisfy SOLID.
+5. Link to relevant docs and add ADRs only for genuine architecture decisions, not for every change.
+
+Prompt template (copy into prompts or use interactively)
+
+"You are an expert developer contributing to the Guardian Platform. Read `documentation/INSTRUCTIONS.md` and `documentation/FLUTTER_APP_INSTRUCTIONS.md` before writing code. Target project: [PROJECT_NAME] at [PROJECT_PATH]. Requirement: [SHORT_REQUIREMENT]. Provide: (1) requirement summary, (2) docs referenced, (3) business rules applied, (4) proposed solution and files changed, (5) impact analysis, (6) tests and verification steps, then the minimal production-quality code changes."
+
+Files added or updated
+
+- `documentation/FLUTTER_APP_INSTRUCTIONS.md`: Flutter-specific guidance and a prompt template for AI agents.
+- `documentation/INSTRUCTIONS.md`: updated to reference the new Flutter instructions file.
+
+How to enforce
+
+- Add a short line in your PR template reminding contributors to run `flutter analyze` for Flutter projects and link the ADR when architectural changes are made.
+- Optionally add `.github/copilot-instructions.md` to shadow or extend these rules for GitHub Copilot-specific workflows.
+
+If you want, I can also create `.github/copilot-instructions.md` containing a brief, machine-friendly subset of these directives.
+
+===FILE_END===
+===FILE_START:AI_CONTENT/AGENT_WORKFLOW.md===
+# Agent Workflow
+
+**Applies to:** every AI agent working anywhere in the Guardian Platform repository.
+
+## Goal
+
+Ensure every AI agent works from the same project context, business rules, architecture, documentation, and quality standards — regardless of which tool is running it, which module it's touching, or which conversation started it.
+
+## Before anything else: size the task
+
+[`documentation/INSTRUCTIONS.md`](../documentation/INSTRUCTIONS.md) STEP 0 sizes every request into **Trivial**, **Standard**, or **Architectural** before any of the process below applies. State the tier in one line. A Trivial request (typo, one-file bug fix, copy/config change) skips straight to making the fix and a 1–2 line explanation — the standard process and output format below are for **Standard and Architectural** work. Applying the full process to Trivial work is the specific failure mode this repository's root `CLAUDE.md` and `AGENTS.md` exist to prevent.
+
+## Standard Process (Standard / Architectural tier)
+
+1. **Load project instructions** — root `CLAUDE.md`, `AGENTS.md`, and `documentation/INSTRUCTIONS.md`.
+2. **Understand the task** — restate it, including anything inferred, before proceeding.
+3. **Identify relevant documentation** — which tier(s) of `documentation/` govern this area (product discovery, system design, database, API, UI, development, testing, deployment).
+4. **Identify affected modules** — which backend module(s), which Flutter app(s), which shared package(s).
+5. **Identify applicable business rules** — by ID, from `documentation/01-product-discovery/BUSINESS_RULES.md`.
+6. **Identify dependencies** — cross-module, cross-project (there are exactly three cross-repository dependencies in this workspace; see `documentation/06-development/PROJECT_STRUCTURE.md`), and any migration or API-compatibility dependency.
+7. **Check for conflicts** — between the request and existing architecture, business rules, or a higher-tier document. Never resolve a conflict by quietly editing the lower-tier document to agree with the wrong thing; escalate it (state it plainly, propose an ADR or documentation amendment if the higher document is genuinely wrong).
+8. **Explain the proposed approach** before writing code — problem, recommendation, alternatives considered, why this fits Guardian specifically.
+9. **Implement only after requirements are clear.** A plausible guess in a safety-relevant system is a defect, not a shortcut. If something safety-relevant is ambiguous, ask rather than proceed.
+10. **Validate the implementation** — against the business rules and requirements identified in steps 3–5.
+11. **Run or recommend tests** — unit for domain rules, integration for repository/database (including RLS enforcement where tenancy is touched), contract for API shape, end-to-end for critical safety journeys. `flutter analyze` clean for any Flutter change.
+12. **Update documentation if required** — the tier(s) identified in step 3, plus `FEATURE_INVENTORY.md` and `MODULE_MAP.md` if a feature or module was added or changed, plus an ADR if an architectural decision was made.
+13. **Produce structured output** — the format below.
+14. **Record important decisions** — in `AI_CONTENT/agents/notes/` per [`notes_workflow.md`](agents/notes/notes_workflow.md) if the decision doesn't yet belong in official documentation, or directly in `documentation/` if it does.
+
+## Agent Output Format (Standard / Architectural tier)
+
+```
+## Task
+What was requested.
+
+## Context Reviewed
+Documents and rules considered (actual paths read, not assumed).
+
+## Requirements
+Relevant requirements, including what was inferred.
+
+## Business Rules
+Rules applied, by ID where they exist.
+
+## Approach
+Proposed implementation approach and why it fits this platform.
+
+## Changes
+Files/modules affected.
+
+## Implementation
+Actual implementation. No placeholders, no pseudo-production shortcuts.
+
+## Validation
+Tests/checks performed or recommended.
+
+## Documentation Updates
+Documentation that should be updated, and by whom if not done here.
+
+## Risks / Concerns
+Anything requiring attention — including anything left uncertain.
+
+## Next Steps
+Recommended next action.
+```
+
+If the user explicitly asks for only code, omit the surrounding sections and provide the code — do not manufacture ceremony the user didn't ask for. For Trivial-tier work, skip this format entirely; a 1–2 line explanation is correct and complete.
+
+## Reusable workflows
+
+Task-specific workflows (feature development, backend changes, Flutter changes, database changes, API changes, testing, code review, documentation) live in [`agents/workflows/`](agents/workflows/) and are added as they're needed — see that folder's README for the convention and the list of workflows that exist versus are anticipated.
+
+## Related
+
+- [`agents/notes/notes_workflow.md`](agents/notes/notes_workflow.md) — how agents record decisions, open questions, and findings that aren't yet official documentation.
+- [`agents/outputs/`](agents/outputs/) — where retained agent-generated artifacts live.
+- [`agents/research_agent/`](agents/research_agent/) — the specialised research agent's operating rules and output format.
+- [`prompts/`](prompts/) — reusable prompt templates.
+
+===FILE_END===
+===FILE_START:AI_CONTENT/agents/notes/notes_workflow.md===
+# Notes Workflow
+
+**Purpose:** a place for an agent to record something worth keeping that is not yet — or may never become — official documentation.
+
+Notes are not a replacement for `documentation/`. If a note describes something that has become an official requirement, architectural decision, or business rule, the obligation is to move it into the appropriate tier of `documentation/` (with an ADR if it's architectural) and either delete the note or mark it superseded — not to leave the real answer sitting only in a note where the next agent won't think to look.
+
+## What belongs in a note
+
+- **Architectural decisions** that haven't yet been written up as a formal ADR, or the reasoning trail behind one that was.
+- **Open questions** raised during a task that the developer hasn't answered yet — so the next agent doesn't re-ask or re-guess.
+- **Requirement changes** noticed mid-task that haven't been reconciled with `documentation/` yet.
+- **Important assumptions** an agent had to make explicit in order to proceed on a non-blocking ambiguity (per `documentation/AI_MASTER_PROMPT.md`: proceed on what doesn't depend on the open question, ask about the part that does, and record the assumption).
+- **Research findings** that haven't yet been evaluated for a documentation update (see the research agent's output format, which explicitly recommends whether `documentation/` should change).
+- **Technical risks** identified but not yet mitigated.
+- **Deferred decisions** — explicitly punted, with the reason, so "we decided not to decide yet" doesn't get mistaken for "nobody thought of it."
+- **Lessons learned** — something that went wrong, or would have, and why.
+
+## What does not belong in a note
+
+- A restated business rule that already has an ID in `documentation/01-product-discovery/BUSINESS_RULES.md`.
+- A finished architectural decision that should be an ADR under `documentation/00-governance/adr/` instead.
+- Product requirements — those belong in `documentation/`, never only in a note.
+- Anything the next reader needs in order to safely make a change. If it's load-bearing, it belongs in official documentation, not a note.
+
+## Format
+
+Store notes as dated Markdown files under `AI_CONTENT/agents/notes/`, named `YYYY-MM-DD_short-topic.md`. Each note should state: what it's about, why it exists as a note rather than a documentation update, and — if applicable — what would need to happen for it to graduate into `documentation/`.
+
+## Promotion
+
+When a note becomes an official requirement or decision:
+
+1. Write or update the appropriate `documentation/` file (and an ADR if it's architectural).
+2. Reference the promoted note from the new documentation entry, or delete the note if it added nothing beyond what's now documented.
+3. Do not leave a stale note contradicting the documentation it was promoted into.
+
+===FILE_END===
+===FILE_START:AI_CONTENT/agents/outputs/README.md===
+# Agent Outputs
+
+Retained agent-generated artifacts live here — not temporary scratch files, not every draft, only outputs intentionally kept.
+
+Organise by:
+
+```
+outputs/<agent>/<YYYY-MM-DD>/<task-slug>/<module>/
+```
+
+For example: `outputs/research_agent/2026-08-21/push-provider-comparison/notifications/`.
+
+Do not store temporary files here. If an artifact isn't worth someone finding six months from now, it doesn't belong in this directory — put it in the agent's own scratch space instead.
+
+===FILE_END===
+===FILE_START:AI_CONTENT/agents/research_agent/CLAUDE.md===
+# Research Agent — Operating Instructions
+
+This file governs any agent operating in the "research" role for Guardian Platform. It is scoped narrowly: the research agent investigates and reports; it does not decide.
+
+## Responsibilities
+
+- Competitor research (other school transportation / child-safety platforms).
+- Technology research (libraries, frameworks, protocols, GPS hardware, notification providers).
+- Architecture research (patterns relevant to a proposed design decision).
+- Product research (what similar products do, and why it does or doesn't apply here).
+- Industry research (school transportation regulation, safety standards, sector norms).
+- API/provider research (maps, messaging, push notification, storage, payment-adjacent-but-out-of-scope providers).
+- Regulatory research, when explicitly requested — this is jurisdiction-sensitive and must not be treated as legal advice.
+- Current pricing research.
+- Current market research.
+- Best-practice research.
+
+## The one rule that matters most
+
+**The research agent must not automatically change product requirements.** Research findings are evidence, not decisions. Product decisions remain controlled by the project owner and by official documentation (`documentation/`, with amendments via ADR where they're architectural). A research report ends with a recommendation about whether documentation should change — it does not change it unilaterally.
+
+## Rules
+
+1. Understand the research question before searching — restate it if it's ambiguous.
+2. Define explicitly what needs to be verified, so the report has a clear scope boundary.
+3. Prefer primary sources over secondary summaries.
+4. Use current sources when the question is time-sensitive (pricing, market state, current competitor features, current regulation) — do not answer a "what does X cost today" question from training-data recall.
+5. Clearly distinguish facts (verifiable, sourced) from opinions (yours or a source's).
+6. Record source URLs for every material claim.
+7. Record publication or last-updated dates where relevant, especially for anything that changes over time.
+8. Identify conflicting information across sources rather than silently picking one.
+9. Avoid unsupported assumptions — if the research doesn't answer part of the question, say so instead of filling the gap with a plausible guess.
+10. State confidence explicitly where it varies across findings.
+11. Summarise actionable findings — a reader should be able to act on the report without re-reading every source.
+12. Recommend explicitly whether `documentation/` should be updated, and which document, without making the update as part of the research task itself unless asked to.
+
+### Source preference by research type
+
+**Technology research:** official documentation, official GitHub repositories, official API documentation, published standards, vendor documentation — in that preference order.
+
+**Competitor research:** official product websites and documentation, app store listings, public product documentation, reputable independent reviews, community feedback where it adds signal beyond marketing claims.
+
+**Do not treat marketing claims as verified facts.** A vendor's or competitor's own claim about their product's capability, accuracy, or reliability is a claim to report as a claim — not to restate as an established fact — until corroborated independently.
+
+## Output Format
+
+Every research task produces a report in this structure:
+
+```
+# Research Report
+
+## 1. Research Question
+## 2. Objective
+## 3. Scope
+## 4. Sources
+## 5. Findings
+## 6. Comparison
+## 7. Verified Facts
+## 8. Unverified / Uncertain Information
+## 9. Risks
+## 10. Recommendations
+## 11. Impact on Guardian
+## 12. Documentation Changes Recommended
+## 13. Sources / References
+```
+
+Section 11 ("Impact on Guardian") is where the research agent connects findings back to this specific platform — its multi-tenancy model, its child-safety priorities, its already-adopted stack (Java/Spring backend, Flutter/BLoC apps, PostgreSQL with RLS) — rather than leaving the reader to make that connection themselves. Section 12 is a recommendation, per the rule above, not an action.
+
+## Relationship to the rest of `AI_CONTENT/`
+
+The research agent still follows the STEP 0 sizing rule (`documentation/INSTRUCTIONS.md`) and the general agent behavior rules in the root `CLAUDE.md` §17. A research task is typically its own tier of work — size it like any other request, and don't let "just research" become an excuse to skip citing sources or to skip stating what's still uncertain.
+
+===FILE_END===
+===FILE_START:AI_CONTENT/agents/research_agent/research_agent.md===
+# Research Agent — Definition
+
+**Role:** specialised research agent for the Guardian Platform project.
+**Rules & output format:** [`CLAUDE.md`](CLAUDE.md) in this same directory — read that first; this file is the shorter "when and how to invoke" companion.
+
+## When to use the research agent
+
+Reach for the research agent instead of the default development workflow when the task is primarily *find out and report*, not *decide and build*:
+
+- "What do competitor X and Y do for wrong-bus detection?"
+- "What's the current pricing for FCM vs an alternative push provider at our expected volume?"
+- "Is there a regulatory requirement in [jurisdiction] for school transport GPS retention?"
+- "What are current best practices for offline-first mobile sync at our scale?"
+- "Compare current PostgreSQL RLS performance guidance against our multi-tenancy design."
+
+If the task is "implement wrong-bus detection," that's a Standard/Architectural development task (see root `AI_CONTENT/AGENT_WORKFLOW.md`), not a research task — though it may *start* with a short research step if the approach is genuinely unclear.
+
+## What it produces
+
+A Research Report in the exact structure defined in `CLAUDE.md` §Output Format — thirteen numbered sections, ending with sourced references. Nothing less than that structure is a complete research task; a partial answer without sources and without an explicit recommendation is not usable evidence for a product decision.
+
+## What it must not do
+
+- Change `documentation/`, code, or configuration as a side effect of research. It reports; a separate Standard/Architectural task (or the project owner directly) acts on the recommendation.
+- Present a vendor's or competitor's marketing claim as an established fact.
+- Resolve a safety-relevant open question by picking the more convenient of two conflicting sources without flagging the conflict.
+- Skip source URLs or dates "to save time" — an unsourced claim in a safety-critical platform's evidence base is a defect, not an efficiency.
+
+## Handoff
+
+When a research report recommends a documentation change, the next step is a Standard or Architectural task (per `documentation/INSTRUCTIONS.md` STEP 0) that reads the report, makes the actual documentation edit or ADR, and — if it changes product behavior — updates `FEATURE_INVENTORY.md` and/or `BUSINESS_RULES.md` as appropriate. The research agent names what should change; it does not itself change it.
+
+===FILE_END===

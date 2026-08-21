@@ -1,0 +1,2237 @@
+===FILE_START:documentation/04-api/FLEET_STAFF_ROUTES_API.md===
+# FLEET, STAFF & ROUTES API
+
+**Document tier:** 4 — API
+**Modules:** MOD-05, MOD-06, MOD-07 · **Features:** FLT-001…005, STF-001…006, RTE-001…007
+
+---
+
+## Vehicles
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/vehicles` | FLT-001 | `PERM-VEHICLE-MANAGE` | BR-FLEET-001, BR-FLEET-005 |
+| `GET` | `/vehicles` | FLT-001 | `PERM-VEHICLE-VIEW` | BR-IAM-006 |
+| `GET` | `/vehicles/{id}` | FLT-001 | `PERM-VEHICLE-VIEW` | |
+| `PATCH` | `/vehicles/{id}` | FLT-001 | `PERM-VEHICLE-MANAGE` | |
+| `GET` | `/vehicles/{id}/eligibility` | FLT-003 | `PERM-VEHICLE-VIEW` | BR-FLEET-002 |
+
+```json
+{
+  "schoolId": "…", "registrationNo": "DL1PC1234", "displayName": "Bus 12",
+  "vehicleType": "BUS", "seatingCapacity": 42, "vendorName": "Sharma Transport"
+}
+```
+
+`displayName` is what parents see in notifications — "Bus 12", not a plate number (NTF-BOARD-01).
+
+### `GET /vehicles/{id}/eligibility`
+
+```json
+{
+  "data": {
+    "eligible": false,
+    "checks": [
+      { "check": "VEHICLE_ACTIVE", "passed": true },
+      { "check": "MANDATORY_DOCUMENTS_VALID", "passed": false,
+        "detail": "Fitness certificate expired 2026-07-15", "businessRule": "BR-FLEET-002" }
+    ]
+  }
+}
+```
+
+Lets a manager see *why* a vehicle is blocked before 6:30 AM, rather than discovering it when a driver cannot start.
+
+---
+
+## Vehicle Documents 🔴
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/vehicles/{id}/documents` | FLT-002 | `PERM-VEHICLE-DOCUMENT-MANAGE` | BR-FLEET-002 |
+| `GET` | `/vehicles/{id}/documents` | FLT-002 | `PERM-VEHICLE-VIEW` | |
+| `PATCH` | `/vehicles/{id}/documents/{docId}` | FLT-002 | `PERM-VEHICLE-DOCUMENT-MANAGE` | |
+| `GET` | `/vehicles/documents/expiring` | FLT-003 | `PERM-VEHICLE-VIEW` | BR-FLEET-003 |
+
+```json
+{ "documentType": "FITNESS_CERTIFICATE", "documentNumber": "…",
+  "issuedOn": "2025-08-01", "expiresOn": "2026-08-01" }
+```
+
+**`documentType` is validated against the region profile, not a code enum** (ADR-0007). Registration, fitness, insurance, and permit types differ by country; a code enum would mean a code change to onboard a new market.
+
+**What is not configurable:** an expired mandatory document blocks trip assignment (BR-FLEET-002 🔴). Tenants configure which documents are mandatory; they cannot configure the block away.
+
+---
+
+## Devices
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/devices` | FLT-004 | `PERM-DEVICE-MANAGE` | BR-FLEET-006 |
+| `GET` | `/devices` | FLT-004 | `PERM-DEVICE-MANAGE` | |
+| `PUT` | `/devices/{id}/vehicle` | FLT-004 | `PERM-DEVICE-MANAGE` | BR-FLEET-004 |
+| `DELETE` | `/devices/{id}/vehicle` | FLT-004 | `PERM-DEVICE-MANAGE` | |
+
+Assigning a second active device to a vehicle returns `409 DEVICE_ALREADY_ASSIGNED` (BR-FLEET-004) — two devices reporting for one bus would produce contradictory positions.
+
+Devices are **explicitly registered**. An unregistered device's position report is logged and ignored, never auto-registered (BR-FLEET-006) — auto-registration would let anyone inject positions for a vehicle they do not own.
+
+---
+
+## Transport Staff
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/transport-staff` | STF-001 | `PERM-STAFF-MANAGE` | |
+| `GET` | `/transport-staff` | STF-001 | `PERM-STAFF-MANAGE` | BR-IAM-006 |
+| `PATCH` | `/transport-staff/{id}` | STF-001 | `PERM-STAFF-MANAGE` | |
+| `POST` | `/transport-staff/{id}/verify` | STF-003 | `PERM-STAFF-VERIFY` | BR-STAFF-002 |
+| `POST` | `/transport-staff/{id}/credentials` | STF-002 | `PERM-STAFF-MANAGE` | BR-STAFF-001 |
+| `GET` | `/transport-staff/{id}/eligibility` | STF-003 | `PERM-STAFF-MANAGE` | BR-STAFF-001/002 |
+| `GET` | `/transport-staff/credentials/expiring` | STF-002 | `PERM-STAFF-MANAGE` | BR-STAFF-003 |
+| `POST` | `/transport-staff/{id}/deactivate` | IAM-008 | `PERM-STAFF-MANAGE` | BR-IAM-008 |
+
+### `POST /transport-staff/{id}/verify`
+
+```json
+{ "verificationType": "POLICE_BACKGROUND_CHECK", "verifiedUntil": "2027-08-03", "referenceNumber": "…" }
+```
+
+**`verifiedUntil` is required** — a permanently-verified staff member is a verification nobody will ever revisit (BR-STAFF-002 🔴). Verification types come from the region profile.
+
+Deactivation revokes all sessions immediately and removes future duty assignments (BR-IAM-008).
+
+---
+
+## Duty Assignments
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/routes/{routeId}/duty-assignments` | STF-004 | `PERM-DUTY-ASSIGN` | BR-STAFF-004, BR-STAFF-005 |
+| `GET` | `/routes/{routeId}/duty-assignments` | STF-004 | `PERM-ROUTE-VIEW` | |
+| `DELETE` | `/duty-assignments/{id}` | STF-004 | `PERM-DUTY-ASSIGN` | |
+
+The **standing roster**. Actual crew for a specific trip is `trip_staff` — separated so a substitution does not rewrite the roster (BR-STAFF-006).
+
+---
+
+## Routes
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/routes` | RTE-001 | `PERM-ROUTE-MANAGE` | BR-ROUTE-001 |
+| `GET` | `/routes` | RTE-001 | `PERM-ROUTE-VIEW` | BR-IAM-006 |
+| `GET` | `/routes/{id}` | RTE-001 | `PERM-ROUTE-VIEW` | |
+| `PATCH` | `/routes/{id}` | RTE-005 | `PERM-ROUTE-MANAGE` | BR-ROUTE-006 |
+| `DELETE` | `/routes/{id}` | RTE-006 | `PERM-ROUTE-MANAGE` | BR-ROUTE-007 |
+| `PUT` | `/routes/{id}/stops` | RTE-001 | `PERM-ROUTE-MANAGE` | BR-ROUTE-002/003/008 |
+| `GET` | `/routes/{id}/stops` | RTE-001 | `PERM-ROUTE-VIEW` | |
+
+### `PUT /routes/{id}/stops`
+
+```json
+{
+  "stops": [
+    { "sequenceNo": 1, "name": "Green Park", "latitude": 28.5601, "longitude": 77.2065,
+      "geofenceRadiusM": 100, "scheduledPickupTime": "07:40", "scheduledDropTime": "15:20",
+      "landmark": "Opposite the metro gate 3" }
+  ]
+}
+```
+
+Replaces the full ordered list — partial stop edits invite sequence gaps and ordering bugs.
+
+**Validation:**
+- At least two stops (BR-ROUTE-001) → `422 ROUTE_MINIMUM_STOPS_REQUIRED`
+- Geofence radius 20–500 m (BR-ROUTE-003, BR-CFG-003 🔴) → `422 ROUTE_GEOFENCE_OUT_OF_BOUNDS`
+- Strictly increasing times along the sequence (BR-ROUTE-008) → `422 ROUTE_STOP_TIMES_NOT_INCREASING`
+
+The geofence bounds are not arbitrary: below 20 m, GPS drift means arrival is never detected and parents get no notification; above 500 m, geofences overlap and arrival events become meaningless ([`MOD-07-routes.md`](../03-database/tables/MOD-07-routes.md)).
+
+**Editing stops does not alter trips already started** (BR-ROUTE-006) — the manifest is materialised at trip start and immutable (BR-TRIP-003).
+
+### `DELETE /routes/{id}`
+
+Refused while students remain assigned — `422 ROUTE_HAS_ACTIVE_ASSIGNMENTS` (BR-ROUTE-007). Reassign or explicitly release first, so no child is silently left without transport.
+
+---
+
+## Student Route Assignments
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/routes/{routeId}/students` | RTE-003 | `PERM-ROUTE-ASSIGN-STUDENT` | BR-ROUTE-004, BR-STU-002 |
+| `POST` | `/routes/{routeId}/students/bulk` | RTE-004 | `PERM-ROUTE-ASSIGN-STUDENT` | BR-ROUTE-004 |
+| `GET` | `/routes/{routeId}/students` | RTE-003 | `PERM-ROUTE-VIEW` | |
+| `DELETE` | `/route-assignments/{id}` | RTE-003 | `PERM-ROUTE-ASSIGN-STUDENT` | |
+| `GET` | `/students/{studentId}/route-assignments` | RTE-003 | `PERM-STUDENT-VIEW` | BR-ROUTE-005 |
+
+```json
+{ "studentId": "…", "stopId": "…", "direction": "PICKUP", "effectiveFrom": "2026-08-05" }
+```
+
+**Preconditions**, each with a distinct error:
+
+| Condition | Error | Rule |
+|---|---|---|
+| Student has no active guardian | `422 STUDENT_HAS_NO_ACTIVE_GUARDIAN` | BR-STU-002 |
+| No guardian holds handover right | `422 GUARDIAN_HANDOVER_RIGHT_REQUIRED` | BR-GRD-002 🔴 |
+| Student not actively enrolled | `422 STUDENT_NOT_ACTIVE` | BR-STU-004 |
+| Already assigned for this direction | `409 STUDENT_ALREADY_ASSIGNED_FOR_DIRECTION` | BR-ROUTE-004 |
+
+The third check is the important one: **a child must not be assigned to transport if nobody is authorised to collect them.**
+
+A student may hold pickup on one route and drop on another (BR-ROUTE-005) — common where a parent drops off but the bus returns.
+
+Bulk assignment reports per-row results like student import.
+
+---
+
+## Verification
+
+1. A vehicle with an expired mandatory document reports `eligible: false` with the specific check.
+2. A second active device for one vehicle is rejected.
+3. An unregistered device's position report is ignored, not auto-registered.
+4. Verifying staff without `verifiedUntil` is rejected.
+5. A stop with a geofence radius of 10 m or 800 m is rejected.
+6. Stop times not strictly increasing are rejected.
+7. Editing stops does not change an in-progress trip's manifest.
+8. Deleting a route with active assignments is refused.
+9. Assigning a student whose guardians lack the handover right is refused.
+10. A student may hold pickup on route A and drop on route B.
+
+===FILE_END===
+===FILE_START:documentation/04-api/REPORTING_AUDIT_CONFIG_API.md===
+# REPORTING, AUDIT & CONFIGURATION API
+
+**Document tier:** 4 — API
+**Modules:** MOD-15, MOD-16, MOD-17 · **Features:** RPT-001…007, AUD-001…005, CFG-001…007
+
+---
+
+# Reporting
+
+All reports run against a **read replica** — reporting queries never block operational writes (BR-RPT-004).
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `GET` | `/reports/trip-operations` | RPT-001 | `PERM-REPORT-OPERATIONAL` | BR-RPT-001/003 |
+| `GET` | `/reports/student-attendance` | RPT-002 | `PERM-REPORT-OPERATIONAL` | BR-RPT-001 |
+| `GET` | `/reports/safety-exceptions` | RPT-003 | `PERM-REPORT-SAFETY` | BR-SAFE-001 |
+| `GET` | `/reports/compliance` | RPT-004 | `PERM-REPORT-COMPLIANCE` | BR-FLEET-002, BR-STAFF-003 |
+| `GET` | `/reports/incidents` | RPT-005 | `PERM-REPORT-SAFETY` | BR-INC-003 |
+| `GET` | `/dashboards/management` | RPT-007 | `PERM-REPORT-OPERATIONAL` | BR-RPT-001 |
+| `POST` | `/exports` | RPT-006 | `PERM-DATA-EXPORT` | BR-RPT-002 🔴 |
+| `GET` | `/exports/{jobId}` | RPT-006 | `PERM-DATA-EXPORT` | |
+
+### Scope containment
+
+**A report never reveals data the requester could not read directly** (BR-RPT-001). Scope is applied inside the query, not filtered afterwards — post-filtering means the wrong data was already assembled, and an aggregate could still leak it.
+
+### Every response states its time basis
+
+```json
+{
+  "data": { },
+  "meta": { "timezone": "Asia/Kolkata", "generatedAt": "2026-08-03T18:00:00Z",
+            "dataAsOf": "2026-08-03T17:55:00Z" }
+}
+```
+
+Required by BR-RPT-003. A report showing "07:42" without a timezone is ambiguous across a multi-region platform (BR-CFG-006).
+
+### `GET /reports/safety-exceptions`
+
+The report a principal reads. Left-behind events, no-shows, wrong-stop alights, handover overrides, refused handovers, and no-receiver exceptions — with actor, reason, and resolution for each.
+
+Every row traces to a business rule ID, so "what happened and which control caught it" is answerable together.
+
+### `POST /exports` 🔴
+
+```json
+{ "exportType": "STUDENT_TRANSPORT_REGISTER", "schoolId": "…", "format": "CSV" }
+```
+
+**`202`** with a job ID. Every export of child personal data is permission-gated and audited with actor, scope, and **record count** (BR-RPT-002 🔴).
+
+The record count is the point: bulk exfiltration is invisible in an access log that records only "an export happened". A count makes an unusual export detectable.
+
+Download links are short-lived, single-use, and authorisation-checked.
+
+---
+
+# Audit
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `GET` | `/audit-records` | AUD-002 | `PERM-AUDIT-VIEW` | BR-AUD-003 |
+| `GET` | `/audit-records/overrides` | AUD-003 | `PERM-AUDIT-VIEW` | BR-AUD-004 |
+| `GET` | `/students/{id}/access-log` | IAM-010 | `PERM-AUDIT-VIEW` | BR-IAM-012 🔴 |
+| `GET` | `/audit-records/platform-access` | AUD-004 | `PERM-AUDIT-VIEW` | BR-TEN-004 🔴 |
+| `POST` | `/audit-records/export` | AUD-002 | `PERM-AUDIT-EXPORT` | BR-AUD-007 |
+
+**There is no `POST`, `PATCH`, or `DELETE` on audit records.** They are written only in-transaction by the modules that cause them (BR-AUD-002 🔴). No API path can create or alter one — the absence of these endpoints is itself the control ([`MOD-16-17-audit-config.md`](../03-database/tables/MOD-16-17-audit-config.md)).
+
+### `GET /audit-records/overrides`
+
+The override register (AUD-003). Every boarding override, wrong-stop alight, handover override, and manifest amendment — each with its **required** reason (BR-AUD-004).
+
+This is the report a school reviews when a parent questions what happened. An override without a reason cannot exist, so every row here is answerable.
+
+### `GET /students/{id}/access-log`
+
+Who has read this child's data, when, and for what purpose (BR-IAM-012 🔴). Guardian reads of their own children are excluded — they are the expected case and would drown the signal.
+
+This is what makes insider misuse **detectable** rather than merely prohibited.
+
+### `GET /audit-records/platform-access`
+
+Every cross-tenant platform operation, with the justification supplied at elevation (BR-TEN-004 🔴). The one deliberate hole in tenant isolation is also the most heavily instrumented path in the system.
+
+---
+
+# Configuration
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `GET` | `/configuration/definitions` | CFG-001 | `PERM-CONFIG-VIEW` | BR-CFG-001 |
+| `GET` | `/configuration/values` | CFG-002 | `PERM-CONFIG-VIEW` | BR-CFG-002 |
+| `PUT` | `/configuration/values` | CFG-002 | `PERM-CONFIG-EDIT` | BR-CFG-003/004 |
+| `GET` | `/region-profiles` | CFG-003 | `PERM-CONFIG-VIEW` | ADR-0007 |
+| `GET` | `/reference-data/{category}` | CFG-003 | authenticated | ADR-0007 |
+| `GET` | `/localisation/{locale}` | CFG-006 | authenticated | BR-CFG-005 |
+
+### `GET /configuration/definitions`
+
+```json
+{
+  "data": [
+    { "configKey": "alert.overspeed.threshold_mps", "valueType": "DECIMAL",
+      "defaultValue": "16.7", "minValue": 5.0, "maxValue": 25.0,
+      "scopeLevel": "SCHOOL", "isSafetyCritical": true },
+    { "configKey": "handover.verification_methods", "valueType": "ENUM",
+      "allowedValues": ["QR","OTP","PIN","VISUAL"], "scopeLevel": "ORG",
+      "isSafetyCritical": true }
+  ]
+}
+```
+
+Every key declares a type, default, bounds, and the lowest scope at which it may be set (BR-CFG-001).
+
+### `PUT /configuration/values` 🔴
+
+```json
+{ "scopeLevel": "SCHOOL", "scopeRefId": "…",
+  "values": [ { "configKey": "alert.overspeed.threshold_mps", "value": "13.9" } ] }
+```
+
+**Validated on write, not on read.** Type, range, and scope are checked when the value is set — misconfiguration surfaces when it is made, not during a school run.
+
+| Condition | Error | Rule |
+|---|---|---|
+| Outside platform floor/ceiling | `422 CONFIG_VALUE_OUT_OF_BOUNDS` | BR-CFG-003 🔴 |
+| Unknown key | `400 CONFIG_KEY_UNKNOWN` | BR-CFG-001 |
+| Set below permitted scope | `422 CONFIG_SCOPE_NOT_PERMITTED` | BR-CFG-001 |
+| Safety-critical without permission | `403 CONFIG_SAFETY_CRITICAL_PERMISSION_REQUIRED` | BR-CFG-003 🔴 |
+
+**A tenant may tighten a safety threshold; never loosen it past the floor** (BR-SAFE-007 🔴).
+
+This is where Configuration over Hardcoding yields to Child Safety First ([`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) resolution order). A tenant configures *which* handover verification methods are acceptable — they cannot set the list to empty and configure verification away (BR-HAND-001 🔴).
+
+Every change is audited with old and new values (BR-CFG-004).
+
+### `GET /reference-data/{category}`
+
+Categories: `vehicle_document_types` · `staff_credential_types` · `relationship_types` · `incident_types` · `verification_methods`
+
+Values come from the region profile (ADR-0007). Clients render these rather than hardcoding lists — a client with a hardcoded document-type dropdown would break in a new market just as a hardcoded enum would.
+
+### `GET /localisation/{locale}`
+
+All user-facing strings as resource keys (BR-CFG-005). **No string destined for a user is written inline in code**, in the backend or in any client.
+
+---
+
+## Verification
+
+1. A report never returns data outside the requester's scope.
+2. Every report response includes `timezone` and `generatedAt`.
+3. Every export writes an audit record including record count.
+4. Export download links expire and are single-use.
+5. No API path creates, updates, or deletes an audit record.
+6. Every override in the register has a non-empty reason.
+7. Child-data access log excludes guardian reads of their own children.
+8. A configuration value outside its bounds is rejected on write.
+9. A safety-critical change without `PERM-CONFIG-SAFETY-EDIT` is refused.
+10. Setting handover verification methods to an empty list is rejected.
+11. Reporting queries execute against the replica, not the primary.
+
+===FILE_END===
+===FILE_START:documentation/04-api/STUDENTS_GUARDIANS_API.md===
+# STUDENTS & GUARDIANS API
+
+**Document tier:** 4 — API
+**Modules:** MOD-03, MOD-04 · **Features:** STU-001…007, GRD-001…007
+
+These endpoints govern **who may collect a child**. Every write here is audited.
+
+---
+
+## Students
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/students` | STU-001 | `PERM-STUDENT-CREATE` | BR-STU-001, BR-STU-003 |
+| `GET` | `/students` | STU-001 | `PERM-STUDENT-VIEW` | BR-IAM-005, BR-IAM-012 |
+| `GET` | `/students/{id}` | STU-001 | `PERM-STUDENT-VIEW` | BR-IAM-005, BR-IAM-012 |
+| `PATCH` | `/students/{id}` | STU-001 | `PERM-STUDENT-EDIT` | |
+| `POST` | `/students/{id}/withdraw` | STU-004 | `PERM-STUDENT-EDIT` | BR-STU-005 |
+| `POST` | `/students/import` | STU-002 | `PERM-STUDENT-IMPORT` | BR-STU-003 |
+| `GET` | `/students/import/{jobId}` | STU-002 | `PERM-STUDENT-IMPORT` | |
+| `POST` | `/students/{id}/transfer` | STU-005 | `PERM-STUDENT-EDIT` | BR-STU-006 |
+| `PUT` | `/students/{id}/photo` | STU-006 | `PERM-STUDENT-EDIT` | |
+| `GET` | `/students/{id}/photo` | STU-006 | `PERM-STUDENT-VIEW` | BR-IAM-012 |
+| `POST` | `/students/{id}/credentials` | STU-007 | `PERM-STUDENT-EDIT` | |
+| `DELETE` | `/students/{id}/credentials/{credId}` | STU-007 | `PERM-STUDENT-EDIT` | |
+
+### Scope narrowing
+
+`GET /students` returns radically different sets by role:
+
+| Role | Sees |
+|---|---|
+| `SCHOOL_ADMIN` | All students in scope schools |
+| `TRANSPORT_MANAGER` | All students in scope schools |
+| `DRIVER` / `ATTENDANT` | **Current trip manifest only** |
+| `GUARDIAN` | **Own children only** (BR-IAM-005) |
+
+Requesting a student outside scope returns `403 AUTH_SCOPE_DENIED` — object-level authorisation, not just endpoint-level.
+
+**Every non-guardian read writes a data-access record** (BR-IAM-012 🔴).
+
+### `GET /students/{id}/photo`
+
+Photos are served through this authorising endpoint, never as a public URL — `photo_ref` is a storage key, not a link. A guessable photo URL for a child is a safety problem ([`MOD-03-04-students-guardians.md`](../03-database/tables/MOD-03-04-students-guardians.md)).
+
+### `POST /students/import`
+
+`multipart/form-data`, returns `202` with a job ID.
+
+```json
+{
+  "data": {
+    "jobId": "…", "status": "COMPLETED",
+    "totalRows": 412, "successCount": 408, "errorCount": 4,
+    "errors": [
+      { "row": 17, "field": "admissionNo", "code": "STUDENT_ADMISSION_NO_EXISTS",
+        "message": "Admission number GW-2024-0117 already exists" }
+    ],
+    "errorReportUrl": "/students/import/{jobId}/errors.csv"
+  }
+}
+```
+
+**Per-row validation; valid rows are imported.** The file is never rejected wholesale — Fatima imports several hundred students per term from spreadsheets of varying quality, and a single bad row must not discard 411 good ones ([`PERSONAS.md`](../01-product-discovery/PERSONAS.md)).
+
+### `POST /students/{id}/withdraw`
+
+Sets `enrolmentStatus` and removes future route assignments. **Never hard-deletes** while safety records reference the student (BR-STU-005) — `STUDENT_HAS_SAFETY_RECORDS` (422) if a hard delete is attempted.
+
+### Credentials
+
+`POST /students/{id}/credentials` issues a QR or card credential (STU-007). The raw value is returned **once, in this response only** — it is stored hashed and can never be retrieved again. A leaked credential table would let anyone forge a boarding scan.
+
+---
+
+## Guardians
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/guardians` | GRD-001 | `PERM-GUARDIAN-MANAGE` | |
+| `GET` | `/guardians/{id}` | GRD-001 | `PERM-GUARDIAN-MANAGE` | |
+| `PATCH` | `/guardians/{id}` | GRD-001 | `PERM-GUARDIAN-MANAGE` | |
+| `POST` | `/guardians/{id}/invite` | GRD-001 | `PERM-GUARDIAN-MANAGE` | |
+| `GET` | `/guardians/me/students` | GRD-007 | authenticated | BR-IAM-005 |
+
+A guardian record exists — receiving SMS, authorised for handover — **before any account is activated**. Requiring an app account first would exclude exactly the parents the platform must reach ([`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) §6).
+
+### `GET /guardians/me/students`
+
+**Status: implemented.** Served by **MOD-18 `com.guardian.parent`**, not by MOD-04 — the review this endpoint was waiting on found that MOD-04 cannot reach trip state without a module dependency cycle. See [`ADR-0010`](../00-governance/adr/ADR-0010-parent-read-composition.md) for the decision and its accepted cost.
+
+This is the parent app's primary read. P-02 must answer "is my child fine?" with **zero taps**, so the endpoint returns each child's current journey state inline rather than making the client compose it from `/trips/{id}/position` and `/trips/{id}/eta` per child — a fan-out of N+1 requests on mobile data, at the exact moment the answer matters most.
+
+```json
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "type": "student",
+      "attributes": {
+        "displayName": "Aarav Sharma",
+        "className": "Class 5-B",
+        "journey": {
+          "state": "ON_BOARD",
+          "tripId": "770e8400-e29b-41d4-a716-446655440010",
+          "vehicleDisplayName": "Bus 12",
+          "stopName": "Green Park",
+          "lastEventAt": "2026-08-03T02:12:00Z",
+          "estimatedArrival": "2026-08-03T02:45:00Z",
+          "nextDepartureAt": null,
+          "positionReceivedAt": "2026-08-03T02:12:11Z",
+          "isPositionStale": false
+        }
+      }
+    }
+  ],
+  "meta": {
+    "requestId": "…",
+    "timestamp": "2026-08-03T02:12:13Z",
+    "school": { "timezoneId": "Asia/Kolkata", "utcOffsetMinutes": 330 }
+  }
+}
+```
+
+**`journey.state`** — `AT_REST` · `SCHEDULED` · `AWAITING_BOARDING` · `ON_BOARD` · `ARRIVED_AT_SCHOOL` · `HANDED_OVER` · `NO_SHOW` · `ABSENT` · `UNACCOUNTED`. New values are additive within `v1`; the parent app renders an unrecognised value as explicitly unknown rather than mapping it onto the nearest familiar state, so a state added after a build shipped can never be displayed as something reassuring.
+
+**`meta.school` is required.** All timestamps are UTC on the wire, and the client renders in the school's timezone (BR-CFG-006). The offset comes from the server rather than a device timezone database, so a parent abroad and a parent at the school gate convert identically.
+
+**`isPositionStale` is always present** (BR-TRACK-003), and is authoritative — the server sees ingestion lag and rejected reports that an age computed from timestamps cannot. The client also derives an age from `timestamp − positionReceivedAt`; where the two disagree, staleness wins.
+
+**`vehicleDisplayName`, never a registration number.** It is what the parent calls the bus.
+
+**`tripId` is present only while live tracking applies** — `ON_BOARD` or `AWAITING_BOARDING`. Tracking is trip-scoped (BR-TRACK-001), so an id the client could not use is not sent at all, and the app has nothing to render a *Track* button from when tracking is unavailable.
+
+**`estimatedArrival`, `positionReceivedAt` and `isPositionStale` come from MOD-10 and are absent until it is built.** `isPositionStale` then defaults to `true` wherever tracking applies, which the app renders as "No signal". That is the honest answer while there is no position pipeline: reporting freshness the platform is not measuring would be the exact failure BR-TRACK-003 exists to prevent.
+
+**No other family's child appears** (BR-NTF-007 🔴), and no student outside the caller's own children (BR-IAM-005) — scoped server-side, with no guardian or student identifier accepted from the client.
+
+### `GET /guardians/me/students/{studentId}`
+
+**Status: implemented** (MOD-18, ADR-0010). Screen P-03.
+
+The same resource as above for one child, with `attributes.legs` added — today's journey in operational order:
+
+```json
+{
+  "direction": "MORNING",
+  "state": "ON_BOARD",
+  "vehicleDisplayName": "Bus 12",
+  "stopName": "Green Park",
+  "scheduledAt": "2026-08-03T01:40:00Z",
+  "eventAt": "2026-08-03T02:12:00Z"
+}
+```
+
+`direction` is `MORNING` / `AFTERNOON` here rather than the operational `PICKUP` / `DROP`: this is parent-facing copy, and a parent reads their day in halves.
+
+A student the caller holds no **active** link to returns `403 AUTH_SCOPE_DENIED` — never `404`. Within a tenant, `403` is the honest answer and avoids a probing oracle that would confirm which children exist at a school.
+
+### `GET /guardians/me/students/{studentId}/journey-history`
+
+**Status: implemented** (MOD-18, ADR-0010). Screen P-05 · Permission `PERM-BOARDING-VIEW`.
+
+The durable record, newest first — one row per leg per day, over the whole of a child's past trips:
+
+```json
+{
+  "serviceDate": "2026-08-02",
+  "direction": "AFTERNOON",
+  "state": "HANDED_OVER",
+  "vehicleDisplayName": "Bus 12",
+  "stopName": "Green Park",
+  "eventAt": "2026-08-02T09:50:00Z"
+}
+```
+
+Driven from `trip_manifests`, not from `boarding_events` — a day a child did **not** board is precisely the day a parent scrolls back to find, and an event-driven query cannot show a leg that produced no event.
+
+Carries `meta.school`, because `eventAt` is UTC and "boarded at 07:42" is only true in the school's zone (BR-CFG-006). Capped server-side; an unbounded read grows for as long as a child is enrolled. Scoped like every other parent read — a student the caller is not linked to returns an empty list, so nothing is learned from the difference between "no history" and "not your child".
+
+---
+
+## Guardian–Student Links 🔴
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/students/{studentId}/guardians` | GRD-001 | `PERM-GUARDIAN-LINK` | BR-GRD-001, BR-GRD-002 |
+| `GET` | `/students/{studentId}/guardians` | GRD-002 | `PERM-STUDENT-VIEW` | |
+| `PATCH` | `/students/{studentId}/guardians/{linkId}` | GRD-001 | `PERM-GUARDIAN-LINK` | BR-GRD-001 |
+| `DELETE` | `/students/{studentId}/guardians/{linkId}` | GRD-003 | `PERM-GUARDIAN-LINK` | BR-GRD-002, BR-GRD-004 |
+
+```json
+{
+  "guardianId": "…",
+  "relationshipType": "MOTHER",
+  "canView": true,
+  "canReceiveNotifications": true,
+  "canAuthoriseHandover": true,
+  "canDeclareAbsence": true,
+  "isPrimary": true
+}
+```
+
+### Rights are explicit, never inferred
+
+`relationshipType` is **descriptive only**. The four booleans are authoritative (BR-GRD-001 🔴). Inferring "father ⇒ may collect" would encode an assumption that is wrong precisely in the cases where being wrong causes harm — custody arrangements, restricted parents (BR-GRD-008).
+
+`canAuthoriseHandover` defaults to `false`. Rights are granted deliberately.
+
+**`DELETE` is refused** if it would leave the student with no guardian holding `canAuthoriseHandover` — `422 GUARDIAN_HANDOVER_RIGHT_REQUIRED` (BR-GRD-002 🔴). Otherwise the child could arrive at a drop stop with nobody authorised to receive them.
+
+Deactivation takes effect immediately: access removed, notifications stopped (BR-GRD-004).
+
+---
+
+## Authorised Pickup Persons
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/students/{studentId}/pickup-persons` | GRD-004 | `PERM-PICKUP-PERSON-MANAGE` | BR-GRD-005, BR-GRD-006 |
+| `GET` | `/students/{studentId}/pickup-persons` | GRD-004 | `PERM-STUDENT-VIEW` | |
+| `DELETE` | `/students/{studentId}/pickup-persons/{id}` | GRD-005 | `PERM-PICKUP-PERSON-MANAGE` | BR-GRD-007 |
+
+```json
+{
+  "fullName": "Sunil Kumar",
+  "phone": "+919812345678",
+  "relationshipNote": "Uncle",
+  "validFrom": "2026-08-05T00:00:00Z",
+  "validUntil": "2026-08-12T23:59:59Z"
+}
+```
+
+**`validUntil` is required.** Nominations always expire — a permanent nomination made once and forgotten is a standing authorisation nobody reviews. Extending is an explicit act.
+
+Only a guardian holding `canAuthoriseHandover` may nominate (BR-GRD-006) — otherwise `403 GUARDIAN_NOT_AUTHORISED_TO_NOMINATE`. The nomination is audited and **all** guardians with that right are notified (NTF-ADM-04), so one guardian cannot quietly authorise someone the others would object to.
+
+Revocation is immediate (BR-GRD-007).
+
+---
+
+## Custody Restrictions 🔴
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/students/{studentId}/custody-restrictions` | GRD-006 | `PERM-CUSTODY-RESTRICTION-MANAGE` | BR-GRD-008 |
+| `GET` | `/students/{studentId}/custody-restrictions` | GRD-006 | `PERM-CUSTODY-RESTRICTION-MANAGE` | |
+| `DELETE` | `/students/{studentId}/custody-restrictions/{id}` | GRD-006 | `PERM-CUSTODY-RESTRICTION-MANAGE` | BR-GRD-008 |
+
+```json
+{
+  "restrictedGuardianId": "…",
+  "restrictionType": "NO_HANDOVER",
+  "reason": "Court order dated 2026-06-12, reference …",
+  "effectiveFrom": "2026-06-15T00:00:00Z"
+}
+```
+
+**Overrides every other permission.** A restriction beats an active guardian link granting `canAuthoriseHandover` (BR-HAND-006 🔴). A collection attempt by a restricted person is refused, recorded as a `HANDOVER_REFUSED` incident, and escalated (NTF-HAND-04).
+
+`reason` is required. Restrictions are visible only to holders of `PERM-CUSTODY-RESTRICTION-MANAGE` — never to the restricted person, and never exposed in any guardian-facing response.
+
+---
+
+## Guardian Self-Service
+
+| Method | Path | Feature | Permission |
+|---|---|---|---|
+| `GET` | `/guardians/me/students` | GRD-007 | authenticated |
+| `GET` | `/guardians/me/preferences` | GRD-007 | `PERM-NOTIFICATION-PREFERENCE-SELF` |
+| `PUT` | `/guardians/me/preferences` | GRD-007 | `PERM-NOTIFICATION-PREFERENCE-SELF` |
+
+Attempting to disable a `CRITICAL` notification returns `422 NOTIFICATION_PREFERENCE_NOT_APPLICABLE` (BR-NTF-006 🔴). A parent may mute everything else *because* the events that matter always arrive.
+
+---
+
+## Verification
+
+1. A guardian requesting another family's student receives `403`.
+2. Every non-guardian student read writes a data-access record.
+3. Removing the last handover-capable guardian is refused.
+4. A guardian without `canAuthoriseHandover` cannot nominate a pickup person.
+5. A pickup nomination without `validUntil` is rejected.
+6. A custody restriction blocks handover despite an active guardian link granting it.
+7. Custody restrictions never appear in guardian-facing responses.
+8. Student photos are unreachable without permission and scope.
+9. Import with 4 bad rows imports the other 408 and reports the 4.
+10. A student credential's raw value is returned once and never retrievable again.
+
+===FILE_END===
+===FILE_START:documentation/04-api/TENANCY_IDENTITY_API.md===
+# TENANCY & IDENTITY API
+
+**Document tier:** 4 — API
+**Modules:** MOD-01, MOD-02 · **Features:** TEN-001…005, IAM-005…008, IAM-010
+
+Standards: [`API_STANDARDS.md`](API_STANDARDS.md) · Errors: [`ERROR_CATALOG.md`](ERROR_CATALOG.md) · Permissions: [`PERMISSION_MATRIX.md`](../01-product-discovery/PERMISSION_MATRIX.md)
+
+---
+
+## Organizations
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/organizations` | TEN-001 | `PERM-ORG-CREATE` | BR-TEN-001, BR-TEN-007 |
+| `GET` | `/organizations/{id}` | TEN-001 | `PERM-ORG-VIEW` | BR-TEN-004 |
+| `PATCH` | `/organizations/{id}` | TEN-001 | `PERM-ORG-EDIT` | BR-TEN-007 |
+| `POST` | `/organizations/{id}/suspend` | TEN-004 | `PERM-ORG-SUSPEND` | BR-TEN-006 |
+| `POST` | `/organizations/{id}/reactivate` | TEN-004 | `PERM-ORG-SUSPEND` | BR-TEN-006 |
+
+### `POST /organizations`
+
+```json
+{
+  "code": "GREENWOOD",
+  "name": "Greenwood Education Group",
+  "regionProfileCode": "IN",
+  "contactEmail": "ops@greenwood.example",
+  "contactPhone": "+919876543210"
+}
+```
+
+`regionProfileCode` supplies defaults for phone formats, required vehicle documents, staff credential types, address format, and retention (ADR-0007). **Onboarding a new country requires no code change** — only a region profile row.
+
+`code` is immutable once operational data exists (BR-TEN-007).
+
+**Errors:** `ORG_CODE_ALREADY_EXISTS` (409)
+
+### Suspension
+
+`POST /organizations/{id}/suspend` blocks all user access except platform operations. It **destroys no data and does not stop safety recording for trips already started** (BR-TEN-006) — a suspension for non-payment must not strand a bus mid-route with no way to record boarding.
+
+---
+
+## Schools
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/schools` | TEN-002 | `PERM-SCHOOL-CREATE` | BR-TEN-002, BR-TEN-003 |
+| `GET` | `/schools` | TEN-002 | `PERM-SCHOOL-VIEW` | BR-IAM-006 |
+| `GET` | `/schools/{id}` | TEN-002 | `PERM-SCHOOL-VIEW` | |
+| `PATCH` | `/schools/{id}` | TEN-002 | `PERM-SCHOOL-EDIT` | BR-TEN-003 |
+| `DELETE` | `/schools/{id}` | TEN-002 | `PERM-SCHOOL-EDIT` | BR-TEN-002 |
+
+```json
+{
+  "organizationId": "…",
+  "code": "GW-MAIN",
+  "name": "Greenwood Main Campus",
+  "timezone": "Asia/Kolkata",
+  "address": { "line1": "…", "city": "…", "postalCode": "…" },
+  "latitude": 28.612900, "longitude": 77.229000,
+  "geofenceRadiusM": 150
+}
+```
+
+**`timezone` is required.** Every displayed time depends on it (BR-CFG-006); a default to server time would be wrong for any school outside the server's zone.
+
+`DELETE` on the last school of an active organization returns `422 ORG_LAST_SCHOOL_CANNOT_BE_REMOVED` (BR-TEN-002). Schools cannot move between organizations — `SCHOOL_CANNOT_CHANGE_ORGANIZATION` (BR-TEN-003).
+
+---
+
+## Branches
+
+| Method | Path | Feature | Permission |
+|---|---|---|---|
+| `POST` | `/schools/{schoolId}/branches` | TEN-003 | `PERM-SCHOOL-EDIT` |
+| `GET` | `/schools/{schoolId}/branches` | TEN-003 | `PERM-SCHOOL-VIEW` |
+| `PATCH` | `/branches/{id}` | TEN-003 | `PERM-SCHOOL-EDIT` |
+
+Optional (ADR-0002). Tenants not using branches never call these; a null `branchId` elsewhere means school-wide (BR-TEN-005).
+
+---
+
+## School Calendar
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `GET` | `/schools/{schoolId}/calendar` | TEN-005 | `PERM-SCHOOL-VIEW` | BR-TRIP-011 |
+| `PUT` | `/schools/{schoolId}/calendar` | TEN-005 | `PERM-SCHOOL-EDIT` | BR-TRIP-011 |
+
+```json
+{ "entries": [ { "date": "2026-08-15", "dayType": "HOLIDAY", "notes": "Independence Day" } ] }
+```
+
+Non-operating days suppress trip generation (BR-TRIP-011). `PUT` replaces a date range wholesale — bulk calendar entry is the realistic workflow.
+
+---
+
+## Roles & Permissions
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `GET` | `/permissions` | IAM-006 | `PERM-ROLE-MANAGE` | |
+| `GET` | `/roles` | IAM-005 | `PERM-ROLE-MANAGE` | BR-IAM-003 |
+| `POST` | `/roles` | IAM-005 | `PERM-ROLE-MANAGE` | BR-IAM-003 |
+| `PUT` | `/roles/{id}/permissions` | IAM-006 | `PERM-ROLE-MANAGE` | BR-IAM-002, BR-IAM-004 |
+| `DELETE` | `/roles/{id}` | IAM-005 | `PERM-ROLE-MANAGE` | |
+
+`GET /permissions` returns the platform's fixed permission set. **Tenants assign permissions; they cannot invent them** — a role referencing an unknown code is rejected.
+
+Permission changes take effect on the **next request** for every affected user, without re-issuing tokens (BR-IAM-004). This is the property that makes revocation meaningful.
+
+System roles (`is_system_role`) match the templates in the permission matrix and cannot be deleted.
+
+---
+
+## Users
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/users` | — | `PERM-USER-CREATE` | BR-IAM-003 |
+| `GET` | `/users` | — | `PERM-USER-VIEW` | BR-IAM-006 |
+| `GET` | `/users/{id}` | — | `PERM-USER-VIEW` | |
+| `PATCH` | `/users/{id}` | — | `PERM-USER-EDIT` | |
+| `POST` | `/users/{id}/deactivate` | IAM-008 | `PERM-USER-DEACTIVATE` | BR-IAM-008 |
+| `PUT` | `/users/{id}/roles` | IAM-005 | `PERM-ROLE-MANAGE` | BR-IAM-003 |
+| `PUT` | `/users/{id}/scopes` | IAM-007 | `PERM-ROLE-MANAGE` | BR-IAM-006 |
+| `GET` | `/users/me` | — | authenticated | BR-IAM-004 |
+| `PATCH` | `/users/me` | — | `PERM-PROFILE-SELF-EDIT` | |
+
+### `POST /users/{id}/deactivate`
+
+Revokes **every session immediately** and removes the user from future duty assignments (BR-IAM-008). This is the endpoint called when a driver leaves employment — the delay between "no longer employed" and "no longer has access to children's data" must be zero.
+
+A user must have an email or a phone (`ck_users_identifier`) — guardians commonly have only a phone.
+
+### `PUT /users/{id}/scopes`
+
+```json
+{ "scopes": [ { "level": "SCHOOL", "refId": "…" }, { "level": "ROUTE", "refId": "…" } ] }
+```
+
+`OWN_CHILDREN`, `TRIP`, and `SELF` are **not settable** — they are derived at request time from guardian links and trip crew ([`MOD-02-identity.md`](../03-database/tables/MOD-02-identity.md)). Attempting to set one returns `400`.
+
+---
+
+## Data Access Log
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `GET` | `/students/{studentId}/access-log` | IAM-010 | `PERM-AUDIT-VIEW` | BR-IAM-012 |
+
+Who has read this child's data, when, and why. Every non-guardian read is recorded (BR-IAM-012) — the control that makes insider misuse detectable rather than merely prohibited.
+
+---
+
+## Platform Operations
+
+| Method | Path | Permission | Rules |
+|---|---|---|---|
+| `POST` | `/platform/tenant-access` | `PERM-PLATFORM-TENANT-ACCESS` | BR-TEN-004 🔴 |
+| `GET` | `/platform/health` | `PERM-PLATFORM-HEALTH-VIEW` | |
+| `GET`/`POST` | `/platform/region-profiles` | `PERM-PLATFORM-REGION-MANAGE` | ADR-0007 |
+
+### `POST /platform/tenant-access`
+
+```json
+{ "organizationId": "…", "justification": "Support ticket #4821 — parent reports missing notification", "durationMinutes": 30 }
+```
+
+The **only** path across the tenant boundary (BR-TEN-004 🔴). `justification` is required — omitting it returns `403 AUTH_JUSTIFICATION_REQUIRED`. An audit record is written **before** access is granted, elevation is time-boxed, and every read during it is logged.
+
+---
+
+## Verification
+
+1. A school cannot be created without a timezone.
+2. Removing the last school of an active organization is refused.
+3. A school cannot change organization.
+4. A role cannot reference a permission code absent from `/permissions`.
+5. Removing a permission from a role takes effect on the next request.
+6. Deactivating a user revokes all their sessions immediately.
+7. Setting a derived scope level returns `400`.
+8. Platform tenant access without a justification is refused, and a successful elevation writes an audit record before the first read.
+9. Suspending an organization does not stop safety recording on in-progress trips.
+
+===FILE_END===
+===FILE_START:documentation/04-api/TRACKING_NOTIFICATION_API.md===
+# TRACKING, ALERTS, NOTIFICATION & INCIDENT API
+
+**Document tier:** 4 — API
+**Modules:** MOD-10 … MOD-13 · **Features:** TRK-001…008, ALT-001…007, NTF-001…009, INC-001…007
+
+---
+
+# Tracking
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/ingestion/positions` | TRK-001 | device credential | BR-TRACK-004, BR-FLEET-006 |
+| `GET` | `/trips/{id}/position` | TRK-003 | `PERM-TRACKING-LIVE-VIEW` | BR-TRACK-001/002/003 |
+| `GET` | `/schools/{id}/live-map` | TRK-004 | `PERM-TRACKING-LIVE-VIEW` | BR-TRACK-001 |
+| `GET` | `/trips/{id}/eta` | TRK-005 | `PERM-TRACKING-LIVE-VIEW` | BR-TRACK-006 |
+| `GET` | `/trips/{id}/position-history` | TRK-006 | `PERM-TRACKING-HISTORY-VIEW` | BR-TRACK-007 |
+
+## `POST /ingestion/positions`
+
+**Device credential path only** — never a human token (ADR-0006).
+
+```json
+{ "reports": [ { "deviceIdentifier": "…", "latitude": 28.5601, "longitude": 77.2065,
+  "speedMps": 8.3, "headingDeg": 145, "ignitionOn": true, "accuracyM": 4.2,
+  "deviceTime": "2026-08-03T07:42:11Z" } ] }
+```
+
+Batched, since devices buffer through coverage gaps. Validation rejects implausible reports — coordinate range, speed, implied speed between fixes, timestamp sanity, accuracy floor (BR-TRACK-004). **Rejected reports are logged and dropped, never stored as fact.**
+
+An unregistered device is logged and ignored, never auto-registered (BR-FLEET-006) — otherwise anyone could inject positions for a vehicle they do not own.
+
+Acknowledgement budget: p95 < 100 ms ([`REALTIME_TRACKING_DESIGN.md`](../02-system-design/REALTIME_TRACKING_DESIGN.md)).
+
+## `GET /trips/{id}/position`
+
+```json
+{
+  "data": {
+    "latitude": 28.5601, "longitude": 77.2065, "speedMps": 8.3, "headingDeg": 145,
+    "deviceTime": "2026-08-03T07:42:11Z", "receivedAt": "2026-08-03T07:42:13Z",
+    "isStale": false, "staleSinceSeconds": 2
+  }
+}
+```
+
+Served from Redis; never touches PostgreSQL. **`isStale` is always present** (BR-TRACK-003) — a stale position must never be displayed as current.
+
+Available **only while the trip is active** (BR-TRACK-001) → `422 TRACKING_NOT_AVAILABLE_OUTSIDE_TRIP`. Vehicles are not tracked outside trip windows; this is what keeps the platform a safety tool rather than staff surveillance.
+
+Guardians see only trips carrying one of their children (BR-TRACK-002) → `403`.
+
+## `GET /trips/{id}/eta`
+
+```json
+{ "data": { "stops": [ { "stopId": "…", "estimatedArrival": "2026-08-03T07:46:00Z",
+  "calculatedAt": "2026-08-03T07:42:13Z", "confidence": "HIGH" } ] } }
+```
+
+**`calculatedAt` and `confidence` are always returned** (BR-TRACK-006). An ETA is an estimate; a parent who leaves the house on a stale one and misses the bus is a product failure. `confidence` drops to `LOW` when routing is unavailable and straight-line fallback is used.
+
+## WebSocket
+
+```
+/topic/trip/{tripId}/position
+/topic/trip/{tripId}/eta
+/topic/school/{schoolId}/alerts
+/user/queue/notifications
+```
+
+**Authorisation is checked at subscribe time, per topic** → `403 TRACKING_SUBSCRIPTION_DENIED`. An unchecked subscription would expose any vehicle's live position to anyone who could guess a trip ID.
+
+Subscriptions close when the trip reaches `COMPLETED`.
+
+---
+
+# Alerts
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `GET` | `/alerts` | ALT-007 | `PERM-ALERT-VIEW` | BR-ALERT-005/006 |
+| `POST` | `/alerts/{id}/acknowledge` | ALT-007 | `PERM-ALERT-RESOLVE` | BR-ALERT-006 |
+| `POST` | `/alerts/{id}/resolve` | ALT-007 | `PERM-ALERT-RESOLVE` | BR-ALERT-006 |
+| `GET`/`PUT` | `/schools/{id}/alert-rules` | ALT-004…006 | `PERM-CONFIG-EDIT` | BR-CFG-003 🔴 |
+
+`GET /alerts?status=OPEN&sort=-severity` — the transport manager's dashboard query.
+
+A continuing condition holds **one** open alert with an advancing `lastObservedAt`, not a stream (BR-ALERT-005). A bus deviating for twenty minutes is one alert, observed repeatedly.
+
+`POST /alerts/{id}/resolve` requires `resolutionOutcome` (BR-ALERT-006) → `422 ALERT_RESOLUTION_OUTCOME_REQUIRED`. Alerts are never silently dropped; closing one means someone decided something.
+
+### Alert rules
+
+```json
+{ "rules": [ { "ruleType": "OVERSPEED", "thresholdValue": 16.7, "durationSeconds": 30,
+  "severity": "HIGH", "isEnabled": true } ] }
+```
+
+**Every threshold has both a magnitude and a duration.** An instantaneous speed spike from a bad GPS fix is not overspeed. Without the duration dimension managers receive constant false alerts and stop reading them — which makes the real one invisible.
+
+Values outside platform floors return `422 CONFIG_VALUE_OUT_OF_BOUNDS` (BR-CFG-003 🔴). A tenant may tighten a safety threshold; never loosen it past the floor (BR-SAFE-007 🔴).
+
+---
+
+# Notifications
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `GET` | `/notifications/me` | NTF-006 | authenticated | BR-NTF-007 |
+| `POST` | `/notifications/{id}/read` | NTF-006 | authenticated | |
+| `GET`/`PUT` | `/users/me/notification-preferences` | NTF-007 | `PERM-NOTIFICATION-PREFERENCE-SELF` | BR-NTF-003/006 |
+| `GET`/`PUT` | `/notification-templates` | NTF-002 | `PERM-NOTIFICATION-TEMPLATE-MANAGE` | BR-NTF-002 |
+| `GET` | `/notifications/{id}/deliveries` | NTF-009 | `PERM-NOTIFICATION-DELIVERY-VIEW` | BR-NTF-005 |
+
+### `PUT /users/me/notification-preferences`
+
+```json
+{ "preferences": [ { "catalogId": "NTF-TRIP-01", "channel": "PUSH", "isEnabled": false } ],
+  "quietHoursStart": "21:00", "quietHoursEnd": "06:00" }
+```
+
+Attempting to disable a `CRITICAL` notification returns `422 NOTIFICATION_PREFERENCE_NOT_APPLICABLE` (BR-NTF-006 🔴).
+
+This refusal is the point: a parent can safely mute routine notifications **because** the events that matter always arrive. Quiet hours **defer** standard notifications; they never discard them (BR-NTF-004).
+
+### `GET /notifications/{id}/deliveries`
+
+One row **per attempt** — channel, provider reference, status, failure reason, whether it was a fallback.
+
+This is the endpoint that answers *"why was I not told?"* after an incident (BR-NTF-005). A counter would say a notification failed three times; these rows say which channel failed, when, with what error, and whether the fallback succeeded.
+
+---
+
+# Incidents & SOS 🔴
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/sos` | INC-001 | `PERM-SOS-RAISE` | BR-INC-001/002, BR-SAFE-004 🔴 |
+| `POST` | `/sos/{id}/acknowledge` | INC-003 | `PERM-SOS-ACKNOWLEDGE` | BR-SAFE-006 |
+| `POST` | `/sos/{id}/resolve` | INC-003 | `PERM-SOS-ACKNOWLEDGE` | BR-INC-005/006 |
+| `POST` | `/incidents` | INC-004 | `PERM-INCIDENT-CREATE` | BR-INC-003 |
+| `GET` | `/incidents` | INC-005 | `PERM-INCIDENT-VIEW` | BR-INC-004, BR-NTF-007 |
+| `POST` | `/incidents/{id}/resolve` | INC-006 | `PERM-INCIDENT-RESOLVE` | BR-INC-005 |
+
+## `POST /sos` 🔴
+
+```json
+{ "tripId": "…", "latitude": 28.5601, "longitude": 77.2065, "source": "DRIVER_APP" }
+```
+
+**The highest-priority operation in the platform.** Minimal payload by design — it is raised one-handed, possibly in an emergency, from any screen in the driver app.
+
+Dispatched immediately, **bypassing every preference, quiet hour, and channel opt-out** (BR-SAFE-004 🔴). The escalation chain runs until acknowledged (BR-SAFE-006 🔴):
+
+```
+L1 Transport Manager  ──unacknowledged──► L2 School Admin + Principal
+                                       ──unacknowledged──► L3 Emergency contacts
+```
+
+## `POST /sos/{id}/resolve`
+
+```json
+{ "resolutionOutcome": "FALSE_ALARM", "resolutionNotes": "Button pressed accidentally" }
+```
+
+**An SOS is never deleted** → `422 SOS_CANNOT_BE_DELETED` (BR-INC-006 🔴). `FALSE_ALARM` is a resolution outcome, not a delete.
+
+This matters: a driver whose SOS fires accidentally every week is a pattern worth seeing — a faulty device, or a button catching a sleeve. Deleting false alarms erases exactly the data that reveals the problem.
+
+## Incidents
+
+```json
+{ "tripId": "…", "studentId": "…", "incidentType": "MEDICAL",
+  "severity": "HIGH", "description": "…", "occurredAt": "…" }
+```
+
+**Notification audience follows severity and scope** (BR-INC-004):
+
+| Scope | Audience | Constraint |
+|---|---|---|
+| Student-specific | That child's guardians | May name the child |
+| Trip-wide | All guardians on the manifest | **Must name no child** (BR-NTF-007 🔴) |
+
+`GET /incidents` for a guardian returns only incidents affecting their own child.
+
+Resolution requires an outcome, actor, and time (BR-INC-005) → `422 INCIDENT_RESOLUTION_REQUIRED`.
+
+---
+
+## Verification
+
+1. An implausible position report is rejected and logged, not stored.
+2. An unregistered device's report is ignored, not auto-registered.
+3. Live position is unavailable outside an active trip.
+4. A guardian cannot read position for a trip not carrying their child.
+5. A WebSocket subscribe without permission is refused.
+6. Live position responses always carry `isStale`; ETAs always carry `calculatedAt` and `confidence`.
+7. A continuing deviation yields one alert with an advancing `lastObservedAt`.
+8. An alert rule below the platform floor is rejected.
+9. Disabling a `CRITICAL` notification preference is refused.
+10. `CRITICAL` dispatches with preferences off and quiet hours active; failures produce a fallback delivery row.
+11. An SOS cannot be deleted; unacknowledged SOS escalates a level.
+12. A trip-wide incident notification names no student.
+
+===FILE_END===
+===FILE_START:documentation/04-api/TRIPS_BOARDING_API.md===
+# TRIPS & BOARDING API 🔴
+
+**Document tier:** 4 — API
+**Modules:** MOD-08, MOD-09, MOD-14 · **Features:** TRP-001…008, BRD-001…016, ABS-001…005
+
+**The most safety-critical API surface in the platform.** Every endpoint here is audited; the boarding endpoints are append-only and idempotent by design.
+
+---
+
+# Trips
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `GET` | `/trips` | TRP-004 | `PERM-TRIP-VIEW` | BR-IAM-006, BR-TRACK-002 |
+| `GET` | `/trips/{id}` | TRP-004 | `PERM-TRIP-VIEW` | |
+| `POST` | `/trips/{id}/start` | TRP-002 | `PERM-TRIP-START` | BR-TRIP-004/005/006 |
+| `POST` | `/trips/{id}/end` | TRP-004 | `PERM-TRIP-END` | BR-TRIP-002 |
+| `POST` | `/trips/{id}/close` | TRP-008 | `PERM-TRIP-CLOSE` | BR-TRIP-009, BR-SAFE-001 🔴 |
+| `POST` | `/trips/{id}/cancel` | TRP-005 | `PERM-TRIP-CANCEL` | BR-TRIP-007 |
+| `GET` | `/trips/{id}/manifest` | TRP-003 | `PERM-TRIP-VIEW` | BR-TRIP-003 |
+| `POST` | `/trips/{id}/manifest/amendments` | TRP-006 | `PERM-MANIFEST-AMEND` | BR-TRIP-003, BR-AUD-004 |
+| `POST` | `/trips/{id}/staff` | STF-005 | `PERM-DUTY-ASSIGN` | BR-STAFF-006 |
+
+### `GET /trips`
+
+Guardian scope returns **only trips carrying one of their children** (BR-TRACK-002). A guardian requesting an arbitrary trip ID receives `403`.
+
+### `POST /trips/{id}/start`
+
+```json
+{ "vehicleId": "…", "driverStaffId": "…", "attendantStaffId": "…",
+  "deviceStartedAt": "2026-08-03T07:28:44Z" }
+```
+
+Runs the full eligibility gate (BR-TRIP-004). **Each failure returns its specific check**, never a generic refusal:
+
+| Failing check | Error | Rule |
+|---|---|---|
+| Vehicle document expired | `VEHICLE_DOCUMENT_EXPIRED` | BR-FLEET-002 🔴 |
+| Driver licence expired | `STAFF_LICENCE_EXPIRED` | BR-STAFF-001 🔴 |
+| Licence class wrong for vehicle | `STAFF_LICENCE_CLASS_INVALID` | BR-STAFF-001 🔴 |
+| Driver verification lapsed | `STAFF_VERIFICATION_LAPSED` | BR-STAFF-002 🔴 |
+| Attendant required, none given | `ATTENDANT_REQUIRED` | BR-STAFF-005 |
+| Vehicle already on a trip | `TRIP_VEHICLE_ON_ANOTHER_TRIP` | BR-TRIP-005 |
+| Driver already on a trip | `STAFF_ALREADY_ON_ACTIVE_TRIP` | BR-STAFF-004 |
+
+A driver refused at 6:30 AM with "cannot start trip" cannot fix the problem. A driver told "fitness certificate expired 2026-07-15" can call the manager and get another vehicle.
+
+**On success**, the manifest is materialised (BR-TRIP-003 🔴):
+
+```
+active route assignments (this route + direction)
+  MINUS declared absences (this date + direction)
+  WHERE enrolment_status = ACTIVE
+       ▼
+  trip_manifests, status = EXPECTED — immutable thereafter
+```
+
+Response includes the full manifest so the driver app can cache it for offline operation (ADR-0008).
+
+`deviceStartedAt` is stored for reference; `startedAt` is server-recorded and authoritative (BR-TRIP-008).
+
+### `POST /trips/{id}/close` 🔴
+
+**The platform's most important gate.** Refused while any reconciliation item is unresolved:
+
+```json
+{
+  "error": {
+    "code": "TRIP_RECONCILIATION_INCOMPLETE",
+    "businessRule": "BR-SAFE-001",
+    "details": [
+      { "field": "studentId", "issue": "Aarav Sharma boarded at 07:42 with no alight record" }
+    ]
+  }
+}
+```
+
+A trip with an unaccounted child **stays visibly open** until a human resolves it with an explicit outcome (BR-TRIP-009, BR-SAFE-001 🔴).
+
+### `POST /trips/{id}/cancel`
+
+`reason` is required (BR-TRIP-007) — it is quoted verbatim to guardians in NTF-TRIP-04. Omitting it returns `422 TRIP_CANCELLATION_REASON_REQUIRED`.
+
+### `POST /trips/{id}/manifest/amendments`
+
+The manifest is immutable (BR-TRIP-003 🔴). Post-start changes are **amendments**, never edits.
+
+```json
+{ "studentId": "…", "amendmentType": "REMOVED", "reason": "Parent collected from school gate" }
+```
+
+`reason` is required and non-empty (BR-AUD-004) — an unexplained amendment is not evidence. Attempting a direct manifest edit returns `422 TRIP_MANIFEST_IMMUTABLE`.
+
+### `POST /trips/{id}/staff` — mid-trip substitution
+
+Records the outgoing and incoming crew and the handover time (BR-STAFF-006). Both rows remain: after an incident, "who was driving at 3:15 PM" must be answerable.
+
+---
+
+# Boarding 🔴
+
+## `POST /trips/{tripId}/boarding-events`
+
+**Feature:** BRD-001, BRD-002, BRD-003, BRD-004 · **Permission:** `PERM-BOARDING-RECORD`
+
+```json
+{
+  "clientEventId": "7f3a9c21-4b6e-4d8f-9a1c-2e5b8d4f6a03",
+  "studentId": "…",
+  "stopId": "…",
+  "eventType": "BOARD",
+  "verificationMethod": "QR_SCAN",
+  "occurredAt": "2026-08-03T07:42:11Z",
+  "latitude": 28.5601, "longitude": 77.2065,
+  "clockSkewSeconds": -3
+}
+```
+
+### `clientEventId` is mandatory
+
+It is the idempotency key **and** the database's uniqueness guarantee (BR-BOARD-009). A retry after a timeout returns the original record with `200`, not a duplicate with `201`.
+
+This is not optional. The driver app syncs offline queues by retrying (ADR-0008); without it, a child would be recorded as boarding twice.
+
+### Two timestamps
+
+`occurredAt` is the device clock; the server records `recordedAt` itself. `clockSkewSeconds` is measured at sync. **The device clock is never authoritative** (BR-BOARD-008) — reports order by `occurredAt`, investigations see both.
+
+### Validation
+
+| Condition | Error | Rule |
+|---|---|---|
+| Not on manifest | `422 BOARDING_STUDENT_NOT_ON_MANIFEST` | BR-BOARD-003 |
+| Expected on another active trip | `422 BOARDING_WRONG_VEHICLE` 🔴 | BR-SAFE-003 |
+| Already boarded, no alight | `409 BOARDING_ALREADY_BOARDED` | BR-BOARD-005 |
+| Alight without board | `422 BOARDING_NOT_BOARDED` | BR-BOARD-006 |
+| Alight at a different stop | `422 BOARDING_WRONG_STOP` 🔴 | BR-BOARD-004 |
+| Unknown or revoked credential | `422 BOARDING_CREDENTIAL_INVALID` | STU-007 |
+
+`BOARDING_WRONG_VEHICLE` is a safety detection, not a validation nicety: the student is on another trip's manifest for the same date and direction. Both trips' staff and the student's guardians are alerted immediately (NTF-BOARD-07).
+
+### Overrides
+
+```json
+{ "clientEventId": "…", "studentId": "…", "eventType": "ALIGHT", "stopId": "…",
+  "isOverride": true, "overrideReason": "Parent requested drop at grandmother's stop, confirmed by phone" }
+```
+
+`overrideReason` is required and non-empty — enforced by a **database constraint**, not only application code, so no future code path can bypass it (BR-AUD-004).
+
+A wrong-stop override immediately notifies guardians and the transport manager (NTF-BOARD-06, BR-BOARD-004 🔴).
+
+### Immutability
+
+There is **no** `PUT`, `PATCH`, or `DELETE` on boarding events. Any such attempt returns `422 BOARDING_EVENT_IMMUTABLE` (BR-BOARD-001 🔴).
+
+## `POST /trips/{tripId}/boarding-events/{id}/corrections`
+
+**Feature:** BRD-005 · **Permission:** `PERM-BOARDING-CORRECT`
+
+```json
+{ "clientEventId": "…", "eventType": "ALIGHT", "stopId": "…",
+  "reason": "Scanned wrong student; corrected", "occurredAt": "…" }
+```
+
+Creates a **new** record with `correctsEventId` pointing at the original. Both remain visible — a mis-scan and its correction are two facts, and overwriting would destroy the second.
+
+## `POST /trips/{tripId}/boarding-events/batch`
+
+**Feature:** BRD-004 · Offline sync (ADR-0008)
+
+```json
+{ "events": [ { "clientEventId": "…", "…": "…" } ] }
+```
+
+**`202`** with per-event results. Each event is processed independently — one rejection never discards the batch.
+
+```json
+{
+  "data": {
+    "results": [
+      { "clientEventId": "…", "status": "CREATED", "eventId": "…" },
+      { "clientEventId": "…", "status": "DUPLICATE", "eventId": "…" },
+      { "clientEventId": "…", "status": "FLAGGED_FOR_REVIEW",
+        "reason": "Student marked absent after manifest was cached" }
+    ]
+  }
+}
+```
+
+**`FLAGGED_FOR_REVIEW`, never rejected** (BR-SAFE-005 🔴). Where a client action contradicts server state, the record is accepted and flagged — losing a real safety record is worse than storing a questionable one.
+
+---
+
+# Handover 🔴
+
+## `POST /trips/{tripId}/handovers`
+
+**Feature:** BRD-008, BRD-009 · **Permission:** `PERM-HANDOVER-RECORD` · **Rules:** BR-HAND-001 🔴
+
+```json
+{
+  "boardingEventId": "…",
+  "receivedByGuardianId": "…",
+  "verificationMethod": "QR"
+}
+```
+
+Exactly **one** receiver path: `receivedByGuardianId`, `receivedByPickupPersonId`, `isSelfRelease`, or `isOverride`. Zero or two returns `422` — enforced by a database check constraint.
+
+`boardingEventId` must reference an `ALIGHT` event (BR-HAND-004) → `422 HANDOVER_REQUIRES_ALIGHT_EVENT`.
+
+| Condition | Error | Rule |
+|---|---|---|
+| Receiver not authorised | `403 HANDOVER_RECEIVER_NOT_AUTHORISED` | BR-HAND-001 🔴 |
+| Verification failed | `422 HANDOVER_VERIFICATION_FAILED` | BR-HAND-002 |
+| Pickup person outside validity | `422 PICKUP_PERSON_OUTSIDE_VALIDITY` | BR-GRD-005 |
+| **Custody restriction** | `403 HANDOVER_REFUSED_CUSTODY_RESTRICTION` 🔴 | BR-HAND-006 |
+| Already recorded | `409 HANDOVER_ALREADY_RECORDED` | BR-HAND-004 |
+
+A custody-restricted attempt creates a `HANDOVER_REFUSED` incident and escalates (NTF-HAND-04). **The refusal leaves a trace even though no handover row is created.**
+
+### Override
+
+```json
+{ "boardingEventId": "…", "isOverride": true,
+  "overrideReason": "Guardian delayed; neighbour known to attendant collected child",
+  "unverifiedReceiverName": "Priya Menon", "unverifiedReceiverPhone": "+919812345678" }
+```
+
+`unverifiedReceiverName` is **required** — an override recording "unverified adult" and nothing else is not evidence (BR-HAND-003 🔴) → `422 HANDOVER_OVERRIDE_REQUIRES_RECEIVER_IDENTITY`.
+
+Immediately notifies **all** guardians and the transport manager (NTF-HAND-03, `CRITICAL`).
+
+## `POST /trips/{tripId}/handover-exceptions`
+
+**Feature:** BRD-012 · **Rules:** BR-HAND-007 🔴
+
+```json
+{ "studentId": "…", "stopId": "…", "exceptionType": "NO_RECEIVER_PRESENT" }
+```
+
+**The student remains on the vehicle.** Creates a `NO_RECEIVER` incident, notifies guardians and the transport manager (NTF-HAND-05, `CRITICAL`), and starts the escalation chain (BR-SAFE-006).
+
+The student is **never released to no one.** This is the rule most likely to be argued away for operational convenience, which is why it is 🔴 and why the API has no path that discharges a child without a recorded receiver.
+
+---
+
+# Reconciliation 🔴
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `GET` | `/trips/{id}/reconciliation` | BRD-013 | `PERM-TRIP-VIEW` | BR-SAFE-001 |
+| `POST` | `/reconciliation-items/{id}/resolve` | BRD-013 | `PERM-RECONCILIATION-RESOLVE` | BR-SAFE-001 🔴 |
+
+### `GET /trips/{id}/reconciliation`
+
+```json
+{
+  "data": {
+    "status": "EXCEPTIONS",
+    "expectedCount": 38, "boardedCount": 36, "alightedCount": 35,
+    "items": [
+      { "id": "…", "studentId": "…", "studentName": "Aarav Sharma",
+        "exceptionType": "UNACCOUNTED", "resolutionOutcome": null }
+    ]
+  }
+}
+```
+
+`UNACCOUNTED` — boarded, never alighted — is **the left-behind case this platform exists to catch** (BR-SAFE-001 🔴). It triggers a `CRITICAL` alert to driver, attendant, transport manager, and guardians (NTF-SAFE-01), bypassing all preferences and quiet hours.
+
+### `POST /reconciliation-items/{id}/resolve`
+
+```json
+{ "resolutionOutcome": "FOUND_ON_VEHICLE", "resolutionNotes": "Asleep on rear seat; alight recorded 15:47" }
+```
+
+Outcomes: `FOUND_ON_VEHICLE` · `RECORD_MISSED` · `NEVER_BOARDED` · `CONFIRMED_NO_SHOW`
+
+Resolution is **all-or-nothing** — outcome, actor, and time together, enforced by a check constraint (`422 RECONCILIATION_RESOLUTION_INCOMPLETE`). There is no way to record what happened without recording who decided it.
+
+`FOUND_ON_VEHICLE` additionally raises a `CRITICAL` incident — a child found on a parked vehicle is a serious event regardless of outcome.
+
+---
+
+# Absence
+
+| Method | Path | Feature | Permission | Rules |
+|---|---|---|---|---|
+| `POST` | `/students/{id}/absences` | ABS-001, ABS-002 | `PERM-ABSENCE-DECLARE` | BR-ABS-001/002/003 |
+| `GET` | `/students/{id}/absences` | ABS-001 | `PERM-ABSENCE-VIEW` | |
+| `DELETE` | `/absences/{id}` | ABS-003 | `PERM-ABSENCE-DECLARE` | BR-ABS-004 |
+
+```json
+{ "fromDate": "2026-08-05", "toDate": "2026-08-07", "direction": null, "reason": "Family travel" }
+```
+
+`reason` is **optional** — requiring a parent to justify an absence is friction with no safety value.
+
+| Timing | Effect |
+|---|---|
+| Before trip start | Excluded from materialisation (BR-ABS-002); no-show alerts suppressed (BR-ABS-005) |
+| After trip start | `422 ABSENCE_TRIP_ALREADY_STARTED` — use a manifest amendment (BR-ABS-003) |
+
+Cancellation is refused after trip start (BR-ABS-004). A student boarding despite a declared absence raises an alert and records **both** facts (BR-BOARD-007, NTF-BOARD-05).
+
+---
+
+## Verification
+
+1. Trip start refusal names the specific failing check.
+2. Manifest is materialised at start and unaffected by later route edits.
+3. Replaying a `clientEventId` returns the original record, not a duplicate.
+4. `PUT`/`PATCH`/`DELETE` on a boarding event returns `422`.
+5. A correction creates a new record; both remain readable.
+6. Batch sync processes each event independently; conflicts are flagged, not rejected.
+7. A handover with zero or two receiver paths is rejected.
+8. A handover override without a receiver identity is rejected.
+9. A custody-restricted attempt creates an incident and no handover row.
+10. A no-receiver exception leaves the student boarded and escalates.
+11. A trip with an unresolved reconciliation item cannot close.
+12. Resolving without an outcome, actor, or time is rejected.
+
+===FILE_END===
+===FILE_START:documentation/05-ui/ACCESSIBILITY.md===
+# ACCESSIBILITY
+
+**Document tier:** 5 — UI
+**Status:** Active
+**Target:** WCAG 2.2 Level AA across all three clients
+
+Accessibility is a **requirement, not an enhancement** ([`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) §6). The platform's users span a wide range of literacy, language, vision, dexterity, device quality, and connectivity — and a parent who cannot read their child's status is not served by this product.
+
+---
+
+## Why This Document Has Teeth
+
+ADR-0003 chose Flutter Web for the admin console, whose accessibility support is weaker than DOM. That ADR names an accessibility audit failure as an explicit **reconsideration trigger**.
+
+**This document is therefore not aspirational.** A failure here reopens an architectural decision rather than producing a waiver.
+
+---
+
+## Perceivable
+
+### Colour and contrast
+
+- Text ≥ 4.5:1 against its background; large text ≥ 3:1; UI components and focus indicators ≥ 3:1.
+- **Colour is never the only signal.** Every status carries an icon and a text label ([`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md)).
+- Verified for both light and dark themes, and for the common color-vision deficiencies.
+
+The driver app **exceeds** AA because it is read in direct sunlight — a compliant contrast ratio indoors can still be unreadable on a windscreen-lit screen.
+
+### Text
+
+- Body text ≥ 16 px in the parent app, ≥ 20 px in the driver app.
+- Scales to **200% without loss of content or function**. No fixed-height text containers.
+- No text baked into images.
+- Line height ≥ 1.5; paragraph spacing ≥ 2× font size.
+
+### Non-text content
+
+- Every image, icon, and control has a meaningful label. Decorative images are explicitly marked decorative.
+- **Maps are never the only route to information.** Every map is accompanied by an equivalent text summary — *"Bus 12 · 3 stops away · ~7 min to Green Park"* ([`PARENT_APP.md`](PARENT_APP.md)).
+- Student photos carry the student's name as their label.
+
+---
+
+## Operable
+
+### Touch targets
+
+| Client | Minimum |
+|---|---|
+| Admin web | 40 × 40 |
+| Parent app | 48 × 48 |
+| Driver app | **64 × 64** |
+| Driver SOS | **88 × 88** |
+
+Driver figures are motor-accessibility requirements under vibration, not stylistic choices.
+
+### Keyboard
+
+The admin console is **fully keyboard operable** — every action, including data grids, route editing, and dialogs.
+
+- Visible focus indicator at ≥ 3:1, never suppressed.
+- Logical focus order; focus trapped inside modals and restored on close.
+- Skip-to-content link.
+- No keyboard traps.
+
+### Timing and motion
+
+- No time limits on any safety action.
+- Session expiry warns and offers extension.
+- All motion respects `prefers-reduced-motion` and degrades to instant state change.
+- Nothing flashes more than three times per second.
+
+### Gestures
+
+Every gesture has a single-pointer alternative. **Nothing requires a multi-touch or path-based gesture** — the driver app in particular is operated one-handed, sometimes with gloves.
+
+---
+
+## Understandable
+
+### Language
+
+- Page and app language declared programmatically; per-user, independent of the school default.
+- Full **RTL** support: mirrored layouts, logical start/end.
+- Plain language in all user-facing copy. Notification copy is complete in the first line ([`NOTIFICATION_CATALOG.md`](../01-product-discovery/NOTIFICATION_CATALOG.md)).
+- Layouts tolerate ±40% string length — a layout that breaks on a longer translation is a defect, not a translation problem.
+
+### Predictability
+
+- Consistent navigation and component behaviour across screens.
+- No context change on focus or input alone.
+- Destructive and safety-critical actions always confirm; nothing else does.
+
+### Errors
+
+- Errors identified in text, not by color or position alone.
+- The localised `messageKey` from the API is displayed, never a raw code.
+- Errors describe the fix: *"Fitness certificate expired 2026-07-15"*, not "invalid vehicle".
+- Errors are associated with their field and announced to screen readers.
+- All field errors returned at once, not one per submission.
+
+---
+
+## Robust
+
+### Screen readers
+
+Tested with TalkBack (Android), VoiceOver (iOS), and NVDA (admin web).
+
+- Every interactive element exposes role, name, value, and state.
+- Live regions announce status changes: boarding confirmations, alert arrivals, sync state.
+- **Critical alerts use assertive live regions**; everything else is polite.
+- Dynamic content changes are announced, not silent.
+
+### Flutter specifics
+
+- `Semantics` widgets on every custom component; `excludeSemantics` on decorative layers.
+- Custom-painted elements (map markers, status indicators) always carry semantic labels.
+- Focus order verified explicitly — visual order is not sufficient for Flutter Web.
+
+---
+
+## Situational and Environmental
+
+The platform's hardest accessibility conditions are situational rather than permanent:
+
+| Condition | Response |
+|---|---|
+| Sunlight on a driver's screen | Contrast above AA; large type; high-contrast mode |
+| Vibration in a moving vehicle | 64 px targets; no precision gestures |
+| One hand occupied | Every action single-pointer; SOS reachable one-handed |
+| Noisy environment | Feedback is visual **and** haptic, never audio-only |
+| Low-end parent device | Lightweight parent app; SMS as the floor channel |
+| Poor connectivity | Cached state with explicit freshness; offline-first driver app (ADR-0008) |
+| Limited literacy | Icons paired with short plain-language labels; SMS in the user's language |
+
+---
+
+## Testing
+
+| Layer | Method |
+|---|---|
+| Automated | Contrast, target size, missing labels — in CI, failures break the build |
+| Widget tests | Semantics assertions on every custom component |
+| Manual | Screen-reader walkthrough of every critical journey each release |
+| Keyboard | Full admin console traversal without a pointer |
+| Scaling | Every screen at 200% text |
+| RTL | Every screen mirrored |
+
+### Critical journeys audited every release
+
+1. Parent checks child status (P-02)
+2. Parent receives and acts on a critical alert
+3. Attendant records boarding (D-05)
+4. Attendant completes handover (D-08)
+5. Driver raises SOS (D-15)
+6. Manager acknowledges a critical alert (A-04)
+
+---
+
+## Verification
+
+1. Automated accessibility checks pass in CI; failures break the build.
+2. Every color pair meets AA in light and dark themes.
+3. Every screen functions at 200% text scale.
+4. Every screen renders correctly mirrored in RTL.
+5. Admin console is fully operable by keyboard.
+6. Every custom component exposes role, name, value, and state.
+7. Critical alerts are announced assertively by screen readers.
+8. Every map has an equivalent text summary.
+9. No gesture lacks a single-pointer alternative.
+10. **The admin console passes a full audit before it is declared production-ready — a failure reopens ADR-0003.**
+
+===FILE_END===
+===FILE_START:documentation/05-ui/ADMIN_WEB.md===
+# ADMIN WEB
+
+**Document tier:** 5 — UI
+**Client:** `admin` (Flutter Web, ADR-0003 — **status Proposed**)
+**Personas:** Anil (transport manager), Fatima (school admin)
+
+> **ADR-0003 is the weakest of the platform's current assumptions.** This console is data-dense, which is where Flutter Web is least comfortable. The verification section below defines the conditions that trigger reconsideration in favour of React — an accessibility audit failure or a load-budget breach reopens the ADR rather than waiving the requirement.
+
+---
+
+## Design Brief
+
+**Conditions of use:** desktop, several tabs open, keyboard-driven. Phone during a live incident.
+
+**Anil's day is exceptions.** The console must surface what is going wrong right now, ranked by severity, and let him act without hunting ([`PERSONAS.md`](../01-product-discovery/PERSONAS.md)).
+
+**Fatima's work is bulk.** Import, assign, correct, repeat — data entry that duplicates what the office already has is the main thing that makes her job worse.
+
+---
+
+## A-01 — Operations Dashboard
+
+The landing screen. Exceptions first, statistics second.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ 🔴 CRITICAL                                              │
+│   Unaccounted child · Bus 12 · Aarav Sharma      [Open]  │
+├──────────────────────────────────────────────────────────┤
+│ 🟠 NEEDS ATTENTION                          4            │
+│   Bus 7 route deviation · 6 min              [Ack]       │
+│   Bus 22 not started · 12 min late           [Open]      │
+│   Fitness certificate expired · DL1PC1234    [Open]      │
+│   Handover override · Bus 9 · 15:22          [Review]    │
+├──────────────────────────────────────────────────────────┤
+│  Trips today   142      Running  38     Completed  104   │
+│  Students      2,140    On bus   612    Delivered  1,203 │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Ordering is by severity, never by time.** A critical event from an hour ago outranks a warning from a minute ago.
+
+Alerts are deduplicated (BR-ALERT-005) — a bus deviating for twenty minutes is one row, not two hundred. Without this the dashboard becomes noise and Anil stops reading it, which makes the real alert invisible.
+
+---
+
+## A-02 — Fleet Live Map
+
+All active vehicles, clustered at scale. Colour by status; **icon and label too** — color is never the only signal.
+
+Selecting a vehicle opens a side panel: trip, crew, next stop, boarded count, open alerts, with actions to call the driver or open the trip.
+
+Vehicles outside active trips do not appear (BR-TRACK-001) — the platform is a safety tool, not staff surveillance.
+
+---
+
+## A-04 / A-05 — Alert Inbox & Incident Console
+
+Work queues, not notification lists. Every row has an owner, a severity, and a resolution state (BR-ALERT-006).
+
+Resolution requires an outcome — alerts are never silently dropped. Bulk-acknowledge exists for related alerts; **bulk-resolve does not**, because a resolution is a decision about one thing.
+
+The SOS console shows the live escalation trail: who was notified at each level, when, and who acknowledged (BR-SAFE-006 🔴).
+
+---
+
+## A-06 — Safety Exceptions
+
+The screen a principal reads. Left-behind events, no-shows, wrong-stop alights, handover overrides, refused handovers, no-receiver exceptions.
+
+Every row carries actor, reason, resolution, and its **business rule ID** — so "what happened" and "which control caught it" are answerable together.
+
+---
+
+## A-12 — Bulk Student Import
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  412 rows · 408 imported · 4 errors                      │
+├──────────────────────────────────────────────────────────┤
+│ Row 17  admissionNo   Already exists: GW-2024-0117       │
+│ Row 88  phone         Invalid format for region IN       │
+│ Row 201 guardian      No guardian with handover right    │
+│ Row 340 stopId        Unknown stop: "Green Prk"          │
+├──────────────────────────────────────────────────────────┤
+│      [Download error rows]   [Fix and re-upload]         │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Valid rows are imported; the file is never rejected wholesale.** The error download contains only failed rows in the original format, so Fatima fixes and re-uploads a small file rather than reconciling 412 rows by hand.
+
+Row 201's error is the important one: BR-GRD-002 🔴 refuses a student with no guardian authorised to collect them.
+
+---
+
+## A-13 — Guardian Links & Rights 🔴
+
+```
+Meera Sharma · Mother
+  ☑ View    ☑ Notifications    ☑ Authorise handover    ☑ Declare absence
+
+Rajesh Sharma · Father
+  ☑ View    ☑ Notifications    ☐ Authorise handover    ☐ Declare absence
+```
+
+Rights are **explicit checkboxes**, never inferred from relationship (BR-GRD-001 🔴). The relationship label is descriptive only — the form makes that visually obvious so an admin does not assume "father" grants collection.
+
+Unchecking the last `Authorise handover` across all guardians is **blocked** with an explanation (BR-GRD-002 🔴).
+
+---
+
+## A-14 — Custody Restrictions 🔴
+
+Gated behind `PERM-CUSTODY-RESTRICTION-MANAGE`, visually distinct, `reason` required.
+
+Restrictions are **never** exposed in any parent-facing surface. The console warns explicitly that adding one blocks handover and visibility immediately and overrides existing guardian rights (BR-HAND-006).
+
+---
+
+## A-31 — Route Editor
+
+Map-based: drag stops, reorder, adjust geofence radius visually.
+
+**Validation is inline**, not at save:
+
+| Violation | Feedback |
+|---|---|
+| Radius outside 20–500 m | Circle turns red with the bound explained (BR-ROUTE-003 🔴) |
+| Times not increasing | Offending stop highlighted (BR-ROUTE-008) |
+| Fewer than two stops | Save disabled (BR-ROUTE-001) |
+
+A banner states that changes apply to **future trips only** — trips already started keep their materialised manifest (BR-ROUTE-006, BR-TRIP-003).
+
+---
+
+## A-32 — Student Route Assignment
+
+Two-panel: unassigned students on the left, stops on the right. Drag or multi-select and assign.
+
+Capacity is shown live against the vehicle's seating (BR-FLEET-005). Assignment preconditions are surfaced **before** the attempt, not as an error afterwards — a student lacking a handover-capable guardian is visibly flagged in the unassigned list.
+
+---
+
+## A-45 / A-47 — Configuration & Alert Rules
+
+```
+Overspeed threshold
+[ 13.9 ] m/s        allowed 5.0 – 25.0        🔒 safety-critical
+Sustained for [ 30 ] seconds
+```
+
+Bounds are **displayed alongside the field**, not discovered on save (BR-CFG-003 🔴). Safety-critical keys are marked and require `PERM-CONFIG-SAFETY-EDIT`.
+
+The duration field is given equal prominence to the threshold — without it, alerts fire on GPS noise and become unreadable.
+
+Every change shows old and new values in a confirmation and is audited (BR-CFG-004).
+
+---
+
+## A-54 … A-57 — Audit Surfaces
+
+Read-only. **No create, edit, or delete affordance exists anywhere** — audit records are append-only (BR-AUD-001 🔴), and the absence of these controls reflects the absence of the API.
+
+| Screen | Purpose |
+|---|---|
+| A-54 Audit trail | Searchable by actor, subject, action, correlation ID |
+| A-55 Override register | Every override with its required reason (BR-AUD-004) |
+| A-56 Child data access log | Who read which child's data, when (BR-IAM-012 🔴) |
+| A-57 Platform access log | Cross-tenant operations with justification (BR-TEN-004 🔴) |
+
+---
+
+## Data Grids
+
+Where Flutter Web is weakest, so the rules are strict:
+
+- **Virtualised** — thousands of rows without degradation.
+- Cursor pagination, never offset ([`API_STANDARDS.md`](../04-api/API_STANDARDS.md)).
+- Sorting only on documented sortable fields; others are not offered.
+- Column visibility and order persist per user.
+- Bulk selection with an explicit count: *"412 students selected"*.
+- Every export is permission-gated and audited with a record count (BR-RPT-002 🔴).
+- **Keyboard navigable throughout** — arrow keys, Enter, Escape.
+
+---
+
+## Responsive
+
+| Width | Layout |
+|---|---|
+| ≥1280 | Full — sidebar, grid, detail panel |
+| 768–1279 | Detail collapses to overlay |
+| <768 | **Incident-response subset only** — dashboard, alerts, SOS, live map |
+
+The narrow layout is deliberately not the full console. Anil on a phone during an incident needs to act, not administer.
+
+---
+
+## Performance Budget (ADR-0003 gate)
+
+| Metric | Budget |
+|---|---|
+| First meaningful paint, simulated 4G | < 4 s |
+| Route transition | < 300 ms |
+| Grid render, 1,000 rows | < 500 ms |
+| Initial bundle | Tracked; regressions fail CI |
+
+**A sustained breach reopens ADR-0003.** These numbers are the ADR's own stated reconsideration trigger, not aspirations.
+
+---
+
+## Verification
+
+1. Dashboard orders by severity, not recency.
+2. A continuing alert condition renders one row.
+3. Import shows per-row errors and imports the valid remainder.
+4. Unchecking the last handover right is blocked.
+5. Custody restrictions never appear in parent-facing responses.
+6. Route editor validates geofence bounds and stop-time ordering inline.
+7. Configuration fields display their permitted bounds.
+8. Audit screens expose no mutation affordance.
+9. Grids virtualise and remain keyboard-navigable.
+10. Every export writes an audit record with a record count.
+11. Accessibility audit passes ([`ACCESSIBILITY.md`](ACCESSIBILITY.md)) — **failure reopens ADR-0003**.
+12. Load budget holds in CI — **sustained breach reopens ADR-0003**.
+
+===FILE_END===
+===FILE_START:documentation/05-ui/DESIGN_SYSTEM.md===
+# DESIGN SYSTEM
+
+**Document tier:** 5 — UI
+**Status:** Active
+**Applies to:** parent app, driver/attendant app, admin web
+
+One design system, three clients with sharply different conditions of use. Shared tokens; **per-client component sizing**, because a widget usable at a desk is not usable in a moving vehicle.
+
+---
+
+## Principles
+
+1. **State over decoration.** The parent app answers "is my child fine?" in the first screen, without a tap.
+2. **Legibility beats density** — especially in the driver app.
+3. **Colour is never the only signal** ([`ACCESSIBILITY.md`](ACCESSIBILITY.md)). Every status carries an icon and a label.
+4. **Calm for routine, direct for urgent.** Visual weight matches severity, so severity stays meaningful.
+5. **Never show stale data as current.** Freshness is displayed, not assumed (BR-TRACK-003).
+
+---
+
+## Colour
+
+Semantic tokens, never raw values in components.
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `surface` | `#FFFFFF` | `#121417` | Page background |
+| `surfaceRaised` | `#F6F7F9` | `#1C1F24` | Cards |
+| `textPrimary` | `#14181F` | `#EDEFF2` | Body |
+| `textSecondary` | `#5A6472` | `#A2ABB8` | Supporting |
+| `border` | `#DDE2E8` | `#2C313A` | Dividers |
+| `primary` | `#1B5FA8` | `#5B9BD8` | Actions |
+| `onPrimary` | `#FFFFFF` | `#0A1017` | Text on primary |
+
+### Status colors
+
+| Token | Light | Dark | Meaning |
+|---|---|---|---|
+| `statusSafe` | `#1F7A47` | `#4CAF7D` | Boarded, arrived, handed over |
+| `statusInfo` | `#1B5FA8` | `#5B9BD8` | In progress, scheduled |
+| `statusWarning` | `#9A6200` | `#E0A33E` | Delayed, expiring, no-show |
+| `statusCritical` | `#B3261E` | `#F2837B` | Unaccounted child, SOS, override |
+| `statusNeutral` | `#5A6472` | `#A2ABB8` | Not started, absent, unknown |
+
+All pairs meet WCAG AA (4.5:1) against their surfaces in both themes. **`statusCritical` is reserved for genuine safety events** — using it for a validation error would erode the one signal that must never be ignored.
+
+---
+
+## Typography
+
+Roboto / Noto Sans, with Noto covering the scripts the platform's locales require. Metrics-compatible fallbacks so translated strings do not reflow layouts.
+
+| Token | Size / weight | Use |
+|---|---|---|
+| `displayLarge` | 32 / 700 | Driver next-stop |
+| `headline` | 24 / 600 | Screen titles |
+| `titleLarge` | 20 / 600 | Card titles, student names |
+| `body` | 16 / 400 | Default |
+| `bodySmall` | 14 / 400 | Supporting |
+| `label` | 13 / 500 | Status chips |
+| `caption` | 12 / 400 | Timestamps, freshness |
+
+**Minimum 16 px for anything a parent or driver reads while moving.** `bodySmall` and below are for desk contexts and secondary metadata only.
+
+Text scales to 200% without loss of function; no fixed-height text containers.
+
+---
+
+## Spacing, Radius, Elevation
+
+4 px base scale: `xs 4 · sm 8 · md 16 · lg 24 · xl 32 · xxl 48`.
+
+Radius: `sm 6 · md 10 · lg 16 · full`. Elevation: `0` flat, `1` cards, `2` sheets, `3` dialogs. Elevation is never the sole indicator of interactivity.
+
+---
+
+## Touch Targets
+
+| Client | Minimum | Reason |
+|---|---|---|
+| Admin web | 40 × 40 | Pointer input, desk |
+| Parent app | 48 × 48 | WCAG standard |
+| **Driver / attendant app** | **64 × 64** | **Moving vehicle, one-handed, gloved** |
+| Driver SOS | **88 × 88** | Reachable without looking |
+
+The driver figures are not a preference. A 48 px target on a vehicle over uneven road is a miss, and a miss during boarding means an unrecorded child ([`PERSONAS.md`](../01-product-discovery/PERSONAS.md), Sunita and Ramesh).
+
+---
+
+## Core Components
+
+### Status chip
+
+Icon + label + color, always all three.
+
+```
+[✓] Boarded        statusSafe
+[→] On the bus     statusInfo
+[!] Delayed        statusWarning
+[⚠] Unaccounted    statusCritical
+[–] Absent         statusNeutral
+```
+
+### Student row
+
+Photo (or initials), name, status chip, time. Photos load through the authorising endpoint, never a public URL.
+
+### Live map
+
+Vehicle marker with heading, route polyline, stop markers, the user's stop emphasised. **Always accompanied by a text summary** — the map is an enhancement, not the only way to get the information (`ACCESSIBILITY.md`).
+
+### Freshness indicator
+
+Mandatory wherever live data appears (BR-TRACK-003):
+
+```
+● Live · updated 4s ago          statusSafe
+◐ Last seen 2 min ago            statusWarning
+○ No signal since 07:38          statusNeutral
+```
+
+### Timestamp
+
+Always rendered in the **school's** timezone with an explicit label (BR-CFG-006). Never the device's zone — a parent travelling abroad must still see school-local times.
+
+### Empty, loading, error states
+
+Every list defines all three. Errors show the localised `messageKey` from the API and a retry action; they never show a raw code or an internal detail.
+
+---
+
+## Motion
+
+Durations 150–250 ms, standard easing. **Nothing blocks a safety action on an animation.** All motion respects `prefers-reduced-motion` and falls back to instant state change.
+
+---
+
+## Localisation
+
+**No string is written inline in a widget** (BR-CFG-005). All text comes from localisation resources.
+
+- Layouts tolerate ±40% string length; no fixed-width text containers.
+- Full RTL support: mirrored layouts, logical start/end rather than left/right.
+- Dates, times, and numbers formatted per locale (ADR-0007).
+- Names render in the order the locale expects.
+
+A layout that breaks on a longer translation is a defect, not a translation problem.
+
+---
+
+## Implementation
+
+Tokens live in `guardian-core/lib/design/` and are consumed by all three clients. **`guardian_core` must not import `package:flutter/material.dart`** for its domain layer — the design layer is separate, keeping the domain portable if ADR-0003 is reversed.
+
+Components are pure: they render state and emit intents. **No business logic in widgets** ([`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md) §8) — a rule checked in a widget is checked for user experience only; the server decides.
+
+---
+
+## Verification
+
+1. Every color pair meets WCAG AA in light and dark themes.
+2. No component references a raw color value.
+3. Driver app targets are ≥64 px; SOS ≥88 px.
+4. No user-facing string literal appears in any widget.
+5. Layouts survive a 40% string-length increase and RTL mirroring.
+6. Text scales to 200% without loss of function.
+7. Every live-data surface renders a freshness indicator.
+8. Every timestamp displays with the school's timezone.
+9. `guardian_core` domain code does not import Flutter widgets.
+
+===FILE_END===
+===FILE_START:documentation/05-ui/DRIVER_ATTENDANT_APP.md===
+# DRIVER & ATTENDANT APP 🔴
+
+**Document tier:** 5 — UI
+**Client:** `flutter/driver_attender_app` (Flutter, offline-first per ADR-0008)
+**Personas:** Ramesh (driver), Sunita (attendant) — [`PERSONAS.md`](../01-product-discovery/PERSONAS.md)
+
+---
+
+## Design Brief
+
+**Conditions of use:** a moving or briefly stopped vehicle. Sunlight on the screen. Engine noise. Children boarding. One hand on a rail. Coverage drops on part of the route every single day.
+
+Two roles, one app:
+
+| Role | Primary need | Interaction budget |
+|---|---|---|
+| **Driver** | Next stop, and a way to raise an alarm | **As close to zero as possible** |
+| **Attendant** | Mark many children fast; know who is missing | High, but every action must be fast |
+
+**The driver should be interacting with this app as little as possible.** Where an attendant is assigned, boarding belongs to them (BR-STAFF-005).
+
+---
+
+## Non-Negotiable Constraints
+
+| Constraint | Value | Reason |
+|---|---|---|
+| Touch targets | **≥ 64 × 64** | A 48 px target on uneven road is a miss; a miss is an unrecorded child |
+| SOS target | **≥ 88 × 88** | Reachable without looking |
+| Minimum text | **20 px**, next-stop at 32 px | Read at arm's length in sunlight |
+| Contrast | Exceeds WCAG AA | Direct sunlight |
+| Typing while moving | **None** | No free-text input on any in-motion flow |
+| Confirmation dialogs | Only for irreversible safety actions | Dialogs during boarding cost seconds per child |
+| Offline | **Every safety action works offline** | ADR-0008 |
+
+---
+
+## D-04 — Active Trip (Driver's default screen)
+
+```
+┌───────────────────────────────────┐
+│  Bus 12 · Morning · 38 students   │
+├───────────────────────────────────┤
+│                                   │
+│   NEXT STOP                       │
+│   GREEN PARK                      │  ← 32px
+│   ~4 min · 6 students             │
+│                                   │
+│   [ Opposite metro gate 3 ]       │
+│                                   │
+├───────────────────────────────────┤
+│  ● 12 boarded   ○ 26 to come      │
+│  ⟳ All synced                     │
+├───────────────────────────────────┤
+│ [ARRIVED AT STOP]                 │  ← full width, 72px
+└───────────────────────────────────┘
+                                [SOS]  ← 88px, persistent
+```
+
+One decision on screen: *arrived*. Landmark text is shown because a driver new to the route needs it and cannot read a map while moving.
+
+---
+
+## D-05 — Stop Boarding (Attendant's screen) 🔴
+
+**The most-used screen in the platform.** A dozen children board in under two minutes.
+
+```
+┌───────────────────────────────────┐
+│  GREEN PARK · 6 expected          │
+├───────────────────────────────────┤
+│      ┌───────────────────┐        │
+│      │   [camera view]   │        │
+│      │   scan credential │        │
+│      └───────────────────┘        │
+├───────────────────────────────────┤
+│ ✓ Aarav Sharma          7:42      │
+│ ✓ Priya Nair            7:42      │
+│ ○ Rohan Gupta                     │  ← tap to mark manually
+│ ○ Diya Menon                      │
+│ – Kabir Shah      (absent)        │
+├───────────────────────────────────┤
+│ [DEPART STOP]                     │
+└───────────────────────────────────┘
+```
+
+**Scan-first, manual fallback** (BRD-001, BRD-002). Both are one action.
+
+**Feedback is immediate and multi-sensory** — the attendant is not looking at the screen while a child moves past:
+
+| Result | Feedback |
+|---|---|
+| Success | Green flash + short beep + haptic |
+| Already boarded | Amber + double beep |
+| **Not on manifest** | Red + long beep + **blocking card** |
+| **Wrong vehicle** 🔴 | Red + urgent tone + **blocking card, cannot dismiss without a decision** |
+
+Records are written locally and acknowledged **instantly** — never blocked on a network call (ADR-0008). A child does not wait for a spinner.
+
+### Departure guard
+
+`DEPART STOP` with un-boarded students shows a confirmation naming them:
+
+```
+Rohan Gupta and Diya Menon have not boarded.
+Depart anyway?          [Cancel]  [Depart]
+```
+
+Departure records them as no-shows and notifies guardians (BR-SAFE-002 🔴). **This is one of the few permitted confirmation dialogs** — the cost of a wrong tap here is a child left at a stop.
+
+---
+
+## D-08 — Handover Verification 🔴
+
+```
+┌───────────────────────────────────┐
+│  Aarav Sharma · Green Park        │
+├───────────────────────────────────┤
+│  Release to:                      │
+│                                   │
+│  ┌──────────┐   Meera Sharma      │
+│  │ [photo]  │   Mother            │
+│  └──────────┘   ✓ Authorised      │
+│                                   │
+│  [ SCAN PARENT'S CODE ]           │
+│  [ ENTER CODE MANUALLY ]          │
+├───────────────────────────────────┤
+│  [Someone else is collecting]     │
+└───────────────────────────────────┘
+```
+
+Authorised receivers are listed **with photos** — the attendant is verifying a face, and a name alone does not do that.
+
+| Path | Behaviour |
+|---|---|
+| Guardian verified | Handover recorded (BRD-008) |
+| Authorised pickup person, valid | Handover recorded; **all** guardians notified (NTF-HAND-02) |
+| Pickup person expired | Refused; override path only (BR-GRD-005) |
+| **Custody restriction** 🔴 | **Blocked**. Card explains the school has been alerted. No override offered. |
+| Unverified adult | Override flow (D-09) |
+| **Nobody present** | No-receiver flow (D-10) |
+
+**The custody-restriction block offers no override on this screen.** The restriction is refused, recorded, and escalated (BR-HAND-006 🔴) — resolution happens through the school, not through a tap on a bus.
+
+---
+
+## D-09 — Handover Override 🔴
+
+```
+⚠ Releasing to an unverified adult
+
+This will be recorded and all guardians will be
+notified immediately.
+
+Who is collecting?
+Name    [_______________]      ← required
+Phone   [_______________]
+
+Reason  ( ) Guardian delayed, confirmed by phone
+        ( ) Known to attendant
+        ( ) Instructed by school office
+        ( ) Other
+
+                    [Cancel]  [Confirm release]
+```
+
+**Structured reasons, not free text.** The attendant is standing at a stop with children waiting — typing a paragraph is not realistic, and a free-text field under pressure yields "ok" and nothing useful.
+
+`Name` is required (BR-HAND-003 🔴) — an override recording "unverified adult" and nothing else is not evidence.
+
+On confirmation: all guardians and the transport manager notified immediately, `CRITICAL` (NTF-HAND-03).
+
+---
+
+## D-10 — No Receiver Present 🔴
+
+```
+No one is here to collect Aarav Sharma.
+
+Aarav stays on the bus. The school and his
+guardians are being contacted now.
+
+                              [Understood]
+```
+
+**There is no path on this screen that discharges the child.** The student remains on the vehicle, a `NO_RECEIVER` incident is raised, and the escalation chain starts (BR-HAND-007 🔴).
+
+This is the rule most likely to be argued away for operational convenience. The UI provides no affordance to do so.
+
+---
+
+## D-11 / D-12 — Trip End & Reconciliation 🔴
+
+Ending a trip runs reconciliation (BR-SAFE-001 🔴).
+
+```
+┌───────────────────────────────────┐
+│ ⚠ 1 STUDENT UNACCOUNTED           │
+├───────────────────────────────────┤
+│  Aarav Sharma                     │
+│  Boarded 7:42 · no record of      │
+│  getting off                      │
+│                                   │
+│  CHECK THE VEHICLE NOW            │
+├───────────────────────────────────┤
+│ [Found on vehicle]                │
+│ [Got off — I missed the record]   │
+│ [Never actually boarded]          │
+└───────────────────────────────────┘
+```
+
+**The trip cannot be closed until every exception is resolved** (BR-TRIP-009). There is no dismiss, no "later", no back gesture that skips it.
+
+The instruction is an action, not a status: *check the vehicle now*. This screen exists for the one case where a child is asleep on a rear seat.
+
+Resolution records outcome, actor, and time together (BR-SAFE-001).
+
+---
+
+## D-14 — Sync Status
+
+```
+⟳ All synced · last 15:47
+```
+```
+⚠ 7 records waiting · offline since 15:31
+```
+
+**Always visible in the header.** Silent queuing hides failure from the person who most needs to know (Sunita). Tapping shows the pending records and a manual retry.
+
+Local data is encrypted and wiped on logout or remote session revocation (ADR-0008) — driver devices are often shared.
+
+---
+
+## D-15 — SOS 🔴
+
+Persistent overlay on **every screen**. 88 px. Reachable without looking.
+
+```
+Press and hold to send SOS
+        [ ●●●○○ ]           ← 1.5s hold
+```
+
+Hold-to-confirm rather than tap — a pocket press must not raise a false alarm, but the gesture must remain performable in an emergency without precision.
+
+Once sent: immediate confirmation, position attached, escalation chain runs until acknowledged (BR-SAFE-006 🔴). **No cancel** — a raised SOS is resolved, never deleted (BR-INC-006).
+
+---
+
+## Offline Behaviour (ADR-0008)
+
+| Action | Offline |
+|---|---|
+| Start trip | ✓ if the manifest is cached |
+| Board / alight | ✓ **always** |
+| Handover | ✓ **always** — verification material is cached |
+| Reconciliation | ✓ resolved locally, synced later |
+| SOS | ✓ queued and retried aggressively; SMS fallback where available |
+| Live map | ✗ degraded to stop list |
+
+Manifest, guardian photos, and pickup-person details are cached at trip start so the whole trip runs offline if needed. A manifest past a configured age shows a warning — it does not lock the attendant out.
+
+---
+
+## Verification
+
+1. Every touch target ≥64 px; SOS ≥88 px.
+2. No free-text input on any in-motion flow.
+3. A full trip's boarding works with the network disabled, survives an app restart, and syncs exactly once.
+4. Boarding feedback is visual, audible, and haptic.
+5. Wrong-vehicle detection blocks with a card requiring a decision.
+6. Departing with un-boarded students requires confirmation naming them.
+7. A custody-restricted handover offers no override affordance.
+8. The no-receiver screen has no path that discharges the child.
+9. Trip close is impossible with an unresolved exception.
+10. Pending-sync count is visible on every screen.
+11. Logout wipes the encrypted local store.
+12. SOS requires a deliberate hold and cannot be cancelled once sent.
+
+===FILE_END===

@@ -2,9 +2,9 @@
 # Individual Flutter projects should still run `flutter analyze` from their own folders.
 analyzer:
   exclude:
-    - guardian-driver-app/**
-    - guardian-parent-app/**
-    - guardian-admin-web/**
+    - flutter/driver_attender_app/**
+    - flutter/parent_app/**
+    - admin/**
 
 # Keep the file minimal — it prevents the workspace-level analyzer from attempting
 # to resolve `package:flutter/*` when run from the repository root.

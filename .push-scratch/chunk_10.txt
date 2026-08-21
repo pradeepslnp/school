@@ -1,0 +1,1657 @@
+===FILE_START:documentation/07-testing/TEST_CASES.md===
+# TEST CASES
+
+**Document tier:** 7 — Testing
+**Status:** Active
+
+Feature-level test cases, keyed to feature IDs from [`FEATURE_INVENTORY.md`](../01-product-discovery/FEATURE_INVENTORY.md).
+
+Format `TC-<FEATURE>-<nn>`. Safety-critical coverage is in [`SAFETY_CRITICAL_TEST_MATRIX.md`](SAFETY_CRITICAL_TEST_MATRIX.md); this document covers the rest.
+
+---
+
+## Tenancy (TEN)
+
+| ID | Feature | Case | Expected |
+|---|---|---|---|
+| TC-TEN-01 | TEN-001 | Create organization with a region profile | Defaults seeded from the profile; no code path selects on country |
+| TC-TEN-02 | TEN-001 | Duplicate organization code | `409 ORG_CODE_ALREADY_EXISTS` |
+| TC-TEN-03 | TEN-002 | Create school without timezone | `400` — required |
+| TC-TEN-04 | TEN-002 | Remove last school of an active organization | `422 ORG_LAST_SCHOOL_CANNOT_BE_REMOVED` |
+| TC-TEN-05 | TEN-002 | Move school between organizations | `422 SCHOOL_CANNOT_CHANGE_ORGANIZATION` |
+| TC-TEN-06 | TEN-004 | Suspend organization with a trip in progress | Access blocked; **safety recording continues** |
+| TC-TEN-07 | TEN-003 | Tenant not using branches | Null `branchId` accepted everywhere |
+| TC-TEN-08 | TEN-005 | Holiday in calendar | No trips generated for that date |
+
+---
+
+## Identity (IAM)
+
+| ID | Feature | Case | Expected |
+|---|---|---|---|
+| TC-IAM-01 | IAM-001 | Login, wrong password | `401 AUTH_CREDENTIALS_INVALID` |
+| TC-IAM-02 | IAM-001 | Login, unknown email | **Same** error — no account enumeration |
+| TC-IAM-03 | IAM-002 | OTP request, unregistered number | `202`, identical response |
+| TC-IAM-04 | IAM-002 | OTP reuse | `401 AUTH_OTP_ALREADY_USED` |
+| TC-IAM-05 | IAM-003 | Refresh rotates token | New pair; old refresh unusable |
+| TC-IAM-06 | IAM-003 | Reuse consumed refresh | Family revoked, alert raised (NTF-SEC-02) |
+| TC-IAM-07 | IAM-006 | Remove permission from role | Effective on the **next request**, no re-login |
+| TC-IAM-08 | IAM-008 | Deactivate staff member | All sessions revoked immediately |
+| TC-IAM-09 | IAM-011 | Repeated failed logins | Lockout per BR-IAM-011 |
+| TC-IAM-10 | IAM-007 | Set a derived scope (`OWN_CHILDREN`) | `400` — derived, not settable |
+
+---
+
+## Students & Guardians (STU / GRD)
+
+| ID | Feature | Case | Expected |
+|---|---|---|---|
+| TC-STU-01 | STU-002 | Import 412 rows, 4 invalid | 408 imported, 4 reported, error file downloadable |
+| TC-STU-02 | STU-002 | Duplicate admission number | Row fails; others succeed |
+| TC-STU-03 | STU-004 | Withdraw student with safety records | Status changed; **records retained** |
+| TC-STU-04 | STU-006 | Photo requested without permission | `403` — never a public URL |
+| TC-STU-05 | STU-007 | Issue credential | Raw value returned **once**; stored hashed |
+| TC-STU-06 | STU-007 | Scan revoked credential | `422 BOARDING_CREDENTIAL_INVALID` |
+| TC-GRD-01 | GRD-001 | Link guardian with explicit rights | Rights stored as given; not inferred from relationship |
+| TC-GRD-02 | GRD-004 | Nominate pickup person without expiry | `400` — `validUntil` required |
+| TC-GRD-03 | GRD-004 | Nominate pickup person | **All** handover-capable guardians notified |
+| TC-GRD-04 | GRD-005 | Revoke pickup person | Effective immediately at next handover |
+| TC-GRD-05 | GRD-005 | Handover to expired nomination | `422 PICKUP_PERSON_OUTSIDE_VALIDITY` |
+
+---
+
+## Fleet & Staff (FLT / STF)
+
+| ID | Feature | Case | Expected |
+|---|---|---|---|
+| TC-FLT-01 | FLT-002 | Document type from a second region profile | Accepted; no code change needed |
+| TC-FLT-02 | FLT-003 | Document approaching expiry | Escalating warnings at configured intervals |
+| TC-FLT-03 | FLT-004 | Assign second active device to a vehicle | `409 DEVICE_ALREADY_ASSIGNED` |
+| TC-FLT-04 | FLT-004 | Position from unregistered device | Logged and ignored; **not auto-registered** |
+| TC-FLT-05 | FLT-005 | Assign students beyond seating capacity | Warning; audited override required |
+| TC-STF-01 | STF-003 | Verify staff without `verifiedUntil` | Rejected — no permanent verification |
+| TC-STF-02 | STF-002 | Credential expires | Future assignment blocked; warnings raised |
+| TC-STF-03 | STF-004 | Assign staff already on an active trip | `409 STAFF_ALREADY_ON_ACTIVE_TRIP` |
+| TC-STF-04 | STF-005 | Mid-trip substitution | Both crew rows retained, linked, timed |
+
+---
+
+## Routes (RTE)
+
+| ID | Feature | Case | Expected |
+|---|---|---|---|
+| TC-RTE-01 | RTE-001 | Route with one stop | `422 ROUTE_MINIMUM_STOPS_REQUIRED` |
+| TC-RTE-02 | RTE-002 | Geofence radius 10 m / 800 m | `422 ROUTE_GEOFENCE_OUT_OF_BOUNDS` |
+| TC-RTE-03 | RTE-001 | Stop times not increasing | `422 ROUTE_STOP_TIMES_NOT_INCREASING` |
+| TC-RTE-04 | RTE-003 | Second active pickup assignment for a student | `409` — rejected by constraint |
+| TC-RTE-05 | RTE-003 | Pickup on route A, drop on route B | Accepted (BR-ROUTE-005) |
+| TC-RTE-06 | RTE-003 | Assign student with no handover-capable guardian | `422 GUARDIAN_HANDOVER_RIGHT_REQUIRED` |
+| TC-RTE-07 | RTE-006 | Deactivate route with assignments | `422 ROUTE_HAS_ACTIVE_ASSIGNMENTS` |
+| TC-RTE-08 | RTE-005 | Edit stops after a trip started | In-progress manifest unchanged |
+
+---
+
+## Trips (TRP)
+
+| ID | Feature | Case | Expected |
+|---|---|---|---|
+| TC-TRP-01 | TRP-001 | Generate trips across a holiday | No trips on the holiday |
+| TC-TRP-02 | TRP-002 | Start with expired vehicle document | `422 VEHICLE_DOCUMENT_EXPIRED` — **names the document** |
+| TC-TRP-03 | TRP-002 | Start with expired driver licence | `422 STAFF_LICENCE_EXPIRED` |
+| TC-TRP-04 | TRP-002 | Start when attendant is mandatory and absent | `422 ATTENDANT_REQUIRED` |
+| TC-TRP-05 | TRP-003 | Start with a declared absence | Student excluded from manifest |
+| TC-TRP-06 | TRP-004 | `SCHEDULED` → `CLOSED` directly | `409 TRIP_INVALID_STATUS_TRANSITION` |
+| TC-TRP-07 | TRP-005 | Cancel without a reason | `422 TRIP_CANCELLATION_REASON_REQUIRED` |
+| TC-TRP-08 | TRP-005 | Cancel a trip | All affected guardians notified with the reason |
+| TC-TRP-09 | TRP-007 | Trip not started within window | Delay alert to manager and guardians |
+| TC-TRP-10 | TRP-006 | Amendment without a reason | `422` — rejected |
+
+---
+
+## Boarding (BRD)
+
+Beyond the safety matrix:
+
+| ID | Feature | Case | Expected |
+|---|---|---|---|
+| TC-BRD-01 | BRD-001 | Scan a valid credential | Boarding recorded; guardians notified within budget |
+| TC-BRD-02 | BRD-002 | Manual mark from manifest | Recorded with `MANUAL` verification method |
+| TC-BRD-03 | BRD-001 | Board twice without alighting | `409 BOARDING_ALREADY_BOARDED` |
+| TC-BRD-04 | BRD-003 | Alight without boarding | `422 BOARDING_NOT_BOARDED` |
+| TC-BRD-05 | BRD-004 | Batch sync with one conflicting event | Others succeed; conflict **flagged**, not rejected |
+| TC-BRD-06 | BRD-005 | Correct a mis-scan | New record with `correctsEventId`; both readable |
+| TC-BRD-07 | BRD-006 | Off-manifest boarding with override | Recorded with reason; audited |
+| TC-BRD-08 | BRD-015 | Depart with un-boarded student | No-show recorded; guardians notified |
+| TC-BRD-09 | BRD-011 | Self-release where configured | Recorded as self-release; guardians notified |
+
+---
+
+## Tracking & Alerts (TRK / ALT)
+
+| ID | Feature | Case | Expected |
+|---|---|---|---|
+| TC-TRK-01 | TRK-001 | Position with implausible speed | Rejected and logged; **not stored** |
+| TC-TRK-02 | TRK-001 | Out-of-order reports after a gap | Live position not moved backwards; history retains all |
+| TC-TRK-03 | TRK-002 | Position requested outside an active trip | `422 TRACKING_NOT_AVAILABLE_OUTSIDE_TRIP` |
+| TC-TRK-04 | TRK-003 | Guardian requests another trip's position | `403` |
+| TC-TRK-05 | TRK-003 | Redis unavailable | Tracking degrades; ingestion and boarding unaffected |
+| TC-TRK-06 | TRK-005 | Routing provider unavailable | ETA returned with `confidence: LOW` |
+| TC-TRK-07 | TRK-006 | History query for one day | Exactly one partition scanned |
+| TC-TRK-08 | TRK-007 | No reports during an active trip | Signal-loss alert to manager |
+| TC-ALT-01 | ALT-004 | Brief GPS wander outside the corridor | **No alert** — duration threshold not met |
+| TC-ALT-02 | ALT-004 | Sustained deviation | One alert; `lastObservedAt` advances |
+| TC-ALT-03 | ALT-005 | Momentary speed spike | **No alert** — sustained-condition rule |
+| TC-ALT-04 | ALT-007 | Resolve alert without an outcome | `422 ALERT_RESOLUTION_OUTCOME_REQUIRED` |
+
+TC-ALT-01 and TC-ALT-03 test the *absence* of alerts. False positives destroy a manager's trust in the alert stream, which makes the real alert invisible.
+
+---
+
+## Notification (NTF)
+
+| ID | Feature | Case | Expected |
+|---|---|---|---|
+| TC-NTF-01 | NTF-001 | Guardian without notification right | Not a recipient |
+| TC-NTF-02 | NTF-002 | Missing template in user's locale | Falls back; **gap logged** |
+| TC-NTF-03 | NTF-007 | Standard notification during quiet hours | **Deferred, then delivered** — never discarded |
+| TC-NTF-04 | NTF-008 | Attempt to disable a `CRITICAL` preference | `422 NOTIFICATION_PREFERENCE_NOT_APPLICABLE` |
+| TC-NTF-05 | NTF-009 | Push fails, SMS succeeds | Both attempts recorded; fallback flagged |
+| TC-NTF-06 | NTF-003 | Domain event redelivered | Exactly one notification per recipient/channel |
+| TC-NTF-07 | NTF-001 | Guardian with two children on one trip | Coalesced into one message |
+
+---
+
+## Absence, Incidents, Reporting, Config
+
+| ID | Feature | Case | Expected |
+|---|---|---|---|
+| TC-ABS-01 | ABS-001 | Absence before trip start | Excluded from manifest; no-show suppressed |
+| TC-ABS-02 | ABS-004 | Absence after trip start | `422`; amendment path offered |
+| TC-ABS-03 | ABS-003 | Cancel absence after start | `422 ABSENCE_CANNOT_CANCEL_AFTER_START` |
+| TC-ABS-04 | ABS-005 | Absent student boards anyway | Alert raised; **both facts recorded** |
+| TC-INC-01 | INC-003 | Resolve SOS as false alarm | Recorded as outcome; **not deleted** |
+| TC-INC-02 | INC-005 | Trip-wide incident notification | **No student named** |
+| TC-INC-03 | INC-006 | Close incident without an outcome | `422 INCIDENT_RESOLUTION_REQUIRED` |
+| TC-RPT-01 | RPT-001 | Report requested by a scoped user | Only in-scope data; scope applied in-query |
+| TC-RPT-02 | RPT-001 | Any report response | Includes `timezone` and `generatedAt` |
+| TC-RPT-03 | RPT-006 | Export child data | Audit record with actor, scope, **record count** |
+| TC-RPT-04 | RPT-006 | Reuse an export download link | Refused — single-use, expiring |
+| TC-CFG-01 | CFG-004 | Set value outside bounds | `422 CONFIG_VALUE_OUT_OF_BOUNDS` |
+| TC-CFG-02 | CFG-002 | School override of an org value | School value wins (BR-CFG-002) |
+| TC-CFG-03 | CFG-005 | Change any configuration value | Audited with old and new values |
+| TC-CFG-04 | CFG-003 | Onboard a tenant in a second region | Different phone rules, documents, formats — **no code branch on country** |
+| TC-CFG-05 | CFG-007 | Two schools in different timezones | Each renders its own local times |
+
+TC-CFG-04 is the test ADR-0007 sets for itself: *if a new customer in a new country requires a code change, the design has failed.*
+
+---
+
+## Coverage Check
+
+CI asserts every `R1` feature ID in [`FEATURE_INVENTORY.md`](../01-product-discovery/FEATURE_INVENTORY.md) appears in this document or the safety matrix. A feature with no test case fails the build.
+
+===FILE_END===
+===FILE_START:documentation/07-testing/TEST_STRATEGY.md===
+# TEST STRATEGY
+
+**Document tier:** 7 — Testing
+**Status:** Active
+
+---
+
+## What Tests Are For Here
+
+In most systems tests prevent regressions. In this one they additionally **prove that safety controls exist**.
+
+[`DOCUMENT_HIERARCHY.md`](../00-governance/DOCUMENT_HIERARCHY.md) invariant 2: **every business rule ID has at least one test referencing it.** A rule with no test is a rule that is documented but not enforced — and in a safety system that is worse than an undocumented rule, because it creates false confidence.
+
+---
+
+## The Pyramid
+
+```
+        ╱ E2E ╲            critical journeys only — J1…J8
+      ╱─────────╲
+    ╱  Contract   ╲        API shape vs documented contract
+  ╱─────────────────╲
+ ╱   Integration     ╲     repositories + RLS, via Testcontainers
+╱───────────────────────╲
+      Unit               domain rules, no framework
+```
+
+| Level | Runs in | Scope |
+|---|---|---|
+| Unit | milliseconds | Domain entities, value objects, domain services. **No Spring context.** |
+| Integration | seconds | Repositories against real PostgreSQL, including RLS |
+| Contract | seconds | Request/response shape vs documented API |
+| E2E | minutes | The eight user journeys, end to end |
+| Architecture | seconds | Layering, boundaries, security invariants |
+
+E2E is deliberately thin. Slow, brittle E2E suites get skipped, and a skipped safety test is no test.
+
+---
+
+## Business Rule Traceability
+
+```java
+@BusinessRule("BR-SAFE-001")
+@Test
+void trip_cannot_close_while_a_student_is_unaccounted() {
+    var trip = tripWithBoardedStudentAndNoAlight();
+
+    assertThatThrownBy(() -> closeTripUseCase.execute(trip.id()))
+        .isInstanceOf(ReconciliationIncompleteException.class)
+        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TRIP_RECONCILIATION_INCOMPLETE);
+}
+```
+
+The `@BusinessRule` annotation makes references machine-readable. A CI check parses [`BUSINESS_RULES.md`](../01-product-discovery/BUSINESS_RULES.md), collects every annotation, and **fails the build on any rule with no test**.
+
+🔴 rules require tests at **two levels** — unit for the decision, integration or E2E for the enforcement. A rule enforced only in a use case can be bypassed by a future code path; a rule enforced in the schema cannot.
+
+---
+
+## Unit Tests
+
+Domain only. No Spring, no database, no mocks of things you own.
+
+```java
+@BusinessRule("BR-GRD-002")
+@Test
+void student_must_retain_at_least_one_handover_capable_guardian() { … }
+```
+
+Test **behaviour, not implementation**. A test asserting a method was called on a mock breaks on refactoring while proving nothing about correctness.
+
+Mock only at ports — repositories, notification channels, clocks. Never mock a domain object.
+
+**Time is injected**, never `Instant.now()` in domain code. Clock-dependent rules — credential expiry, quiet hours, pickup-person validity — are otherwise untestable at boundaries.
+
+---
+
+## Integration Tests
+
+Testcontainers PostgreSQL, real schema, real migrations, real RLS.
+
+**Never against a shared database.** These tests create and drop schemas.
+
+### Every module has a tenant-isolation test 🔴
+
+```java
+@BusinessRule("BR-TEN-004")
+@Test
+void data_written_under_one_tenant_is_invisible_to_another() {
+    withTenant(TENANT_A, () -> studentRepository.save(aStudent()));
+
+    var found = withTenant(TENANT_B, () -> studentRepository.findAll());
+
+    assertThat(found).isEmpty();   // zero rows — not an exception
+}
+```
+
+Zero rows, not an error, is the correct outcome. It is what makes a forgotten `WHERE` clause safe ([`MULTI_TENANCY.md`](../02-system-design/MULTI_TENANCY.md)).
+
+### Schema invariants, verified against the live database
+
+- Every `tenant_id` table has RLS **enabled and forced**
+- Every policy declares `USING` **and** `WITH CHECK`
+- `guardian_app` lacks `BYPASSRLS` and owns no tables
+- Append-only tables reject `UPDATE` and `DELETE`
+- Constraints reject: override without reason, handover without receiver, resolution without actor
+- Two sequential transactions on one pooled connection do not leak tenant context
+
+That last one deserves its own test: it is the failure mode `SET` versus `SET LOCAL` produces, and it is silent.
+
+---
+
+## Contract Tests
+
+Assert the API matches its documentation:
+
+- Every endpoint declares a permission that exists in [`PERMISSION_MATRIX.md`](../01-product-discovery/PERMISSION_MATRIX.md)
+- Every error code returned exists in [`ERROR_CATALOG.md`](../04-api/ERROR_CATALOG.md)
+- Response envelopes conform to [`API_STANDARDS.md`](../04-api/API_STANDARDS.md)
+- All timestamps are UTC with `Z`
+- Generated OpenAPI matches the documented contract
+
+Per-role authorisation tests assert every **denied** cell in the permission matrix actually returns `403` — the matrix is otherwise a description of intent rather than of behaviour.
+
+---
+
+## End-to-End Tests
+
+The eight journeys in [`USER_JOURNEYS.md`](../01-product-discovery/USER_JOURNEYS.md), run against a full stack.
+
+| Journey | Asserts |
+|---|---|
+| J1 Morning pickup | Manifest, boarding, notifications, reconciliation |
+| J2 **Handover** 🔴 | Every branch: verified, pickup person, restriction, override, no receiver |
+| J3 **Left-behind** 🔴 | Detection, critical alert, close blocked until resolved |
+| J4 SOS escalation | Delivery bypassing preferences; escalation until acknowledged |
+| J5 Absence | Manifest exclusion; late absence as amendment |
+| J6 Route deviation | Sustained-condition detection; single alert |
+| J7 Onboarding | Import with errors; guardian rights preconditions |
+| J8 Compliance | Expiry blocks new trips; in-progress trip continues |
+
+J2 and J3 are the reason the platform exists. Every branch of both is covered, including the refusal paths that create no record but must leave a trace.
+
+---
+
+## Offline Testing (ADR-0008)
+
+The driver app's offline behaviour needs deliberate testing because its failures are invisible until they matter:
+
+1. Full trip recorded with the network disabled
+2. App killed mid-trip; queue survives restart
+3. Reconnect — every event syncs **exactly once**
+4. Replayed `clientEventId` creates no duplicate
+5. Device clock skewed by hours — skew measured and stored, record still accepted
+6. Client action contradicting server state is **flagged, not discarded** (BR-SAFE-005)
+7. Logout wipes the encrypted local store
+
+---
+
+## Flutter Tests
+
+| Level | Scope |
+|---|---|
+| Unit | Domain and state notifiers, no widgets |
+| Widget | Screens including **empty, loading, and error** states |
+| Golden | Key screens: light/dark, LTR/RTL, 100%/200% text |
+| Integration | Critical journeys including the offline trip |
+
+An untested error state becomes a blank screen in production.
+
+---
+
+## Test Data
+
+- **Never real child or guardian data**, including in fixtures ([`GIT_WORKFLOW.md`](../06-development/GIT_WORKFLOW.md)).
+- Builders with sensible defaults; tests override only what they assert on.
+- **Two region profiles in every fixture set** — so region-specific behaviour leaking into code fails a test rather than a customer (ADR-0007).
+- Each test creates its own tenant. Tests never share state and run in any order.
+
+---
+
+## Coverage
+
+| Area | Expectation |
+|---|---|
+| Domain | High — this is where rules live |
+| Application | High |
+| Infrastructure adapters | Covered by integration tests |
+| Controllers | Covered by contract tests |
+| **Every 🔴 rule** | **100%, at two levels** |
+
+A coverage percentage is a weak signal. **The traceability check is the real gate**: every business rule has a test, and every 🔴 rule has two.
+
+---
+
+## CI
+
+| Stage | Runs on |
+|---|---|
+| Unit + architecture | Every push |
+| Integration + contract | Every PR |
+| E2E | Every PR to `main` |
+| Safety-critical matrix | Every PR touching a 🔴 rule; nightly |
+| Load | Nightly, and before release |
+| Accessibility | Every PR touching UI |
+
+**Flaky tests are fixed or deleted, never retried.** A retried test is a test whose result nobody believes — and in this suite, the ones that matter must be believed.
+
+===FILE_END===
+===FILE_START:documentation/08-deployment/BACKUP_AND_DR.md===
+# BACKUP AND DISASTER RECOVERY
+
+**Document tier:** 8 — Deployment
+**Status:** Active
+
+---
+
+## What Must Survive
+
+Not all data is equally recoverable, and the priority order is not the usual one.
+
+| Data | If lost | Priority |
+|---|---|---|
+| **Safety records** — boarding, handovers, reconciliations | **Unrecoverable and legally material.** Evidence of duty of care. | 1 |
+| **Audit records** | Unrecoverable. Evidence of what was done and by whom. | 1 |
+| Configuration — students, guardians, routes, staff | Recoverable by re-entry, at enormous cost | 2 |
+| Operational — trips, manifests, alerts | Partially reconstructable | 3 |
+| Position history | Lost telemetry; hurts investigations | 4 |
+| Live position cache | Repopulates on the next report | 5 |
+
+**Priority 1 is why the platform is a modular monolith with a shared database** ([`ARCHITECTURE_OVERVIEW.md`](../02-system-design/ARCHITECTURE_OVERVIEW.md)): the audit write shares the transaction with the change it records (BR-AUD-002 🔴), so a restore cannot produce a state where a boarding event exists without its audit trail, or vice versa.
+
+---
+
+## Objectives
+
+| Metric | Target | Rationale |
+|---|---|---|
+| **RPO** (data loss) | **≤ 1 minute** | A lost boarding event is an unaccounted child |
+| **RTO** (downtime) | ≤ 30 minutes during school hours | Two peaks per day; a peak missed is a day's records missed |
+| RTO outside school hours | ≤ 4 hours | Low consequence |
+| Backup retention | Per region profile legal obligation (BR-AUD-007) | |
+
+RPO is driven by consequence, not convention. During a morning run, one minute of lost writes is dozens of boarding events — children whose journeys have no record.
+
+**The driver app's offline queue is the real RPO backstop** (ADR-0008): events recorded on devices survive a database outage entirely and sync afterwards. The database RPO covers everything else.
+
+---
+
+## Backup Strategy
+
+| Layer | Mechanism | Frequency |
+|---|---|---|
+| Continuous | WAL archiving, point-in-time recovery | Streaming |
+| Full snapshot | Automated | Daily, off-peak |
+| Cross-region copy | Replicated snapshot | Daily |
+| Pre-migration | Verified snapshot | Every production migration |
+
+All backups are **encrypted at rest** and use separate credentials from the application — a compromise of the application must not grant the ability to destroy backups.
+
+Cross-region copies respect data residency ([`ENVIRONMENTS.md`](ENVIRONMENTS.md)): a region requiring in-country data has in-country backups, and its copies do not leave.
+
+---
+
+## Restore Testing 🔴
+
+**An untested backup is not a backup.**
+
+| Test | Frequency |
+|---|---|
+| Automated restore to a scratch environment | Weekly |
+| Schema and row-count verification | Weekly, automated |
+| **RLS verification post-restore** | Weekly, automated |
+| Full DR drill with the team | Quarterly |
+| Point-in-time recovery to an arbitrary timestamp | Quarterly |
+
+### RLS verification after restore is mandatory
+
+A restore that loses `FORCE ROW LEVEL SECURITY`, or restores tables owned by the wrong role, produces a running platform **with no tenant isolation** — and nothing else would fail. Every query would still work; every tenant would see every child.
+
+The automated post-restore check asserts:
+- Every `tenant_id` table has RLS enabled **and forced**
+- Every policy declares `USING` and `WITH CHECK`
+- `guardian_app` lacks `BYPASSRLS` and owns no tables
+- A cross-tenant read returns zero rows
+
+This is the single most important item in this document.
+
+---
+
+## Failure Scenarios
+
+### Database primary loss
+
+Failover to a standby in another availability zone. WAL streaming holds RPO within target.
+
+During failover the platform is unavailable — **and the driver app keeps recording offline** (ADR-0008). Boarding and handover continue; they sync when the platform returns. This is the property that makes a database outage a service incident rather than a safety incident.
+
+### Region loss
+
+Restore from the cross-region snapshot into a standby region. RTO is hours, not minutes — accepted, because regional loss is rare and the offline path protects the safety-critical function meanwhile.
+
+### Data corruption
+
+Point-in-time recovery to just before the corrupting event. Correlation IDs and audit records identify the window ([`OBSERVABILITY.md`](OBSERVABILITY.md)).
+
+Because safety and audit tables are **append-only** (BR-AUD-001, BR-BOARD-001 🔴), corruption there cannot be an accidental `UPDATE` — the grants and triggers prevent it. This narrows the corruption surface considerably.
+
+### Accidental deletion
+
+Soft delete on configuration data means most "deletions" are recoverable in-place. Safety and audit records have no delete path at all.
+
+### Redis loss
+
+No recovery needed. Live tracking degrades until the next position report; **no data is lost** (ADR-0004).
+
+### Ransomware / malicious destruction
+
+Backups use separate credentials and are immutable for their retention window. Restoration is from the last known-good snapshot, with point-in-time recovery to just before the event.
+
+---
+
+## Restore Procedure
+
+1. **Declare** the incident; notify stakeholders per the region profile's obligations
+2. **Stop writes** — take the application offline to prevent divergence
+3. **Choose the recovery point** using audit and correlation data
+4. **Restore** to a new instance, never over the live one
+5. **Verify**: schema version · row counts · **RLS assertions** · sample tenant isolation check
+6. **Reconcile**: identify trips and safety events in the lost window; the driver app's queue will resupply device-recorded events
+7. **Resume** writes and monitor
+8. **Communicate** what was lost, to whom, and what was recovered
+9. **Post-incident review** with a documented preventive action
+
+Step 6 matters and is easily forgotten: **after a restore, devices still hold unsynced safety events.** They will arrive, be deduplicated by `client_event_id` (BR-BOARD-009), and fill part of the gap. The reconciliation step must expect them rather than treat them as anomalies.
+
+---
+
+## Communication
+
+A restore losing safety records is a **notifiable event to affected schools**, regardless of whether it meets a regulatory breach threshold. A school's duty of care depends on the platform's records; if a gap exists, they must know its exact extent.
+
+The notification states: the affected time window, the trips and record types involved, what was recovered from device queues, and what could not be recovered.
+
+---
+
+## What Is Never Restored
+
+- Real production data into staging or local ([`ENVIRONMENTS.md`](ENVIRONMENTS.md)) — staging is synthetic, and anonymisation is unreliable for this dataset
+- Backups onto a live production database — always restore to a new instance, then cut over
+
+===FILE_END===
+===FILE_START:documentation/08-deployment/CI_CD.md===
+# CI / CD
+
+**Document tier:** 8 — Deployment
+**Status:** Active
+
+---
+
+## Per-repository pipelines
+
+Each repository runs its own workflow. Not every repository runs every stage — the table says which, and the stage descriptions below are written once and referenced from each.
+
+| Repository | Stages it runs |
+|---|---|
+| `backend` | 1, 2, 3, 4, 5, 6, 8–11 |
+| `guardian-core` | 1 (`dart analyze`, `dart test`), 3 |
+| `flutter/parent_app`, `flutter/driver_attender_app` | 1, 3, 5, 7, 8–11 |
+| `admin` | 1, 3, 7, and the load budget under stages 5–7 |
+| `documentation` | 4 (link integrity only — the rest need code to check against) |
+| `infrastructure` | 3 (compose lint, image scan) |
+
+Two consequences of the split are worth stating plainly rather than discovering:
+
+**Stage 4 belongs to `backend`, not `documentation`.** The traceability checks compare documentation against code, so they can only run where the code is. `documentation` can verify its own links resolve; it cannot verify that a rule it documents has a test. A merge to `documentation` therefore has to trigger `backend`'s pipeline — a repository-dispatch from the docs workflow — or a rule can be published and stay untested until something unrelated turns the backend red.
+
+**The client repositories check out `guardian-core` beside themselves.** Their pub path dependency resolves on disk, so a build that clones only the app will fail at `pub get`. Same for `backend`, which needs `documentation` checked out or `GUARDIAN_DOCS_PATH` pointed at it.
+
+---
+
+## Pipeline
+
+```
+Push to branch
+   ▼
+1  Build + unit + architecture tests          ~2 min
+   ▼
+2  Integration + contract tests               ~5 min   (Testcontainers)
+   ▼
+3  Static analysis + security scan            ~2 min
+   ▼
+4  Documentation traceability checks          ~1 min
+   ▼
+── PR to main ──────────────────────────────────────
+   ▼
+5  E2E journeys                               ~10 min
+   ▼
+6  Safety-critical matrix (if 🔴 touched)     ~8 min
+   ▼
+7  Accessibility (if UI touched)              ~3 min
+   ▼
+── Merge ───────────────────────────────────────────
+   ▼
+8  Build artefacts once, tag by commit
+   ▼
+9  Deploy to staging (automatic)
+   ▼
+10 Staging verification
+   ▼
+11 Deploy to production (manual approval)
+```
+
+**Fast stages first.** A compile error should fail in two minutes, not after a ten-minute E2E suite.
+
+---
+
+## Stage 1 — Build, Unit, Architecture
+
+```bash
+./gradlew build            # compile + unit tests
+./gradlew architectureTest # ArchUnit
+```
+
+Architecture tests run early because they are fast and catch the errors most expensive to fix later — a layering violation found after a feature is complete means rewriting it ([`ARCHITECTURE_ENFORCEMENT.md`](../06-development/ARCHITECTURE_ENFORCEMENT.md)).
+
+## Stage 2 — Integration & Contract
+
+Testcontainers PostgreSQL with the real schema, real migrations, real RLS.
+
+Includes schema invariants that cannot be checked statically:
+
+- Every `tenant_id` table has RLS **enabled and forced**
+- Every policy declares `USING` **and** `WITH CHECK`
+- `guardian_app` lacks `BYPASSRLS`
+- Append-only tables reject `UPDATE` and `DELETE`
+- Pooled-connection tenant context does not leak
+
+Contract tests assert every denied cell in [`PERMISSION_MATRIX.md`](../01-product-discovery/PERMISSION_MATRIX.md) returns `403`, and that generated OpenAPI matches the documented contract.
+
+## Stage 3 — Static Analysis & Security
+
+Spotless, Error Prone, SpotBugs, `flutter analyze` (warnings are errors), dependency vulnerability scan, container image scan, and **secret scanning**.
+
+A detected secret fails the build and the secret is **rotated**, not merely removed from the diff — once committed, it is compromised.
+
+## Stage 4 — Documentation Traceability 🔴
+
+The check that keeps documentation honest as the code grows:
+
+| Check | Fails when |
+|---|---|
+| Business rule coverage | A rule in `BUSINESS_RULES.md` has no `@BusinessRule` test |
+| 🔴 double coverage | A safety-critical rule has fewer than two test levels |
+| Feature coverage | An `R1` feature has no API doc entry or test case |
+| Permission validity | An endpoint declares a permission absent from the matrix |
+| Error catalogue | A returned code is absent from `ERROR_CATALOG.md` |
+| Notification templates | A catalog ID lacks a default-locale template per channel |
+| Link integrity | A link within `documentation` points at a missing path |
+
+Link integrity is scoped to links **inside** `documentation`. Links that reach into a sibling repository (`../../backend/…`) resolve only in a full local checkout, so CI cannot verify them without cloning everything — treat those as documentation for humans, and keep them few.
+
+**Documentation is the source of truth** ([`INSTRUCTIONS.md`](../INSTRUCTIONS.md)). Without this stage that statement decays into an aspiration within a few sprints.
+
+## Stages 5–7 — Journeys, Safety, Accessibility
+
+E2E covers the eight journeys in [`USER_JOURNEYS.md`](../01-product-discovery/USER_JOURNEYS.md).
+
+The safety-critical matrix runs whenever a 🔴 rule is touched, and nightly regardless. **A failure blocks release — no waiver, no fix-forward** ([`SAFETY_CRITICAL_TEST_MATRIX.md`](../07-testing/SAFETY_CRITICAL_TEST_MATRIX.md)).
+
+Accessibility checks run on UI changes; the admin console additionally tracks its load budget, whose sustained breach reopens ADR-0003.
+
+---
+
+## Build Once, Promote
+
+Artefacts are built once at stage 8, tagged with the commit SHA, and promoted unchanged through staging to production.
+
+**Rebuilding per environment means testing something other than what ships.** Configuration differs by environment; the binary does not.
+
+---
+
+## Deployment
+
+Rolling deployment with health checks. New instances must pass readiness before old ones are drained.
+
+### Migration ordering
+
+Migrations run **before** the new application version, and every migration is expand-contract ([`MIGRATION_STRATEGY.md`](../03-database/MIGRATION_STRATEGY.md)) — so the old version continues working against the new schema.
+
+That property is what makes rollback possible: reverting is redeploying the previous artefact, with no schema change required.
+
+### Migration safety in production
+
+- A **verified recent backup** is confirmed before migrations run
+- `lock_timeout` and `statement_timeout` set — a migration fails fast rather than blocking a school run
+- Deployments avoid peak windows; the bimodal load profile makes the safe window obvious and generous
+- Flyway's lock prevents concurrent migration across instances
+
+### Rollback
+
+| Situation | Action |
+|---|---|
+| Application defect | Redeploy previous artefact — schema still compatible |
+| Migration defect | Corrective **forward** migration |
+| Both | Restore from verified backup (last resort) |
+
+No `undo` scripts exist. A rollback script written when a change is fresh and executed years later during an incident is untested code run under pressure ([`MIGRATION_STRATEGY.md`](../03-database/MIGRATION_STRATEGY.md)).
+
+---
+
+## Post-Deployment Verification
+
+Automatic, before the deployment is marked successful:
+
+1. Health and readiness across all three deployables
+2. Smoke tests: login, read a trip, record a boarding event
+3. Migration applied and schema version correct
+4. **RLS assertions against the live database** — every `tenant_id` table forced
+5. Error rate and latency within budget for 10 minutes
+6. Notification dispatch succeeding
+
+Failure triggers automatic rollback to the previous artefact.
+
+Check 4 runs in production deliberately. RLS is the platform's primary security control, and a migration that created a table without a policy must be caught in minutes, not at the next audit.
+
+---
+
+## Release Cadence
+
+Continuous to staging on every merge. Production releases are batched and scheduled outside peak windows.
+
+**Hotfixes** follow the same pipeline with no stages skipped. Speed comes from a small diff, not from reduced verification — a hasty fix causing a second incident is the common failure mode ([`GIT_WORKFLOW.md`](../06-development/GIT_WORKFLOW.md)).
+
+Mobile releases follow store review timelines. **The API maintains backward compatibility within `v1`** ([`API_STANDARDS.md`](../04-api/API_STANDARDS.md)) — a parent running an old app build must keep receiving safety notifications, and cannot be forced to update mid-term.
+
+---
+
+## Pipeline Hygiene
+
+- Pipelines are code, reviewed like application code.
+- **No manual step between test and artefact.**
+- **Flaky tests are fixed or deleted, never retried.** A retried test is one nobody believes — unacceptable for the tests that matter most here.
+- Build times tracked; a slow pipeline gets bypassed, and a bypassed pipeline protects nothing.
+
+===FILE_END===
+===FILE_START:documentation/08-deployment/ENVIRONMENTS.md===
+# ENVIRONMENTS
+
+**Document tier:** 8 — Deployment
+**Status:** Active
+
+---
+
+## The Environments
+
+| Environment | Purpose | Data | Access |
+|---|---|---|---|
+| **Local** | Development | Seeded synthetic | Developer machine |
+| **CI** | Automated verification | Ephemeral per run | Pipeline only |
+| **Staging** | Pre-production verification | **Synthetic, production-shaped** | Team |
+| **Production** | Live | Real child data | Restricted, audited |
+
+---
+
+## Staging Data 🔴
+
+**Staging never contains real child or guardian data.** Not anonymised production data — synthetic data generated to production *shape*.
+
+Anonymisation is unreliable for this dataset: a route, a stop, a school, and a timestamp re-identify a child even without a name. Given [`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) §7 (data minimisation) and the charter's duty of care, the risk is not worth the fidelity gain.
+
+Generated staging data includes:
+- Two organizations under **different region profiles** — so ADR-0007 is exercised continuously
+- Realistic volumes: schools, students, guardians, vehicles, routes
+- Documents and credentials at varying expiry, including expired
+- Trips with exceptions: no-shows, overrides, an unaccounted child, a resolved SOS
+
+That last item matters: staging must exercise the safety paths, not only the happy path.
+
+---
+
+## Configuration
+
+| Kind | Source |
+|---|---|
+| Application settings | `application-<env>.yml`, committed |
+| Secrets | Secret manager or environment — **never source control** |
+| Tenant behaviour | Database configuration (ADR-0007) |
+| Feature flags | Configuration registry, per tenant |
+
+**No environment differs in behaviour by code branch.** A `if (env == "prod")` is a defect — environments differ in configuration and scale, not in logic. Otherwise staging stops predicting production, which is its only purpose.
+
+### Secrets
+
+Distinct per environment. Rotatable without redeployment. Never logged, never returned by any API — including per-tenant provider credentials, even to the tenant that set them.
+
+Production secrets are accessible only to the deployment pipeline and to on-call engineers, and access is audited.
+
+---
+
+## Infrastructure
+
+Per environment:
+
+```
+API (n instances)      ──┐
+Ingestion (n)          ──┼──► PostgreSQL primary
+Worker (n)             ──┘         │
+                                   ├──► read replica (reporting)
+                       ──────────► Redis
+```
+
+Three deployables from the same modules ([`ARCHITECTURE_OVERVIEW.md`](../02-system-design/ARCHITECTURE_OVERVIEW.md)) — separated because their load profiles differ, not because their code does.
+
+| Environment | Scale |
+|---|---|
+| Staging | Single small instance of each; no replica |
+| Production | Autoscaled; replica; multi-AZ |
+
+**Staging runs the same topology at smaller scale.** A topology difference between staging and production is a class of bug staging cannot catch.
+
+### Database roles
+
+Identical in every environment ([`RLS_POLICIES.md`](../03-database/RLS_POLICIES.md)):
+
+- `guardian_owner` — migrations only
+- `guardian_app` — runtime, **`NOBYPASSRLS`**, not the owner
+- `guardian_readonly` — replica reads
+
+Running the application as owner in *any* environment defeats RLS and hides isolation bugs until production. Verified by a startup assertion, not by convention.
+
+---
+
+## Autoscaling
+
+The load profile is **bimodal and predictable** — two sharp peaks per school day ([`SCALABILITY.md`](../02-system-design/SCALABILITY.md)).
+
+Scaling is therefore **schedule-driven with reactive headroom**, not purely reactive. The peaks arrive in minutes; reactive scaling lags them. Scaling up before the morning run costs less than being short during it.
+
+Off-peak the platform scales down to a floor sufficient for background jobs and any late trip.
+
+---
+
+## Timezones
+
+Servers run UTC. All timestamps stored UTC (`TIMESTAMPTZ`). Display timezone comes from the **school** (BR-CFG-006).
+
+Scheduled jobs that are per-school — trip generation, calendar rollover — iterate schools in their own timezones. A single "run at midnight" job would be wrong for every school outside the server's zone, and would produce or miss trips.
+
+---
+
+## Access Control
+
+| Environment | Access |
+|---|---|
+| Staging | Team, with normal application authentication |
+| Production application | Only through the application, with real permissions |
+| Production database | On-call only, break-glass, audited |
+| Production logs | Team; **contain no child PII** by construction |
+
+**There is no direct-database support path.** Tenant support goes through `PERM-PLATFORM-TENANT-ACCESS`, which requires a justification and writes an audit record before the first read (BR-TEN-004 🔴). A database console bypasses that entirely, which is why it is break-glass rather than routine.
+
+---
+
+## Promotion
+
+```
+PR → CI (build, tests, architecture, security) → merge to main
+      ▼
+Staging (automatic)
+      ▼
+Verification: smoke, safety-critical matrix, migration timing
+      ▼
+Production (manual approval)
+```
+
+Every artefact is built once and promoted — the binary tested in staging is the binary that runs in production. Rebuilding per environment means testing something other than what ships.
+
+Details in [`CI_CD.md`](CI_CD.md).
+
+---
+
+## Data Residency
+
+Where a region requires data to remain in-country, the deployment is a **separate regional instance** — its own database, its own application, its own secrets.
+
+This is deliberately not solved by tenant-level partitioning within one database. Residency is a legal boundary, and ADR-0001's shared-schema model does not provide one.
+
+Region profiles (ADR-0007) handle *behavioural* regional variation. Residency is an infrastructure concern, and the two are not interchangeable.
+
+===FILE_END===
+===FILE_START:documentation/08-deployment/OBSERVABILITY.md===
+# OBSERVABILITY
+
+**Document tier:** 8 — Deployment
+**Status:** Active
+**Related:** [`AUDIT_AND_LOGGING.md`](../02-system-design/AUDIT_AND_LOGGING.md) — audit and logging are different things with different guarantees.
+
+---
+
+## What Must Be Observable
+
+Ordinary SaaS observability watches availability and latency. Here the primary question is different:
+
+> **Is every child accounted for, and did every safety notification reach a parent?**
+
+Metrics below are ordered by that priority. Uptime matters, but a platform that is up and silently failing to deliver `CRITICAL` notifications is worse than one that is visibly down.
+
+---
+
+## Safety Metrics 🔴
+
+| Metric | Alert when |
+|---|---|
+| Unaccounted children, open | **> 0 for longer than the detection window** — page immediately |
+| Trips completed but not closed | Above threshold — reconciliations are not being resolved |
+| Reconciliation exceptions per trip | Sustained rise — a process or device problem |
+| Handover overrides per day | Sustained rise — verification may be failing in practice |
+| `HANDOVER_REFUSED` / `NO_RECEIVER` incidents | Any occurrence — notify, do not merely record |
+| Boarding events recorded electronically | **< 99%** of expected (charter measure) |
+| SOS unacknowledged | Beyond escalation window — page |
+| `CRITICAL` notification delivery failure | **Any** — page |
+
+The first row is the platform's reason for existing. It pages a human, not a dashboard.
+
+The handover-override metric is a **leading indicator**: a rising override rate usually means verification is too slow or the credential flow is broken, and staff are working around it. Left unwatched, the control decays into a formality.
+
+---
+
+## Delivery Metrics
+
+| Metric | Alert when |
+|---|---|
+| Board/alight notification latency | p95 > 10 s (charter measure) |
+| Notification dispatch failure rate, per channel | > threshold |
+| Fallback-channel escalations | Rising — the primary channel is degrading |
+| Notifications with no reachable channel | Any — a parent is unreachable |
+| Template gaps logged | Any — a locale is unserved |
+
+---
+
+## Tracking Metrics
+
+| Metric | Alert when |
+|---|---|
+| Ingestion acknowledgement | p95 > 100 ms |
+| Live position freshness | p95 > 30 s (charter measure) |
+| Position rejection rate | Rising — a device is malfunctioning or spoofing |
+| Vehicles reporting vs vehicles on active trips | Gap — devices are offline |
+| **Next partition exists** | **Missing — ingestion will break** |
+| Geofence evaluation lag | p95 > 3 s |
+
+The partition check has days of margin by design. A missing partition means inserts have nowhere to go, and it is entirely preventable ([`INDEXING_AND_PARTITIONING.md`](../03-database/INDEXING_AND_PARTITIONING.md)).
+
+---
+
+## Security Metrics 🔴
+
+| Metric | Alert when |
+|---|---|
+| Cross-tenant access attempts | **Any** — investigate immediately |
+| Refresh-token reuse detections | Any — a token was captured |
+| Failed authentications | Spike per identifier or source |
+| Child-data reads per actor | Anomalous volume — possible insider misuse |
+| Export volume and record counts | Anomalous — possible exfiltration |
+| Platform tenant elevations | Every one, reviewed |
+| Requests with unset tenant context | Any — a code path is missing context |
+
+**Cross-tenant attempts alert at any volume.** RLS makes them return zero rows rather than data, so they are not incidents in themselves — but a single one means a code path exists that tried, and that path needs finding before it is reached with a bug that matters.
+
+---
+
+## System Metrics
+
+Standard four golden signals per deployable, plus:
+
+| Metric | Alert when |
+|---|---|
+| Database connection pool saturation | > 80% — the API's real bottleneck |
+| Redis availability | Down — tracking degrades, boarding must not |
+| Worker queue depth | Growing — notifications delaying |
+| Per-tenant request share | One tenant dominating — fairness breach |
+| Replica lag | Beyond threshold — reports going stale |
+
+---
+
+## Logging
+
+Structured JSON with correlation ID and tenant ID on every entry ([`AUDIT_AND_LOGGING.md`](../02-system-design/AUDIT_AND_LOGGING.md)).
+
+**Never logged:** passwords, tokens, OTPs, provider credentials, full child records, guardian contact details, coordinates tied to a named child. **Students appear as IDs, never names.**
+
+A CI test scans log output against a sensitive-field denylist and fails the build on a hit — this rule is otherwise violated by accident, repeatedly, in every system that merely writes it down.
+
+Retention: weeks. Logs are for diagnosis; **audit records are the evidence** and are retained per legal obligation.
+
+---
+
+## Tracing
+
+Distributed traces span the paths where latency budgets exist:
+
+```
+device → ingestion → event processing → notification → provider
+API request → use case → repository → audit write
+```
+
+Correlation IDs propagate through HTTP, domain events, and background jobs, and appear in audit records — so a parent's report can be traced from their message to the exact request and its audit trail.
+
+---
+
+## Dashboards
+
+| Dashboard | Audience | Shows |
+|---|---|---|
+| **Safety** | On-call, platform ops | Unaccounted children, unresolved reconciliations, SOS, critical delivery failures |
+| Delivery | Platform ops | Notification latency and failure by channel and tenant |
+| Tracking | Platform ops | Ingestion rate, freshness, device coverage, partition health |
+| Security | Security | Cross-tenant attempts, token reuse, access anomalies, elevations |
+| System | Engineering | Golden signals, pools, queues, replica lag |
+| Tenant | Support | Per-tenant activity and error rates |
+
+The safety dashboard is the default view for on-call.
+
+---
+
+## Alert Discipline
+
+The same rule the product applies to parents applies to engineers: **an alert stream that is noisy gets ignored, and then the real alert is invisible** ([`PERSONAS.md`](../01-product-discovery/PERSONAS.md), Anil).
+
+| Severity | Response | Examples |
+|---|---|---|
+| **Page** | Immediate | Unaccounted child, `CRITICAL` delivery failure, cross-tenant attempt, platform down |
+| **Ticket** | Next business day | Rising override rate, template gaps, replica lag |
+| **Dashboard** | Reviewed periodically | Trends, capacity |
+
+Every paging alert has a runbook and is actionable. **An alert with no action is deleted, not tuned** — a page nobody can act on trains people to ignore pages.
+
+Alerts are deduplicated the same way product alerts are (BR-ALERT-005): a continuing condition is one alert, not a stream.
+
+---
+
+## Health Checks
+
+| Endpoint | Purpose |
+|---|---|
+| `/health/liveness` | Process alive |
+| `/health/readiness` | Dependencies reachable; safe to receive traffic |
+| `/health/startup` | Migrations applied, schema version correct |
+
+**Readiness includes an RLS assertion** — if tenant isolation cannot be verified against the live database, the instance does not serve traffic. That is the correct trade for the platform's primary security control.
+
+---
+
+## Incident Response
+
+1. **Detect** — alert fires with a runbook link
+2. **Assess** — is this a safety incident or a system incident?
+3. **Contain** — a suspected compromise of guardian relationships or handover controls escalates on the **safety** path, not merely the technical one
+4. **Investigate** — correlation IDs link logs, traces, and audit records
+5. **Communicate** — affected tenants informed per the region profile's obligations
+6. **Remediate** — fix, then add the regression test
+
+**A data incident involving child location or guardian authorisation is treated as a child-safety incident.** It is not merely a privacy matter, and the escalation reflects that.
+
+===FILE_END===
+===FILE_START:documentation/AI_MASTER_PROMPT.md===
+# AI MASTER PROMPT
+
+**Document tier:** 0 — Governance
+**Priority:** 3
+**Audience:** AI contributors (and the humans reviewing their output)
+
+---
+
+## Operating Contract
+
+You are contributing to a long-term, multi-tenant, safety-critical enterprise platform. Optimise for the engineer who reads this code in three years, not for the speed of this response.
+
+### Before you answer
+
+1. Read [`INSTRUCTIONS.md`](INSTRUCTIONS.md). It outranks this document.
+2. Locate the relevant documents for the module in question. Do not answer from memory of a previous conversation.
+3. If a required document does not exist, say so and recommend creating it. Do not fill the gap with an invention.
+
+### Non-negotiable rules
+
+| Rule | Detail |
+|---|---|
+| Never invent requirements | If a business rule is not written down, ask. A plausible guess in a safety system is a defect. |
+| Never contradict a higher-tier document | Escalate the conflict instead; propose an amendment. |
+| Never place business logic in UI | See [`ENGINEERING_PRINCIPLES.md`](ENGINEERING_PRINCIPLES.md) §8. |
+| Never bypass tenant scope | Any query crossing tenants requires an explicit, permission-gated, audited path. |
+| Never produce placeholder code | No stubs, no `throw new UnsupportedOperationException()` left behind, no fake data paths. |
+| Never silently redesign | Extending an existing module is the default; redesign requires an ADR. |
+
+### Required output structure
+
+`INSTRUCTIONS.md` STEP 0 sizes every request into Trivial / Standard / Architectural before anything else happens. The structure below is the default for **Standard and Architectural** tier only.
+
+For a Standard or Architectural development request:
+
+1. **Requirement Summary** — restate what is being asked, including what you inferred
+2. **Documents Referenced** — actual paths you read
+3. **Business Rules Applied** — by ID (`BR-BOARD-004`)
+4. **Proposed Solution** — approach and rationale
+5. **Impact Analysis** — business · database · API · UI · security · testing
+6. **Implementation** — complete, production-quality code
+7. **Test Cases** — mapped to business rule IDs
+8. **Future Considerations** — what this defers, and documents needing update
+
+Omit sections only when the user explicitly asks for code alone.
+
+For a **Trivial** request (typo, one-file bug fix, config/copy change — see `INSTRUCTIONS.md` STEP 0): skip this structure. Make the fix, and give a one- or two-line explanation of what changed and why. Do not manufacture Impact Analysis or Future Considerations sections for a one-line change — that ceremony is the over-engineering failure mode STEP 0 exists to prevent.
+
+### Traceability
+
+Feature IDs (`TRK-003`) and business rule IDs (`BR-TRIP-011`) are the connective tissue of this repository. When you add a feature, add its ID to [`FEATURE_INVENTORY.md`](01-product-discovery/FEATURE_INVENTORY.md) and reference that ID in the API document, the database document, the UI document, and the tests. A feature that appears in code but not in the inventory is untracked work.
+
+### When you are uncertain
+
+State the uncertainty explicitly, proceed with everything that does not depend on it, and ask a specific question about the part that does. Do not block an entire deliverable on one open question, and do not resolve a safety-relevant ambiguity by guessing.
+
+### Documentation obligation
+
+Every change that introduces a business rule, feature, module, or architectural decision must name:
+
+- the document to update,
+- any new document required,
+- other documents affected.
+
+Documentation is the source of truth. Code that disagrees with documentation is a bug in one of the two — say which.
+
+===FILE_END===
+===FILE_START:documentation/ENGINEERING_PRINCIPLES.md===
+# ENGINEERING PRINCIPLES
+
+**Document tier:** 0 — Governance
+**Status:** Active
+**Applies to:** backend, mobile apps, admin web, infrastructure
+
+---
+
+## 1. Clean Architecture
+
+Dependencies point inward. Domain knows nothing about infrastructure.
+
+```
+┌──────────────────────────────────────────────┐
+│  Interface        controllers, DTOs, mappers │
+│  ┌────────────────────────────────────────┐  │
+│  │  Application    use cases, ports        │  │
+│  │  ┌──────────────────────────────────┐   │  │
+│  │  │  Domain   entities, value objects │   │  │
+│  │  │           domain services, rules  │   │  │
+│  │  └──────────────────────────────────┘   │  │
+│  └────────────────────────────────────────┘  │
+│  Infrastructure  JPA, messaging, providers   │
+└──────────────────────────────────────────────┘
+        Infrastructure implements Application ports
+```
+
+**Rules**
+- Domain classes import no framework annotations beyond what is unavoidable, and never import Spring, JPA, or HTTP types.
+- Application defines **ports** (interfaces). Infrastructure provides **adapters**.
+- Interface layer maps DTO ↔ domain. Domain objects are never serialised directly to clients.
+
+**Enforcement:** an ArchUnit test suite in `guardian-common` fails the build on violations. See [`documentation/06-development/ARCHITECTURE_ENFORCEMENT.md`](06-development/ARCHITECTURE_ENFORCEMENT.md).
+
+---
+
+## 2. Feature-First (Modular) Organisation
+
+Package by feature, then by layer — never the reverse.
+
+```
+com.guardian.tenancy
+  ├── domain/
+  ├── application/
+  ├── infrastructure/
+  └── interfaces/
+```
+
+Not `com.guardian.controllers`, `com.guardian.services`.
+
+A module owns its tables. Cross-module access goes through the owning module's application layer, never by reaching into another module's repository or table.
+
+---
+
+## 3. SOLID
+
+| Principle | Applied as |
+|---|---|
+| Single Responsibility | A use case class does one thing. If its name needs "And", split it. |
+| Open/Closed | New notification channels, GPS device types, and alert rules are added as new implementations, not by editing a switch. |
+| Liskov Substitution | Any `NotificationChannel` works wherever the port is used, including in tests. |
+| Interface Segregation | Narrow ports. A use case that only reads declares a read port. |
+| Dependency Inversion | Application depends on abstractions; Spring wires concretions at the edge. |
+
+---
+
+## 4. Repository Pattern
+
+- Repositories are defined as **domain-facing interfaces in the application layer** and implemented in infrastructure.
+- Repository methods speak the domain's language (`findActiveTripsForVehicle`), not the ORM's.
+- No JPA entity leaves the infrastructure layer. Persistence models and domain models are separate types with explicit mapping.
+
+**Why the separation is worth its cost here:** safety records are append-only and will outlive the current ORM choice. Coupling domain rules to JPA would make retention, partitioning, and archival changes far more expensive later.
+
+---
+
+## 5. Dependency Injection
+
+- Constructor injection only. No field injection, no `@Autowired` on fields.
+- All dependencies are explicit and final.
+- No static mutable state. No service locators.
+
+---
+
+## 6. DRY — With Judgement
+
+Business logic is defined once, in the domain. Two pieces of code that look alike but change for different reasons are **not** duplication; do not couple them.
+
+The rule that matters: **a business rule has exactly one implementation.** If a rule is checked in the UI, it is checked for user experience only — the server enforces it.
+
+---
+
+## 7. KISS
+
+Prefer the simplest design that satisfies the requirement and its stated scalability target. Do not build for hypothetical requirements. When adding indirection, name the concrete second implementation it enables — if none exists, do not add it.
+
+---
+
+## 8. Layer Separation
+
+**Never mix business logic into UI.** Flutter widgets render state and emit intents. Decisions are made in the domain layer of the app, and authoritative decisions are made on the server.
+
+**Never duplicate business logic.** A rule implemented on both client and server is a rule that will diverge.
+
+---
+
+## 9. Multi-Tenancy Is Structural
+
+- Every tenant-scoped table carries `tenant_id`.
+- PostgreSQL Row-Level Security is the enforcement boundary; application filtering is a convenience, not the control.
+- Tenant context is established once per request and propagated; it is never passed as a method parameter that a developer could forget.
+- A repository that can return cross-tenant rows must be explicitly named and permission-gated.
+
+See [`documentation/02-system-design/MULTI_TENANCY.md`](02-system-design/MULTI_TENANCY.md).
+
+---
+
+## 10. Security by Design
+
+- Authorisation decided server-side, inside tenant scope, on every request.
+- Deny by default. A new endpoint without an explicit permission fails closed.
+- Validate at the boundary; never trust client-supplied identifiers.
+- Secrets come from the environment or a secret manager, never from source.
+- Child PII is minimised, encrypted at rest and in transit, and access-audited.
+
+---
+
+## 11. Auditability
+
+Every safety-relevant state change writes an audit record: actor, action, subject, timestamp, source, and reason where applicable. Audit writes participate in the same transaction as the change. Audit records are append-only.
+
+---
+
+## 12. Error Handling
+
+- Domain failures are typed domain exceptions, not strings or booleans.
+- One global exception handler maps domain failures to the standard error envelope in [`documentation/04-api/ERROR_CATALOG.md`](04-api/ERROR_CATALOG.md).
+- Never swallow an exception. Never log and rethrow the same error at multiple layers.
+- Error messages returned to clients never leak internal detail.
+
+---
+
+## 13. Observability
+
+Structured JSON logs with correlation ID and tenant ID on every entry. No child PII in logs. Metrics for every safety-critical path. Traces across ingestion → processing → notification.
+
+---
+
+## 14. Testing
+
+| Level | Scope |
+|---|---|
+| Unit | Domain rules, in isolation, no Spring context |
+| Integration | Repository + database via Testcontainers, including RLS enforcement |
+| Contract | API request/response shape against documented schema |
+| End-to-end | Critical safety journeys only |
+
+Every business rule ID in [`BUSINESS_RULES.md`](01-product-discovery/BUSINESS_RULES.md) has at least one test referencing it by ID.
+
+---
+
+## 15. Production Quality
+
+No placeholder code. No `TODO` in merged code without a linked issue. No commented-out blocks. No pseudo-production shortcuts.
+
+If something cannot be finished properly, it is not merged — it is documented as not done.
+
+===FILE_END===
+===FILE_START:documentation/FLUTTER_APP_INSTRUCTIONS.md===
+# Flutter App Instructions
+
+**Document tier:** 1 — Implementation guidance
+**Status:** Active
+
+---
+
+## Purpose
+
+This document provides explicit, reusable instructions and a prompt-template for developers and AI agents when working on the Flutter applications in this repository (driver, parent, admin web client). It complements `INSTRUCTIONS.md` and focuses on Flutter-specific architecture, conventions, and safety rules.
+
+## Key Principles (Flutter-specific)
+
+- Keep business logic out of widgets — place it in services, providers, or domain classes.
+- Follow the repository `ENGINEERING_PRINCIPLES.md` (Clean Architecture, SOLID, DI, modular features).
+- No placeholder or pseudo-production code in UI surfaces.
+- Prefer configuration over hardcoding for environment or tenant-specific behaviour.
+- Keep widget trees thin; expose state through well-defined interfaces.
+- Run `flutter analyze` and preserve existing Flutter tests; do not add new widget tests unless requested.
+
+## Developer Checklist
+
+- Confirm which Flutter project is affected (`flutter/driver_attender_app`, `flutter/parent_app`, `admin`).
+- Identify which package(s) in `/lib` will change and whether `guardian_core` is impacted.
+- List API and database impacts, and create or update API contract docs if backend changes are required.
+- Add or update the relevant ADR when introducing architectural changes.
+- Run `flutter analyze` and ensure no new analyzer issues are introduced.
+
+## How to Use This Document (AI & Humans)
+
+First size the task using `INSTRUCTIONS.md` STEP 0. For a **Trivial** change (typo, small widget-local bug fix, copy/config change) just make the change and explain it in 1–2 lines — the checklist and plan below are for Standard/Architectural tier work.
+
+For Standard or Architectural tasks: follow the steps in `INSTRUCTIONS.md` first, then apply the Flutter checklist above. Before producing code, provide a brief plan covering:
+
+1. Requirement summary
+2. Documents referenced
+3. Business rules applied
+4. Proposed solution and architecture changes
+5. Impact analysis (API, DB, UI, security, testing)
+
+Only after that produce code following the project's standards.
+
+## Prompt Template — Adopt Repository Architecture (use when asking an AI to write Flutter code)
+
+Use the following prompt when requesting changes from an AI, replacing bracketed values:
+
+"You are an expert developer contributing to the Guardian Platform. Before writing code, read and follow `documentation/INSTRUCTIONS.md` and `documentation/FLUTTER_APP_INSTRUCTIONS.md`. The project follows Clean Architecture, SOLID, and separates UI from business logic. The target project is [PROJECT_NAME] (path: [PROJECT_PATH]).
+
+Requirement: [SHORT_REQUIREMENT].
+
+Explain the approach (architecture, modules to change), business impact, API and DB impact, UI changes, security considerations, and testing plan. Then produce the minimal, production-quality code changes required, avoiding placeholders and pseudo-production code. Ensure `flutter analyze` remains clean and do not add new widget tests unless explicitly requested."
+
+## Files to Update for New Features
+
+- Add ADRs under `documentation/00-governance/adr/` for architectural decisions.
+- Update `MODULE_MAP.md` and `FEATURE_INVENTORY.md` when features are added or changed.
+
+## When to Ask Questions
+
+If an API contract, permission, or business rule is missing or ambiguous, ask clarifying questions before coding.
+
+---
+
+End of document.
+
+## Flavor Setup (DEV / PROD)
+
+This repository provides preconfigured VS Code launch configurations that run each Flutter app with a `dev` or `prod` flavor. See `.vscode/launch.json` at the workspace root for the available configurations.
+
+How the launch configs work
+
+- Each launch configuration runs `lib/main.dart` in the target project folder with `--flavor` and a `--dart-define=ENVIRONMENT` so code can branch at runtime.
+- Example args shown in launch configurations: `--flavor dev --dart-define=ENVIRONMENT=dev`.
+
+Platform notes — additional setup required
+
+Android
+
+- Add product flavors to `android/app/build.gradle` inside each Flutter app (example):
+
+```groovy
+android {
+	flavorDimensions "env"
+	productFlavors {
+		dev {
+			dimension "env"
+			applicationIdSuffix ".dev"
+			resValue "string", "app_name", "Guardian (DEV)"
+		}
+		prod {
+			dimension "env"
+			resValue "string", "app_name", "Guardian"
+		}
+	}
+}
+```
+
+You'll also need to create appropriate environment-specific resources under `app/src/dev` and `app/src/prod` if required by your services.
+
+iOS
+
+- Create iOS schemes named `Dev` and `Prod` with corresponding build configurations such as `Debug-dev`, `Release-dev`, `Debug-prod`, and `Release-prod`. Add flavor-specific Info.plist entries or bundle identifiers as needed.
+
+Web
+
+- Web builds use `--dart-define`; the launch configs pass `ENVIRONMENT` via `--dart-define` so you can read `const String.fromEnvironment('ENVIRONMENT')` in Dart.
+
+Runtime usage examples (CLI)
+
+Run a single app in DEV from the workspace root:
+
+```bash
+cd flutter/driver_attender_app
+flutter run --flavor dev --dart-define=ENVIRONMENT=dev --dart-define=API_BASE_URL=http://localhost:8080/api/v1
+```
+
+Run all three DEV configs via VS Code: open the Run and Debug view and choose `Run All (DEV)`.
+
+If you want, I can also add example `android/app/src/dev` and `android/app/src/prod` resource folders and minimal iOS scheme instructions for each Flutter project — should I proceed?
+
+===FILE_END===
+===FILE_START:documentation/INSTRUCTIONS.md===
+# INSTRUCTIONS
+
+**Document tier:** 0 — Governance
+**Status:** Active
+**Authority:** This is the highest-priority document in the repository. Where any other document conflicts with this one, this document wins.
+
+---
+
+## Purpose
+
+This repository contains the official documentation and source code for the **Guardian Platform**, a multi-tenant student safety and transport system for schools.
+
+This document defines the process every contributor — human or AI — follows before answering a question, writing code, or changing documentation.
+
+---
+
+## STEP 0 — Size the Task First
+
+Before doing anything else, classify the request into one of three tiers. This determines how much of the process below actually applies — most requests are **not** Architectural tier, and should not be treated like one.
+
+| Tier | Examples | What applies |
+|---|---|---|
+| **Trivial** | Typo, copy/text change, log message, config value, a bug fix confined to one file or function, formatting, dependency bump | Make the change. Read only the file(s) you're touching, not the Step 1 priority list. Skip Steps 2–5 and the Response Format below — give a 1–2 line explanation of what changed and why. No new ADR, no new docs, no new tests unless one is directly required to prove the fix. |
+| **Standard** | New endpoint, new UI screen, schema change, new business rule, anything touching more than one module | Full process: Steps 1–6 and the Response Format below apply. |
+| **Architectural** | New service, new pattern, cross-cutting change, anything that changes how modules talk to each other | Full process + an ADR under `00-governance/adr/`. |
+
+Rules for using this table:
+
+- State which tier you picked in one line before proceeding (e.g. "Trivial — one-line null check in `TripService`").
+- If genuinely unsure between two tiers, pick the lower one and say so — do not default to Architectural "to be safe." Escalating the process is easy if the user asks for more; doing eight sections of write-up for a typo cannot be undone.
+- Safety-critical rules (child safety, tenant isolation, auth, audit trail — `ENGINEERING_PRINCIPLES.md` §9–§11) are never skipped regardless of tier. Tiering controls how much you *write about* and *scaffold around* a change, not whether the change itself is safe and correct.
+
+**Scope discipline, every tier:**
+
+- Touch only the files the request requires. Do not refactor, rename, reformat, reorganize, or "clean up" code, tests, or docs that weren't asked about — even if you notice something else that looks wrong. Mention it to the user instead of fixing it unprompted.
+- Do not introduce a new abstraction, interface, layer, design pattern, or dependency unless the current code cannot express the fix without it. Per KISS (`ENGINEERING_PRINCIPLES.md` §7): if you can't name the concrete second case a new layer of indirection enables, don't add the layer.
+- Do not open files, read documents, or run commands beyond what's needed to understand and verify this specific change. The Step 1 priority list is for Standard/Architectural work — reading twelve documents to fix one line is itself the failure mode this section exists to stop.
+- Do not create documentation, ADRs, or tests that weren't requested and aren't required by this tiering, the Documentation Rule, or the Current Exception below.
+- When scope is ambiguous, ask a specific question rather than doing extra work "to be safe."
+
+---
+
+## STEP 1 — Read Project Context (Standard / Architectural tier)
+
+Always identify the relevant project documents before answering.
+
+Priority order:
+
+1. `INSTRUCTIONS.md` (this document)
+2. `AI_MASTER_PROMPT.md`
+3. `PROJECT_CHARTER.md`
+4. `ENGINEERING_PRINCIPLES.md`
+5. `PRODUCT_PRINCIPLES.md`
+6. Relevant Product Discovery documents — [`documentation/01-product-discovery/`](01-product-discovery/)
+7. Relevant System Design documents — [`documentation/02-system-design/`](02-system-design/)
+8. Relevant API documents — [`documentation/04-api/`](04-api/)
+9. Relevant Database documents — [`documentation/03-database/`](03-database/)
+10. Relevant UI documents — [`documentation/05-ui/`](05-ui/)
+11. Relevant Development documents — [`documentation/06-development/`](06-development/)
+12. Flutter App instructions — [`documentation/FLUTTER_APP_INSTRUCTIONS.md`](FLUTTER_APP_INSTRUCTIONS.md)
+
+Never ignore existing documentation.
+
+---
+
+## STEP 2 — Verify Requirement
+
+Before writing code or documentation, understand the request and determine:
+
+- Which module is affected — see [`MODULE_MAP.md`](01-product-discovery/MODULE_MAP.md)
+- Which stakeholders are affected — see [`STAKEHOLDERS.md`](01-product-discovery/STAKEHOLDERS.md)
+- Which business rules apply — see [`BUSINESS_RULES.md`](01-product-discovery/BUSINESS_RULES.md)
+- Which APIs are affected
+- Which database tables are affected
+- Which UI screens are affected
+- Which permissions are affected — see [`PERMISSION_MATRIX.md`](01-product-discovery/PERMISSION_MATRIX.md)
+- Which notifications are affected — see [`NOTIFICATION_CATALOG.md`](01-product-discovery/NOTIFICATION_CATALOG.md)
+
+**If information is missing, ask questions instead of making assumptions.**
+
+---
+
+## STEP 3 — Follow Project Principles
+
+Every response must uphold:
+
+| Principle | Meaning |
+|---|---|
+| Child Safety First | When a trade-off exists, the option that better protects a child wins — even at the cost of convenience, performance, or elegance. |
+| Parent Peace of Mind | Parents receive timely, accurate, non-alarming information about their child. |
+| School Operational Efficiency | Staff workflows minimise manual effort and cognitive load. |
+| Enterprise Scalability | Designs work for one school and for a group of five hundred. |
+| Security by Design | Security is a design input, never a later addition. |
+| Configuration over Hardcoding | Behaviour that varies by tenant, region, or policy lives in configuration. |
+| Multi-Tenant Architecture | Tenant isolation is enforced structurally, not by convention. |
+| Auditability | Every safety-relevant action is attributable to an actor and a time. |
+| Maintainability | Optimise for the reader, not the writer. |
+| Production Quality | No placeholders, no pseudo-production code, no "temporary" shortcuts. |
+
+Full detail: [`PRODUCT_PRINCIPLES.md`](PRODUCT_PRINCIPLES.md) and [`ENGINEERING_PRINCIPLES.md`](ENGINEERING_PRINCIPLES.md).
+
+---
+
+## STEP 4 — Follow Engineering Standards
+
+All solutions follow: Clean Architecture, SOLID, DRY, KISS, Feature-First Architecture, Repository Pattern, Dependency Injection, Modular Design, Layer Separation, Single Responsibility.
+
+- **Never mix business logic into UI.**
+- **Never duplicate business logic.**
+
+See [`ENGINEERING_PRINCIPLES.md`](ENGINEERING_PRINCIPLES.md) and [`documentation/06-development/`](06-development/).
+
+---
+
+## STEP 5 — Before Coding
+
+Explain, in this order: overall approach, business impact, database impact, API impact, UI impact, security impact, testing impact.
+
+Then generate code.
+
+---
+
+## STEP 6 — After Coding
+
+Verify: business rules · validation · authorization · error handling · logging · audit trail · performance · security · scalability · testability.
+
+See [`documentation/06-development/DEFINITION_OF_DONE.md`](06-development/DEFINITION_OF_DONE.md), and [Current Exception — Flutter tests](#current-exception--flutter-tests) below.
+
+---
+
+## Current Exception — Flutter tests
+
+**Do not write new Flutter test classes.** Delivery is focused on the backend API and database; widget tests written against an API shape that is still settling would be rewritten rather than reused.
+
+Still applies:
+- Existing Flutter tests stay and must keep passing.
+- `flutter analyze` stays clean.
+- `guardian_core` stays tested — it is pure Dart and every client depends on it.
+- No business logic in widgets ([`ENGINEERING_PRINCIPLES.md`](ENGINEERING_PRINCIPLES.md) §8). That is what keeps the untested layer thin.
+- Backend tests remain mandatory.
+
+Revisit when the driver app starts consuming real endpoints. The 🔴 safety-critical screens — boarding, handover, SOS, reconciliation — are not covered by this and still require the coverage in [`SAFETY_CRITICAL_TEST_MATRIX.md`](07-testing/SAFETY_CRITICAL_TEST_MATRIX.md).
+
+---
+
+## Document Hierarchy
+
+```
+INSTRUCTIONS.md
+   ↓
+PROJECT_CHARTER.md
+   ↓
+Business Rules
+   ↓
+Feature Inventory
+   ↓
+System Design
+   ↓
+Database
+   ↓
+API
+   ↓
+UI
+   ↓
+Development
+   ↓
+Testing
+   ↓
+Deployment
+```
+
+If two documents conflict, **the higher-priority document wins**. Never invent requirements.
+
+Full detail: [`documentation/00-governance/DOCUMENT_HIERARCHY.md`](00-governance/DOCUMENT_HIERARCHY.md).
+
+---
+
+## Response Format
+
+This applies to **Standard and Architectural tier** requests (see STEP 0). When responding to one, cover:
+
+1. Requirement Summary
+2. Documents Referenced
+3. Business Rules Applied
+4. Proposed Solution
+5. Impact Analysis
+6. Implementation
+7. Test Cases
+8. Future Considerations
+
+Never skip these sections unless the user explicitly requests only code.
+
+**Trivial tier requests skip this format entirely** — see STEP 0. Manufacturing eight sections of write-up for a one-line fix is the failure mode STEP 0 exists to prevent, not a safer default.
+
+---
+
+## Documentation Rule
+
+Whenever a new business rule, feature, module, or architectural decision is introduced, recommend:
+
+- Which document should be updated
+- Which new document should be created, if required
+- Which existing documents may be affected
+
+Architectural decisions are recorded as ADRs in [`documentation/00-governance/adr/`](00-governance/adr/).
+
+Documentation is always the single source of truth.
+
+---
+
+## Quality Rule
+
+- Never generate placeholder code.
+- Never generate pseudo-production code.
+- Never sacrifice architecture for speed.
+- Always optimise for readability, maintainability, scalability, and long-term support.
+
+---
+
+## Project Memory
+
+This is a long-term enterprise project. Maintain consistency with all previous architectural decisions. Never redesign an existing module without explaining why. Always extend the architecture rather than break it.
+
+---
+
+## Final Rule
+
+For any question related to this project:
+
+1. Read the project instructions.
+2. Read the relevant documentation.
+3. Explain your reasoning.
+4. Follow project standards.
+5. Produce enterprise-quality output.
+6. **If documentation is missing, recommend creating or updating it before implementation.**
+
+===FILE_END===

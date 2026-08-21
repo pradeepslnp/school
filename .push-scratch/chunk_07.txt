@@ -1,0 +1,1792 @@
+===FILE_START:documentation/03-database/tables/MOD-08-trips.md===
+# MOD-08 — Trip Execution Tables
+
+**Owning module:** `com.guardian.trip` · **Rules:** BR-TRIP-*
+
+The operational centre. **Every safety event is anchored to a trip.**
+
+---
+
+## `trips`
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | `NOT NULL` → `schools` — denormalised from route for query efficiency |
+| `route_id` | `UUID` | `NOT NULL` → `routes` |
+| `vehicle_id` | `UUID` | → `vehicles`. Null until started. |
+| `service_date` | `DATE` | `NOT NULL` |
+| `direction` | `VARCHAR(16)` | `NOT NULL`, `PICKUP` / `DROP` |
+| `status` | `VARCHAR(24)` | `NOT NULL` |
+| `scheduled_start_time` | `TIME` | School time zone |
+| `started_at`, `completed_at`, `closed_at` | `TIMESTAMPTZ` | Server-recorded (BR-TRIP-008) |
+| `device_started_at` | `TIMESTAMPTZ` | Device-reported, for reference only |
+| `cancelled_at`, `cancellation_reason` | | |
+
+```sql
+CONSTRAINT uq_trips_route_date_direction
+    UNIQUE (tenant_id, route_id, service_date, direction),
+CONSTRAINT ck_trips_status CHECK (status IN (
+    'SCHEDULED','STARTED','IN_PROGRESS','COMPLETED','CLOSED','CANCELLED')),
+CONSTRAINT ck_trips_started   CHECK (status = 'SCHEDULED' OR started_at IS NOT NULL),
+CONSTRAINT ck_trips_vehicle   CHECK (status IN ('SCHEDULED','CANCELLED') OR vehicle_id IS NOT NULL),
+CONSTRAINT ck_trips_completed CHECK (status NOT IN ('COMPLETED','CLOSED') OR completed_at IS NOT NULL),
+CONSTRAINT ck_trips_closed    CHECK (status <> 'CLOSED' OR closed_at IS NOT NULL),
+CONSTRAINT ck_trips_cancelled CHECK (status <> 'CANCELLED' OR
+    (cancelled_at IS NOT NULL AND cancellation_reason IS NOT NULL))
+```
+
+### Why `school_id` is denormalised
+
+It is reachable via `route_id → routes.school_id`, but the hottest query in the platform — *active trips for a school* — runs constantly during peak windows ([`INDEXING_AND_PARTITIONING.md`](../INDEXING_AND_PARTITIONING.md)). Carrying `school_id` here avoids a join on that path. A route cannot move between schools, so the denormalisation cannot go stale.
+
+### Status is a `VARCHAR` + `CHECK`, not a native enum
+
+Per [`CONVENTIONS.md`](../CONVENTIONS.md): altering a PostgreSQL enum requires migration gymnastics, and this list will grow.
+
+The transition graph (BR-TRIP-002) is enforced in the domain, not the schema — SQL cannot express "from `STARTED` you may reach `IN_PROGRESS` or `CANCELLED` but not `CLOSED`". The check constraints above enforce what SQL *can*: that each status carries its required timestamps. **A documented deviation**, covered by a state-machine test.
+
+`ck_trips_cancelled` makes BR-TRIP-007 structural — a cancellation always carries a reason, because the guardian notification quotes it.
+
+**Indexes**
+```sql
+uq_trips_route_date_direction
+idx_trips_active (tenant_id, school_id, status) WHERE status IN ('STARTED','IN_PROGRESS')
+idx_trips_service_date (tenant_id, school_id, service_date)
+idx_trips_vehicle_active (tenant_id, vehicle_id) WHERE status IN ('STARTED','IN_PROGRESS')
+```
+
+`idx_trips_vehicle_active` serves BR-TRIP-005 — the check that a vehicle is not already on another active trip.
+
+**Rules:** BR-TRIP-001, BR-TRIP-002, BR-TRIP-005, BR-TRIP-007, BR-TRIP-008, BR-TRIP-011
+
+---
+
+## `trip_manifests` 🔴
+
+**Materialised at trip start; immutable thereafter** (BR-TRIP-003).
+
+| Column | Type | Notes |
+|---|---|---|
+| `trip_id` | `UUID` | `NOT NULL` → `trips` |
+| `student_id` | `UUID` | `NOT NULL` → `students` |
+| `expected_stop_id` | `UUID` | `NOT NULL` → `stops` |
+| `student_name_snapshot` | `VARCHAR(255)` | `NOT NULL` — name as at materialisation |
+| `sequence_no` | `INTEGER` | `NOT NULL` — stop order, denormalised |
+| `status` | `VARCHAR(24)` | `NOT NULL`, `EXPECTED` / `BOARDED` / `ALIGHTED` / `NO_SHOW` / `ABSENT` |
+
+```sql
+CONSTRAINT uq_trip_manifests UNIQUE (tenant_id, trip_id, student_id),
+CONSTRAINT ck_trip_manifests_status CHECK (
+    status IN ('EXPECTED','BOARDED','ALIGHTED','NO_SHOW','ABSENT'))
+```
+
+### Why materialise rather than derive
+
+Route assignments change. Students move stops, leave the school, get reassigned. A trip that ran three months ago must show **who was expected on it that day** — deriving from current assignments would silently rewrite history.
+
+In a system whose records are evidence after an incident, a manifest that changes retroactively is worse than useless.
+
+`student_name_snapshot` follows the same reasoning: a name correction later should not alter what a printed manifest showed the attendant that morning.
+
+**`status` is the one mutable field** — it advances as boarding events arrive. The membership of the manifest never changes; only each row's progress does. Changes to membership go to `trip_manifest_amendments`.
+
+**Indexes:** `idx_trip_manifests_trip (tenant_id, trip_id)`, `idx_trip_manifests_student (tenant_id, student_id)`
+
+---
+
+## `trip_manifest_amendments`
+
+Append-only record of post-start manifest changes (BR-TRIP-003, BR-ABS-003).
+
+| Column | Type | Notes |
+|---|---|---|
+| `trip_id` | `UUID` | `NOT NULL` → `trips` |
+| `student_id` | `UUID` | `NOT NULL` → `students` |
+| `amendment_type` | `VARCHAR(24)` | `NOT NULL`, `ADDED` / `REMOVED` / `STOP_CHANGED` |
+| `previous_stop_id`, `new_stop_id` | `UUID` | → `stops` |
+| `reason` | `TEXT` | `NOT NULL` |
+| `actor_id` | `UUID` | `NOT NULL` |
+| `occurred_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+
+```sql
+CONSTRAINT ck_amendments_type CHECK (amendment_type IN ('ADDED','REMOVED','STOP_CHANGED')),
+CONSTRAINT ck_amendments_reason CHECK (length(trim(reason)) > 0)
+```
+
+**`reason` is `NOT NULL` and non-empty.** A late absence declared after departure, or a child added at the gate, is exactly the kind of change that gets questioned afterwards. An unexplained amendment is not evidence (BR-AUD-004).
+
+---
+
+## `trip_staff`
+
+Actual crew for this trip — distinct from the standing roster in `duty_assignments`.
+
+| Column | Type | Notes |
+|---|---|---|
+| `trip_id` | `UUID` | `NOT NULL` → `trips` |
+| `staff_id` | `UUID` | `NOT NULL` → `transport_staff` |
+| `role` | `VARCHAR(24)` | `NOT NULL`, `DRIVER` / `ATTENDANT` |
+| `assigned_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+| `unassigned_at` | `TIMESTAMPTZ` | Set on mid-trip substitution |
+| `replaced_staff_id` | `UUID` | → `transport_staff` (BR-STAFF-006) |
+
+```sql
+CONSTRAINT ck_trip_staff_role CHECK (role IN ('DRIVER','ATTENDANT')),
+CONSTRAINT uq_trip_staff_active
+    UNIQUE (tenant_id, trip_id, role) WHERE unassigned_at IS NULL
+```
+
+`uq_trip_staff_active` guarantees one active driver and one active attendant per trip at any moment — a substitution must unassign before assigning.
+
+**Substitutions append rather than overwrite** (BR-STAFF-006): the outgoing row gets `unassigned_at`, the incoming row references it via `replaced_staff_id`. Both remain. After an incident, "who was driving at 3:15 PM" must be answerable.
+
+**Indexes:** `idx_trip_staff_staff_active (tenant_id, staff_id) WHERE unassigned_at IS NULL` — serves BR-STAFF-004 (one active trip per staff member).
+
+---
+
+## Lifecycle
+
+```
+SCHEDULED ──start──► STARTED ──first boarding──► IN_PROGRESS
+    │                   │                             │
+    │                   │                             ▼
+    └───────────────────┴──cancel──► CANCELLED    COMPLETED
+                                                       │
+                                          reconciliation gate 🔴
+                                          BR-TRIP-009 / BR-SAFE-001
+                                                       ▼
+                                                    CLOSED
+```
+
+**The reconciliation gate is the platform's most important invariant.** A trip cannot reach `CLOSED` while any `reconciliation_items` row is unresolved ([`MOD-09-boarding.md`](MOD-09-boarding.md)) — which means a trip with an unaccounted child stays visibly open until a human resolves it with an explicit outcome.
+
+At `STARTED`, materialisation runs (BR-TRIP-003):
+
+```
+route_student_assignments (active, this route + direction)
+   MINUS absence_declarations (this date + direction, not cancelled)
+   WHERE student enrolment_status = ACTIVE
+        ▼
+   trip_manifests rows, status = EXPECTED
+```
+
+---
+
+## Verification
+
+1. Two trips for the same route, date, and direction cannot be created.
+2. A trip cannot start when its vehicle or driver is on another active trip.
+3. A `CANCELLED` trip without a reason is rejected by constraint.
+4. Route edits after trip start do not change the materialised manifest.
+5. A manifest amendment without a reason is rejected.
+6. A trip with an unresolved reconciliation item cannot reach `CLOSED`.
+7. A mid-trip substitution leaves both crew rows, linked, with times.
+8. Invalid status transitions are rejected by the domain state machine.
+
+===FILE_END===
+===FILE_START:documentation/03-database/tables/MOD-09-boarding.md===
+# MOD-09 — Boarding & Handover Tables 🔒
+
+**Owning module:** `com.guardian.boarding` · **Rules:** BR-BOARD-*, BR-HAND-*, BR-SAFE-001
+
+**The most safety-critical tables in the platform.** All four are **append-only** — enforced by grants and triggers, not convention ([`CONVENTIONS.md`](../CONVENTIONS.md)).
+
+```sql
+GRANT INSERT, SELECT ON boarding_events, handovers,
+                        reconciliations, reconciliation_items TO guardian_app;
+-- no UPDATE, no DELETE granted
+```
+
+`reconciliations` and `reconciliation_items` are the one qualified exception: resolution fields are set once via a controlled path (see below).
+
+---
+
+## `boarding_events`
+
+An immutable record that a student boarded or alighted.
+
+| Column | Type | Notes |
+|---|---|---|
+| `trip_id` | `UUID` | `NOT NULL` → `trips` |
+| `student_id` | `UUID` | `NOT NULL` → `students` |
+| `stop_id` | `UUID` | → `stops`. Null when boarding at school. |
+| `event_type` | `VARCHAR(16)` | `NOT NULL`, `BOARD` / `ALIGHT` |
+| `verification_method` | `VARCHAR(32)` | `NOT NULL`, `QR_SCAN` / `CARD` / `MANUAL` / `OTP` / `VISUAL` |
+| `actor_id` | `UUID` | `NOT NULL` — the staff member who recorded it |
+| `actor_role` | `VARCHAR(32)` | `NOT NULL` — role **as held at the time** |
+| `client_event_id` | `UUID` | `NOT NULL`, **globally unique** — idempotency key |
+| `corrects_event_id` | `UUID` | → `boarding_events`. Set on compensating records. |
+| `is_override` | `BOOLEAN` | `NOT NULL DEFAULT false` |
+| `override_reason` | `TEXT` | Required when `is_override` |
+| `latitude`, `longitude` | `NUMERIC(9,6)` | Device position at recording |
+| `occurred_at` | `TIMESTAMPTZ` | `NOT NULL` — device clock |
+| `recorded_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` — server receipt |
+| `clock_skew_seconds` | `INTEGER` | Measured at sync |
+| `sync_state` | `VARCHAR(16)` | `NOT NULL`, `SYNCED` / `FLAGGED_FOR_REVIEW` |
+
+No soft-delete columns. No `updated_at`/`updated_by` — the row never changes.
+
+```sql
+CONSTRAINT uq_boarding_events_client_id UNIQUE (client_event_id),
+CONSTRAINT ck_boarding_events_type      CHECK (event_type IN ('BOARD','ALIGHT')),
+CONSTRAINT ck_boarding_events_override  CHECK (
+    (is_override = false) OR (override_reason IS NOT NULL AND length(trim(override_reason)) > 0)),
+CONSTRAINT ck_boarding_events_sync      CHECK (sync_state IN ('SYNCED','FLAGGED_FOR_REVIEW')),
+CONSTRAINT fk_boarding_events_corrects  FOREIGN KEY (corrects_event_id)
+    REFERENCES boarding_events(id) ON DELETE RESTRICT
+```
+
+### Why these choices
+
+**`client_event_id` is globally unique, not per-tenant.** It is a client-generated UUID and is the sole mechanism making offline sync idempotent (BR-BOARD-009, ADR-0008). A retry after a timeout must not create a second boarding record for the same child.
+
+**`ck_boarding_events_override` is a database constraint, not an application check.** BR-AUD-004 says an override without a reason is rejected; putting that in the schema means no code path — including a future one — can bypass it.
+
+**`corrects_event_id` self-reference** implements BR-BOARD-001: a mis-scan produces two rows, both true. The original stays visible. There is no update path.
+
+**Two timestamps** (ADR-0008): `occurred_at` for reporting, `recorded_at` for provenance, `clock_skew_seconds` for honesty about the device clock. Reports order by `occurred_at` (BR-BOARD-008).
+
+**Indexes**
+```sql
+idx_boarding_events_trip     (tenant_id, trip_id, occurred_at)
+idx_boarding_events_student  (tenant_id, student_id, occurred_at DESC)
+uq_boarding_events_client_id (client_event_id)
+idx_boarding_events_flagged  (tenant_id, sync_state) WHERE sync_state = 'FLAGGED_FOR_REVIEW'
+```
+
+**Rules:** BR-BOARD-001 (append-only + corrections), BR-BOARD-002 (all fields captured), BR-BOARD-008 (dual timestamps), BR-BOARD-009 (idempotency), BR-AUD-004 (override reason), BR-SAFE-005 (flagged, never discarded)
+
+---
+
+## `handovers`
+
+Verified release of a student to an adult. Completes an `ALIGHT` event.
+
+| Column | Type | Notes |
+|---|---|---|
+| `boarding_event_id` | `UUID` | `NOT NULL` **UNIQUE** → `boarding_events` |
+| `received_by_guardian_id` | `UUID` | → `guardians` |
+| `received_by_pickup_person_id` | `UUID` | → `authorised_pickup_persons` |
+| `is_self_release` | `BOOLEAN` | `NOT NULL DEFAULT false` |
+| `verification_method` | `VARCHAR(32)` | `NOT NULL`, `QR` / `OTP` / `PIN` / `VISUAL` / `OVERRIDE` |
+| `is_override` | `BOOLEAN` | `NOT NULL DEFAULT false` |
+| `override_reason` | `TEXT` | Required when `is_override` |
+| `unverified_receiver_name` | `VARCHAR(255)` | Recorded identity of an unverified receiver |
+| `unverified_receiver_phone` | `VARCHAR(32)` | |
+| `actor_id` | `UUID` | `NOT NULL` — staff who performed the handover |
+| `occurred_at` | `TIMESTAMPTZ` | `NOT NULL` |
+| `recorded_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+
+```sql
+CONSTRAINT uq_handovers_boarding_event UNIQUE (boarding_event_id),
+CONSTRAINT fk_handovers_boarding_event FOREIGN KEY (boarding_event_id)
+    REFERENCES boarding_events(id) ON DELETE RESTRICT,
+
+-- exactly one receiver path
+CONSTRAINT ck_handovers_receiver CHECK (
+    (received_by_guardian_id IS NOT NULL)::int
+  + (received_by_pickup_person_id IS NOT NULL)::int
+  + (is_self_release)::int
+  + (is_override)::int = 1),
+
+CONSTRAINT ck_handovers_override CHECK (
+    (is_override = false) OR (
+        override_reason IS NOT NULL AND length(trim(override_reason)) > 0
+        AND unverified_receiver_name IS NOT NULL))
+```
+
+### Why these choices
+
+**`boarding_event_id NOT NULL UNIQUE`** implements BR-HAND-004 structurally: a handover cannot exist without the alight record it completes, and an alight cannot be handed over twice.
+
+**`ck_handovers_receiver`** is the important one. Exactly one of four mutually exclusive paths must hold — guardian, authorised pickup person, self-release, or override. Without this constraint a row could record a handover to nobody, or to two people, and BR-HAND-001 would be enforced only by application code.
+
+**`ck_handovers_override`** requires that an override name the person the child was given to. An override recording "unverified adult" and nothing else is not evidence (BR-HAND-003).
+
+**Indexes:** `idx_handovers_tenant_occurred (tenant_id, occurred_at DESC)`, `idx_handovers_overrides (tenant_id, occurred_at DESC) WHERE is_override`
+
+**Rules:** BR-HAND-001 🔴, BR-HAND-003 🔴, BR-HAND-004, BR-HAND-005
+
+**Not modelled here:** BR-HAND-006 (custody restriction) and BR-HAND-007 (no receiver present) are *refusals* — no handover row is created. They produce `incidents` and audit records instead. **A refused handover must leave a trace somewhere**, and that place is not this table.
+
+---
+
+## `reconciliations`
+
+One per trip, created at `COMPLETED`. Gates closure (BR-SAFE-001 🔴).
+
+| Column | Type | Notes |
+|---|---|---|
+| `trip_id` | `UUID` | `NOT NULL` **UNIQUE** → `trips` |
+| `status` | `VARCHAR(24)` | `NOT NULL`, `PENDING` / `EXCEPTIONS` / `RESOLVED` |
+| `expected_count`, `boarded_count`, `alighted_count` | `INTEGER` | `NOT NULL` |
+| `started_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+| `resolved_at` | `TIMESTAMPTZ` | |
+
+```sql
+CONSTRAINT uq_reconciliations_trip UNIQUE (tenant_id, trip_id),
+CONSTRAINT ck_reconciliations_status CHECK (status IN ('PENDING','EXCEPTIONS','RESOLVED')),
+CONSTRAINT ck_reconciliations_resolved CHECK (
+    (status <> 'RESOLVED') OR (resolved_at IS NOT NULL))
+```
+
+---
+
+## `reconciliation_items`
+
+One per exception. **A trip cannot reach `CLOSED` while any item is unresolved** (BR-TRIP-009, BR-SAFE-001).
+
+| Column | Type | Notes |
+|---|---|---|
+| `reconciliation_id` | `UUID` | `NOT NULL` → `reconciliations` |
+| `student_id` | `UUID` | `NOT NULL` → `students` |
+| `exception_type` | `VARCHAR(32)` | `NOT NULL`, `UNACCOUNTED` / `NO_SHOW` / `WRONG_STOP` / `OFF_MANIFEST` |
+| `resolution_outcome` | `VARCHAR(48)` | `FOUND_ON_VEHICLE` / `RECORD_MISSED` / `NEVER_BOARDED` / `CONFIRMED_NO_SHOW` |
+| `resolution_notes` | `TEXT` | |
+| `resolved_by` | `UUID` | → `users` |
+| `resolved_at` | `TIMESTAMPTZ` | |
+
+```sql
+CONSTRAINT ck_reconciliation_items_type CHECK (
+    exception_type IN ('UNACCOUNTED','NO_SHOW','WRONG_STOP','OFF_MANIFEST')),
+CONSTRAINT ck_reconciliation_items_resolution CHECK (
+    (resolution_outcome IS NULL AND resolved_by IS NULL AND resolved_at IS NULL)
+ OR (resolution_outcome IS NOT NULL AND resolved_by IS NOT NULL AND resolved_at IS NOT NULL))
+```
+
+**`ck_reconciliation_items_resolution` is the safety invariant made structural:** a resolution is all-or-nothing. There is no way to record an outcome without recording **who** resolved it and **when**. `UNACCOUNTED` is the left-behind case — the one this entire platform exists to catch.
+
+**Indexes:** `idx_reconciliation_items_unresolved (tenant_id, reconciliation_id) WHERE resolution_outcome IS NULL`
+
+The partial index is the query that runs on every trip close.
+
+**Rules:** BR-SAFE-001 🔴, BR-SAFE-002 🔴, BR-TRIP-009
+
+---
+
+## Append-Only Enforcement
+
+Two independent controls, because the platform's evidentiary value rests on this property:
+
+```sql
+-- 1. Grants
+REVOKE UPDATE, DELETE ON boarding_events, handovers FROM guardian_app;
+
+-- 2. Trigger
+CREATE OR REPLACE FUNCTION reject_mutation() RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'Table % is append-only (BR-BOARD-001)', TG_TABLE_NAME;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_boarding_events_append_only
+    BEFORE UPDATE OR DELETE ON boarding_events
+    FOR EACH ROW EXECUTE FUNCTION reject_mutation();
+```
+
+`reconciliation_items` permits a single controlled `UPDATE` to set the resolution fields — the only mutation allowed in this module, and it is one-way (guarded by the check constraint above, which prevents a partial resolution, and by a trigger rejecting any update once `resolved_at` is set).
+
+---
+
+## Verification
+
+1. `UPDATE` or `DELETE` on `boarding_events` or `handovers` raises an exception.
+2. Duplicate `client_event_id` insert is rejected — offline replay is idempotent.
+3. An override without a reason is rejected by constraint, not just by the application.
+4. A handover with zero or two receiver paths is rejected.
+5. A handover without a `boarding_event_id` cannot be inserted.
+6. A reconciliation item cannot record an outcome without actor and time.
+7. A trip with an unresolved reconciliation item cannot transition to `CLOSED`.
+8. A correction record references its original and both remain readable.
+
+===FILE_END===
+===FILE_START:documentation/03-database/tables/MOD-10-11-tracking-alerts.md===
+# MOD-10 / MOD-11 — Tracking & Alerts Tables
+
+**Owning modules:** `com.guardian.tracking`, `com.guardian.alert` · **Implements:** ADR-0004 · **Rules:** BR-TRACK-*, BR-ALERT-*
+
+---
+
+## `position_history`
+
+**The only partitioned table** — ~99% of row volume, 0% of business logic. Full rationale in [`INDEXING_AND_PARTITIONING.md`](../INDEXING_AND_PARTITIONING.md).
+
+| Column | Type | Notes |
+|---|---|---|
+| `vehicle_id` | `UUID` | `NOT NULL` → `vehicles` |
+| `trip_id` | `UUID` | → `trips`. Null only for a brief pre-trip window. |
+| `device_id` | `UUID` | `NOT NULL` → `devices` |
+| `latitude`, `longitude` | `NUMERIC(9,6)` | `NOT NULL` |
+| `speed_mps` | `NUMERIC(6,2)` | SI units; converted at display |
+| `heading_deg` | `INTEGER` | `0`–`359` |
+| `accuracy_m` | `NUMERIC(6,2)` | |
+| `ignition_on` | `BOOLEAN` | |
+| `device_time` | `TIMESTAMPTZ` | `NOT NULL` — device clock |
+| `received_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` — **partition key** |
+
+```sql
+PRIMARY KEY (id, received_at),
+CONSTRAINT ck_position_latitude  CHECK (latitude  BETWEEN -90  AND 90),
+CONSTRAINT ck_position_longitude CHECK (longitude BETWEEN -180 AND 180),
+CONSTRAINT ck_position_heading   CHECK (heading_deg IS NULL OR heading_deg BETWEEN 0 AND 359)
+) PARTITION BY RANGE (received_at);
+```
+
+**Partitioned on `received_at`, not `device_time`.** A device buffering through a coverage gap reports hours-old positions on reconnect. Partitioning on device time would scatter writes into old partitions unpredictably — including partitions already dropped by retention.
+
+The primary key includes the partition key because PostgreSQL requires it.
+
+**No standard audit columns.** These rows are machine-generated telemetry, written once, never updated, and dropped by partition. `created_by`/`updated_at`/`version` would add bytes to billions of rows for no purpose — **a documented deviation** from [`CONVENTIONS.md`](../CONVENTIONS.md).
+
+**Validation happens before insert, not as constraints.** Plausibility checks — implied speed between fixes, timestamp sanity, accuracy floor — live in the ingestion service (BR-TRACK-004). Rejected reports are logged and dropped, never stored. The check constraints above are a last-resort guard against a coding error, not the primary control.
+
+**Per-partition indexes:** `(tenant_id, vehicle_id, received_at)`, `(tenant_id, trip_id, received_at)`
+
+**RLS must be applied to every new partition by the partition-creation job** — it is not inherited ([`RLS_POLICIES.md`](../RLS_POLICIES.md)).
+
+---
+
+## `trip_etas`
+
+| Column | Type | Notes |
+|---|---|---|
+| `trip_id` | `UUID` | `NOT NULL` → `trips` |
+| `stop_id` | `UUID` | `NOT NULL` → `stops` |
+| `estimated_arrival` | `TIMESTAMPTZ` | `NOT NULL` |
+| `calculated_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+| `confidence` | `VARCHAR(16)` | `NOT NULL`, `HIGH` / `MEDIUM` / `LOW` |
+
+```sql
+CONSTRAINT uq_trip_etas UNIQUE (tenant_id, trip_id, stop_id),
+CONSTRAINT ck_trip_etas_confidence CHECK (confidence IN ('HIGH','MEDIUM','LOW'))
+```
+
+**`calculated_at` and `confidence` are both `NOT NULL`** because BR-TRACK-006 requires an ETA to be presented as an estimate, with its calculation time. A parent who leaves the house on a stale ETA and misses the bus is a product failure — the UI cannot present freshness or uncertainty it was not given.
+
+`confidence` drops to `LOW` when routing is unavailable and straight-line fallback is used ([`INTEGRATION_ARCHITECTURE.md`](../../02-system-design/INTEGRATION_ARCHITECTURE.md)).
+
+One row per trip-stop, upserted on recalculation. History is not retained — a superseded estimate has no evidentiary value.
+
+---
+
+## `alert_rules`
+
+Tenant-configurable thresholds, bounded by platform floors (BR-CFG-003 🔴).
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | → `schools`. Null = organization-wide. |
+| `rule_type` | `VARCHAR(32)` | `NOT NULL`, `OVERSPEED` / `ROUTE_DEVIATION` / `UNSCHEDULED_STOP` / `SIGNAL_LOSS` / `TRIP_DELAY` |
+| `threshold_value` | `NUMERIC(10,2)` | `NOT NULL` — SI units |
+| `duration_seconds` | `INTEGER` | `NOT NULL DEFAULT 0` |
+| `severity` | `VARCHAR(16)` | `NOT NULL`, `LOW` / `MEDIUM` / `HIGH` / `CRITICAL` |
+| `is_enabled` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+```sql
+CONSTRAINT uq_alert_rules UNIQUE (tenant_id, school_id, rule_type),
+CONSTRAINT ck_alert_rules_type CHECK (rule_type IN (
+    'OVERSPEED','ROUTE_DEVIATION','UNSCHEDULED_STOP','SIGNAL_LOSS','TRIP_DELAY')),
+CONSTRAINT ck_alert_rules_duration CHECK (duration_seconds >= 0),
+CONSTRAINT ck_alert_rules_threshold CHECK (threshold_value > 0)
+```
+
+### `duration_seconds` is why alerts are usable
+
+Every threshold has both a **magnitude and a duration**. An instantaneous speed spike from a bad GPS fix is not overspeed; a momentary positional wander is not a route deviation. Without the duration dimension, managers receive constant false alerts and stop reading them — which makes the real one invisible ([`PERSONAS.md`](../../01-product-discovery/PERSONAS.md), Anil).
+
+Platform floors and ceilings are enforced in the configuration module (MOD-17), not here, because they vary by `rule_type` and cannot be expressed as a single check.
+
+---
+
+## `alerts`
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | `NOT NULL` → `schools` |
+| `trip_id` | `UUID` | → `trips` |
+| `vehicle_id` | `UUID` | → `vehicles` |
+| `alert_rule_id` | `UUID` | → `alert_rules` |
+| `alert_type` | `VARCHAR(32)` | `NOT NULL` |
+| `severity` | `VARCHAR(16)` | `NOT NULL` |
+| `status` | `VARCHAR(16)` | `NOT NULL`, `OPEN` / `ACKNOWLEDGED` / `RESOLVED` |
+| `detail` | `JSONB` | Measured value, threshold, position at detection |
+| `opened_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+| `last_observed_at` | `TIMESTAMPTZ` | `NOT NULL` — updated while the condition persists |
+| `acknowledged_at`, `acknowledged_by` | | |
+| `resolved_at`, `resolved_by`, `resolution_outcome` | | |
+
+```sql
+CONSTRAINT ck_alerts_status CHECK (status IN ('OPEN','ACKNOWLEDGED','RESOLVED')),
+CONSTRAINT ck_alerts_resolved CHECK (
+    status <> 'RESOLVED' OR (resolved_at IS NOT NULL AND resolution_outcome IS NOT NULL))
+```
+
+### Deduplication
+
+`last_observed_at` is what implements BR-ALERT-005. A continuing condition **updates this field on an existing open alert** rather than inserting a new row. A bus deviating for twenty minutes produces one alert observed repeatedly — not two hundred rows.
+
+Enforced by a partial unique index:
+
+```sql
+CREATE UNIQUE INDEX uq_alerts_open_condition
+    ON alerts (tenant_id, trip_id, alert_type)
+    WHERE status IN ('OPEN','ACKNOWLEDGED');
+```
+
+At most one unresolved alert per trip per type, structurally.
+
+**`ck_alerts_resolved` implements BR-ALERT-006** — alerts are not silently dropped. Closing one requires an outcome, so "resolved" always means someone decided something.
+
+**Indexes:** `idx_alerts_open (tenant_id, school_id, severity, opened_at DESC) WHERE status = 'OPEN'` — the transport manager's dashboard query, ordered by severity.
+
+---
+
+## Verification
+
+1. A single-day history query touches exactly one partition.
+2. A newly created partition has RLS enabled, forced, and policied.
+3. An implausible position report is rejected before insert and logged.
+4. Out-of-order reports do not move live position backwards; history retains all.
+5. A continuing deviation produces one alert row with an advancing `last_observed_at`.
+6. A second open alert of the same type for the same trip is rejected by the partial unique index.
+7. Resolving an alert without an outcome is rejected.
+8. An ETA row cannot be written without `calculated_at` and `confidence`.
+
+===FILE_END===
+===FILE_START:documentation/03-database/tables/MOD-12-notification.md===
+# MOD-12 — Notification Tables
+
+**Owning module:** `com.guardian.notification` · **Implements:** ADR-0005 · **Rules:** BR-NTF-*
+
+Catalog: [`NOTIFICATION_CATALOG.md`](../../01-product-discovery/NOTIFICATION_CATALOG.md) · Pipeline: [`NOTIFICATION_ARCHITECTURE.md`](../../02-system-design/NOTIFICATION_ARCHITECTURE.md)
+
+---
+
+## `notification_templates`
+
+Templates are **data, not code** (BR-CFG-005, ADR-0007).
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | → `schools`. Null = organization-wide. |
+| `catalog_id` | `VARCHAR(32)` | `NOT NULL` — e.g. `NTF-BOARD-01` |
+| `channel` | `VARCHAR(16)` | `NOT NULL`, `PUSH` / `SMS` / `EMAIL` / `IN_APP` |
+| `locale` | `VARCHAR(16)` | `NOT NULL` |
+| `title_template` | `TEXT` | Push and email |
+| `body_template` | `TEXT` | `NOT NULL` |
+| `provider_template_ref` | `VARCHAR(128)` | Pre-registered ID where the region requires it |
+| `version` | `INTEGER` | `NOT NULL DEFAULT 1` |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+```sql
+CONSTRAINT uq_notification_templates
+    UNIQUE (tenant_id, school_id, catalog_id, channel, locale),
+CONSTRAINT ck_notification_templates_channel
+    CHECK (channel IN ('PUSH','SMS','EMAIL','IN_APP'))
+```
+
+`provider_template_ref` exists because some regions require SMS templates to be pre-registered with the operator before they may be sent (ADR-0007). That registration ID is regional data, not a code concern.
+
+Resolution order (BR-NTF-002): school+locale → org+locale → org+default locale → platform default. Any fallback beyond the first step **logs a template gap** so it can be filled.
+
+**Indexes:** `idx_templates_lookup (tenant_id, catalog_id, channel, locale) WHERE is_active`
+
+---
+
+## `notification_preferences`
+
+| Column | Type | Notes |
+|---|---|---|
+| `user_id` | `UUID` | `NOT NULL` → `users` |
+| `catalog_id` | `VARCHAR(32)` | `NOT NULL` |
+| `channel` | `VARCHAR(16)` | `NOT NULL` |
+| `is_enabled` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+| `quiet_hours_start`, `quiet_hours_end` | `TIME` | School time zone |
+
+```sql
+CONSTRAINT uq_notification_preferences UNIQUE (tenant_id, user_id, catalog_id, channel)
+```
+
+**These rows have no effect on `CRITICAL` notifications** (BR-NTF-006 🔴). The suppression check is skipped entirely for that class — it is not that preferences are consulted and overridden, but that they are never read.
+
+This is deliberate: a parent can safely mute everything else *because* the events that matter always arrive ([`NOTIFICATION_CATALOG.md`](../../01-product-discovery/NOTIFICATION_CATALOG.md)).
+
+Absent rows mean "use the catalog default" — the table stores deviations, not every combination.
+
+---
+
+## `notifications`
+
+One row per notification event occurrence — **not per recipient**.
+
+| Column | Type | Notes |
+|---|---|---|
+| `catalog_id` | `VARCHAR(32)` | `NOT NULL` |
+| `priority_class` | `VARCHAR(16)` | `NOT NULL`, `CRITICAL` / `URGENT` / `STANDARD` / `INFO` |
+| `subject_student_id` | `UUID` | → `students` |
+| `trip_id` | `UUID` | → `trips` |
+| `source_event_id` | `UUID` | `NOT NULL` — domain event; idempotency key |
+| `payload` | `JSONB` | `NOT NULL` — template variables |
+| `created_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+
+```sql
+CONSTRAINT uq_notifications_source_event UNIQUE (tenant_id, source_event_id, catalog_id),
+CONSTRAINT ck_notifications_priority CHECK (
+    priority_class IN ('CRITICAL','URGENT','STANDARD','INFO'))
+```
+
+**`uq_notifications_source_event` is the idempotency guarantee.** Domain events may be redelivered — a worker restart, a retry. Without this constraint, a redelivered `StudentBoarded` event would send a second "Aarav boarded" message. The unique constraint makes the duplicate insert fail, and the handler treats that as success.
+
+---
+
+## `notification_deliveries`
+
+**One row per attempt**, per recipient, per channel. This is the table that answers *"why was I not told?"* — a question that will be asked after an incident.
+
+| Column | Type | Notes |
+|---|---|---|
+| `notification_id` | `UUID` | `NOT NULL` → `notifications` |
+| `recipient_user_id` | `UUID` | `NOT NULL` → `users` |
+| `channel` | `VARCHAR(16)` | `NOT NULL` |
+| `destination` | `VARCHAR(255)` | Masked phone or email; never the full value in logs |
+| `attempt_no` | `INTEGER` | `NOT NULL DEFAULT 1` |
+| `status` | `VARCHAR(24)` | `NOT NULL`, `PENDING` / `SENT` / `DELIVERED` / `FAILED` / `SUPPRESSED` |
+| `provider_reference` | `VARCHAR(255)` | |
+| `failure_reason` | `TEXT` | |
+| `is_fallback` | `BOOLEAN` | `NOT NULL DEFAULT false` |
+| `sent_at`, `delivered_at` | `TIMESTAMPTZ` | |
+| `created_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+
+```sql
+CONSTRAINT ck_deliveries_status CHECK (
+    status IN ('PENDING','SENT','DELIVERED','FAILED','SUPPRESSED')),
+CONSTRAINT ck_deliveries_failure CHECK (status <> 'FAILED' OR failure_reason IS NOT NULL)
+```
+
+### Why attempts are rows, not a counter
+
+A counter tells you a notification failed three times. Rows tell you *which channel failed, when, with what provider error, and whether the fallback succeeded*. After a safety incident, the difference between those two is the difference between an answer and a shrug (BR-NTF-005).
+
+**`SUPPRESSED` is distinct from `FAILED`.** A quiet-hours suppression (BR-NTF-004) is recorded so the deferred delivery is traceable — suppression defers, it never discards.
+
+**`is_fallback`** marks escalation after primary-channel failure for `CRITICAL` (BR-NTF-006), so the escalation path is auditable.
+
+**Indexes**
+```sql
+idx_deliveries_pending (tenant_id, status) WHERE status = 'PENDING'
+idx_deliveries_notification (tenant_id, notification_id)
+idx_deliveries_recipient (tenant_id, recipient_user_id, created_at DESC)
+```
+
+The last index serves the in-app notification centre (NTF-006) — the durable record a parent scrolls back through.
+
+---
+
+## Multi-Recipient Safety
+
+BR-NTF-007 🔴 — a notification sent to more than one family may not name any child.
+
+`notifications.payload` carries template variables. For catalog entries flagged multi-recipient (NTF-INC-04, NTF-TRIP-04), the rendering layer rejects any template referencing a student-name variable.
+
+Enforced in code and covered by a test asserting multi-recipient templates cannot interpolate student names — **not enforceable as a database constraint**, and documented as such.
+
+---
+
+## Verification
+
+1. A redelivered domain event produces exactly one notification row.
+2. Every dispatch attempt writes a delivery row, including failures and suppressions.
+3. A `FAILED` delivery without a reason is rejected.
+4. `CRITICAL` dispatches with preferences disabled and quiet hours active.
+5. `CRITICAL` primary-channel failure produces a fallback row with `is_fallback = true`.
+6. A quiet-hours suppression is later delivered, not dropped.
+7. Multi-recipient templates cannot reference a student name.
+8. Every catalog ID has a template in the default locale for each of its channels.
+
+===FILE_END===
+===FILE_START:documentation/03-database/tables/MOD-13-14-incidents-absence.md===
+# MOD-13 / MOD-14 — Incidents & Absence Tables
+
+**Owning modules:** `com.guardian.incident`, `com.guardian.absence` · **Rules:** BR-INC-*, BR-ABS-*
+
+`sos_alerts` and `incidents` are **append-only for creation** — they are resolved, never deleted (BR-INC-002, BR-INC-006).
+
+---
+
+## `sos_alerts` 🔴
+
+The highest-priority event class in the platform.
+
+| Column | Type | Notes |
+|---|---|---|
+| `trip_id` | `UUID` | → `trips` |
+| `vehicle_id` | `UUID` | → `vehicles` |
+| `raised_by_user_id` | `UUID` | `NOT NULL` → `users` |
+| `raised_by_role` | `VARCHAR(24)` | `NOT NULL` — role **as held at the time** |
+| `source` | `VARCHAR(24)` | `NOT NULL`, `DRIVER_APP` / `ATTENDANT_APP` / `DEVICE_BUTTON` |
+| `latitude`, `longitude` | `NUMERIC(9,6)` | Position at the moment of raising |
+| `status` | `VARCHAR(24)` | `NOT NULL`, `RAISED` / `ACKNOWLEDGED` / `RESOLVED` |
+| `raised_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+| `acknowledged_at`, `acknowledged_by` | | |
+| `resolved_at`, `resolved_by` | | |
+| `resolution_outcome` | `VARCHAR(48)` | `GENUINE_EMERGENCY` / `FALSE_ALARM` / `ACCIDENTAL` / `RESOLVED_ON_SITE` |
+| `resolution_notes` | `TEXT` | |
+
+```sql
+CONSTRAINT ck_sos_status CHECK (status IN ('RAISED','ACKNOWLEDGED','RESOLVED')),
+CONSTRAINT ck_sos_acknowledged CHECK (
+    status = 'RAISED' OR (acknowledged_at IS NOT NULL AND acknowledged_by IS NOT NULL)),
+CONSTRAINT ck_sos_resolved CHECK (
+    status <> 'RESOLVED' OR (resolved_at IS NOT NULL AND resolved_by IS NOT NULL
+                             AND resolution_outcome IS NOT NULL))
+```
+
+### An SOS is never deleted
+
+`FALSE_ALARM` is a *resolution outcome*, not a delete (BR-INC-006). This matters: a driver whose SOS button is accidentally pressed weekly is a pattern worth seeing — a faulty device, or a button placed where it catches a sleeve. Deleting false alarms would erase exactly the data that reveals the problem.
+
+`ck_sos_resolved` makes closure require an actor, a time, and an outcome — all three, or none.
+
+`raised_by_role` is snapshotted because roles change; the record must show the role held when the alert was raised.
+
+**Indexes:** `idx_sos_open (tenant_id, status, raised_at DESC) WHERE status <> 'RESOLVED'`
+
+**Rules:** BR-INC-001 🔴, BR-INC-002, BR-INC-006, BR-SAFE-004 🔴
+
+---
+
+## `incidents`
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | `NOT NULL` → `schools` |
+| `trip_id` | `UUID` | → `trips` |
+| `student_id` | `UUID` | → `students`. Set when a specific child is affected. |
+| `vehicle_id` | `UUID` | → `vehicles` |
+| `incident_type` | `VARCHAR(48)` | `NOT NULL`, `ACCIDENT` / `BREAKDOWN` / `MEDICAL` / `BEHAVIOURAL` / `HANDOVER_REFUSED` / `NO_RECEIVER` / `OTHER` |
+| `severity` | `VARCHAR(16)` | `NOT NULL`, `LOW` / `MEDIUM` / `HIGH` / `CRITICAL` |
+| `status` | `VARCHAR(16)` | `NOT NULL`, `OPEN` / `IN_PROGRESS` / `RESOLVED` |
+| `description` | `TEXT` | `NOT NULL` |
+| `reported_by_user_id` | `UUID` | `NOT NULL` → `users` |
+| `occurred_at` | `TIMESTAMPTZ` | `NOT NULL` |
+| `resolved_at`, `resolved_by` | | |
+| `resolution_outcome` | `VARCHAR(64)` | |
+
+```sql
+CONSTRAINT ck_incidents_severity CHECK (severity IN ('LOW','MEDIUM','HIGH','CRITICAL')),
+CONSTRAINT ck_incidents_status   CHECK (status IN ('OPEN','IN_PROGRESS','RESOLVED')),
+CONSTRAINT ck_incidents_resolved CHECK (
+    status <> 'RESOLVED' OR (resolved_at IS NOT NULL AND resolved_by IS NOT NULL
+                             AND resolution_outcome IS NOT NULL))
+```
+
+### `HANDOVER_REFUSED` and `NO_RECEIVER`
+
+These two types carry the traces of the handover refusals that create **no** `handovers` row ([`MOD-09-boarding.md`](MOD-09-boarding.md)):
+
+- **`HANDOVER_REFUSED`** — a custody-restricted person attempted collection (BR-HAND-006 🔴).
+- **`NO_RECEIVER`** — nobody was present; the child stayed on the vehicle (BR-HAND-007 🔴).
+
+A refused handover must leave a record somewhere. Because the handover did not happen, that place is here.
+
+**Notification audience follows severity** (BR-INC-004): a `student_id`-scoped incident notifies that child's guardians; a trip-scoped incident notifies all guardians on the manifest **without naming any child** (BR-NTF-007 🔴).
+
+**Indexes:** `idx_incidents_open (tenant_id, school_id, severity, occurred_at DESC) WHERE status <> 'RESOLVED'`, `idx_incidents_student (tenant_id, student_id, occurred_at DESC)`
+
+---
+
+## `incident_escalations`
+
+The escalation trail (BR-SAFE-006 🔴). Append-only.
+
+| Column | Type | Notes |
+|---|---|---|
+| `incident_id` | `UUID` | → `incidents` |
+| `sos_alert_id` | `UUID` | → `sos_alerts` |
+| `level` | `INTEGER` | `NOT NULL`, `>= 1` |
+| `notified_role` | `VARCHAR(32)` | `NOT NULL` |
+| `notified_user_id` | `UUID` | → `users` |
+| `notified_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+| `acknowledged_at` | `TIMESTAMPTZ` | |
+
+```sql
+CONSTRAINT ck_escalations_subject CHECK (
+    (incident_id IS NOT NULL)::int + (sos_alert_id IS NOT NULL)::int = 1),
+CONSTRAINT ck_escalations_level CHECK (level >= 1)
+```
+
+Each row is one notification attempt at one level. Unacknowledged, the escalation job inserts the next level and repeats **until acknowledged** (BR-SAFE-006). The full chain remains visible afterwards — who was told, when, and who finally responded.
+
+**Indexes:** `idx_escalations_unack (tenant_id, notified_at) WHERE acknowledged_at IS NULL` — drives the escalation job.
+
+---
+
+## `absence_declarations`
+
+| Column | Type | Notes |
+|---|---|---|
+| `student_id` | `UUID` | `NOT NULL` → `students` |
+| `declared_by_guardian_id` | `UUID` | → `guardians`. Null when declared by staff. |
+| `declared_by_user_id` | `UUID` | `NOT NULL` → `users` |
+| `absence_date` | `DATE` | `NOT NULL` |
+| `direction` | `VARCHAR(16)` | `PICKUP` / `DROP` / null = both |
+| `reason` | `VARCHAR(255)` | Optional — parents are not required to explain |
+| `is_cancelled` | `BOOLEAN` | `NOT NULL DEFAULT false` |
+| `cancelled_at`, `cancelled_by` | | |
+| `created_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+
+```sql
+CONSTRAINT uq_absence UNIQUE (tenant_id, student_id, absence_date, direction),
+CONSTRAINT ck_absence_direction CHECK (direction IS NULL OR direction IN ('PICKUP','DROP'))
+```
+
+**`reason` is deliberately optional.** Requiring a parent to justify their child's absence is friction with no safety value — the platform needs to know the child is not travelling, not why.
+
+Cancellation is a flag, not a delete (BR-ABS-004) — a declaration made and withdrawn is part of the record when a no-show is later questioned.
+
+**Interaction with the manifest:**
+
+| Timing | Effect |
+|---|---|
+| Before trip start | Student excluded from materialisation (BR-ABS-002); no-show alerts suppressed (BR-ABS-005) |
+| After trip start | Manifest is immutable (BR-TRIP-003) — recorded as an amendment instead (BR-ABS-003) |
+| Student boards despite absence | Alert raised, absence removed, **both facts recorded** (BR-BOARD-007) |
+
+**Indexes:** `idx_absence_lookup (tenant_id, absence_date, student_id) WHERE NOT is_cancelled` — read at every trip materialisation.
+
+---
+
+## Verification
+
+1. An SOS cannot be deleted; `FALSE_ALARM` is recorded as an outcome.
+2. Resolving an SOS or incident without actor, time, and outcome is rejected.
+3. An unacknowledged escalation advances a level and inserts a new row.
+4. A custody-restricted collection attempt creates a `HANDOVER_REFUSED` incident and no handover row.
+5. A no-receiver event creates a `NO_RECEIVER` incident and the child remains on the manifest as boarded.
+6. A trip-scoped incident notification names no student.
+7. An absence before trip start excludes the student from the manifest.
+8. An absence after trip start creates an amendment and leaves the manifest unchanged.
+9. A student boarding despite a declared absence raises an alert and records both facts.
+
+===FILE_END===
+===FILE_START:documentation/03-database/tables/MOD-16-17-audit-config.md===
+# MOD-16 / MOD-17 — Audit & Configuration Tables
+
+**Owning modules:** `com.guardian.audit`, `com.guardian.config` · **Implements:** ADR-0007 · **Rules:** BR-AUD-*, BR-CFG-*
+
+---
+
+# MOD-16 — Audit 🔒
+
+Strictly append-only. See [`AUDIT_AND_LOGGING.md`](../../02-system-design/AUDIT_AND_LOGGING.md).
+
+## `audit_records`
+
+| Column | Type | Notes |
+|---|---|---|
+| `actor_id` | `UUID` | Null for system actions |
+| `actor_type` | `VARCHAR(24)` | `NOT NULL`, `USER` / `SYSTEM` / `DEVICE` / `PLATFORM_OPERATOR` |
+| `actor_role` | `VARCHAR(32)` | Role **as held at the time** |
+| `action` | `VARCHAR(64)` | `NOT NULL` — canonical verb, e.g. `HANDOVER_OVERRIDE` |
+| `subject_type` | `VARCHAR(48)` | `NOT NULL` |
+| `subject_id` | `UUID` | `NOT NULL` |
+| `reason` | `TEXT` | **Required for overrides** (BR-AUD-004) |
+| `source` | `VARCHAR(24)` | `NOT NULL`, `API` / `DEVICE` / `JOB` / `PLATFORM_OPS` |
+| `correlation_id` | `UUID` | `NOT NULL` |
+| `before_values`, `after_values` | `JSONB` | Changed fields only, sensitive values redacted |
+| `occurred_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+
+No `updated_at`, no `version`, no soft delete. The row never changes.
+
+```sql
+CONSTRAINT ck_audit_actor_type CHECK (
+    actor_type IN ('USER','SYSTEM','DEVICE','PLATFORM_OPERATOR')),
+CONSTRAINT ck_audit_source CHECK (source IN ('API','DEVICE','JOB','PLATFORM_OPS'))
+```
+
+### No foreign keys to subjects — deliberately
+
+`subject_type` + `subject_id` is a polymorphic reference with **no FK constraint**. This is intentional: a subject may be archived or its table restructured while the audit trail must remain readable and intact. An FK would let a subject's lifecycle constrain its own audit record — precisely backwards.
+
+### Append-only enforcement
+
+Two independent controls, because the platform's evidentiary value rests on this:
+
+```sql
+GRANT INSERT, SELECT ON audit_records TO guardian_app;
+-- no UPDATE, no DELETE
+
+CREATE TRIGGER trg_audit_records_append_only
+    BEFORE UPDATE OR DELETE ON audit_records
+    FOR EACH ROW EXECUTE FUNCTION reject_mutation();
+```
+
+### The transactional guarantee
+
+**The audit write shares the transaction of the change it records** (BR-AUD-002 🔴). If the audit write fails, the business change rolls back. The platform refuses an operation rather than performing it unrecorded.
+
+This is the main reason the platform is a modular monolith with a shared database ([`ARCHITECTURE_OVERVIEW.md`](../../02-system-design/ARCHITECTURE_OVERVIEW.md)) — across service boundaries the guarantee would need a distributed transaction, or would be quietly dropped.
+
+**Indexes**
+```sql
+idx_audit_subject     (tenant_id, subject_type, subject_id, occurred_at DESC)
+idx_audit_actor       (tenant_id, actor_id, occurred_at DESC)
+idx_audit_correlation (correlation_id)
+idx_audit_overrides   (tenant_id, action, occurred_at DESC) WHERE reason IS NOT NULL
+```
+
+`idx_audit_overrides` serves the override register (AUD-003) — the report a school reviews when a parent questions a handover.
+
+---
+
+## `data_access_records`
+
+Separate from `audit_records`: higher volume, different retention, different indexing (BR-IAM-012 🔴).
+
+| Column | Type | Notes |
+|---|---|---|
+| `actor_id` | `UUID` | `NOT NULL` |
+| `actor_role` | `VARCHAR(32)` | `NOT NULL` |
+| `student_id` | `UUID` | `NOT NULL` |
+| `access_type` | `VARCHAR(24)` | `NOT NULL`, `VIEW` / `LIST` / `EXPORT` / `REPORT` |
+| `purpose` | `VARCHAR(64)` | The operation that caused the read |
+| `record_count` | `INTEGER` | Set for `LIST` and `EXPORT` (BR-RPT-002) |
+| `correlation_id` | `UUID` | `NOT NULL` |
+| `occurred_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` |
+
+Records every read of child personal data **by a non-guardian**. Guardians reading their own children are excluded — that is the expected case and would drown the signal.
+
+**This is what makes insider misuse detectable rather than merely prohibited.** A staff member browsing children outside their operational need produces a visible pattern.
+
+**Indexes:** `idx_data_access_student (tenant_id, student_id, occurred_at DESC)`, `idx_data_access_actor (tenant_id, actor_id, occurred_at DESC)`
+
+---
+
+# MOD-17 — Configuration
+
+Implements ADR-0007: **no country, document type, or credential type is hardcoded.**
+
+## `region_profiles`
+
+Platform reference data — no `tenant_id`, no RLS.
+
+| Column | Type | Notes |
+|---|---|---|
+| `code` | `VARCHAR(32)` | `NOT NULL` **UNIQUE** |
+| `country_code` | `VARCHAR(8)` | `NOT NULL` — ISO 3166 |
+| `default_locale` | `VARCHAR(16)` | `NOT NULL` |
+| `phone_format_pattern` | `VARCHAR(128)` | `NOT NULL` |
+| `address_format` | `JSONB` | `NOT NULL` — field order and requirements |
+| `required_vehicle_documents` | `JSONB` | `NOT NULL` — document types and mandatory flags |
+| `required_staff_credentials` | `JSONB` | `NOT NULL` |
+| `default_retention_days` | `JSONB` | `NOT NULL` — per data class |
+
+**Onboarding a new country is inserting a row here.** No deployment, no code change, no schema change — the test ADR-0007 sets for itself.
+
+`JSONB` is appropriate here: these structures are read whole at tenant onboarding to seed defaults, never queried by internal field, and no business rule depends on a value inside them.
+
+---
+
+## `configuration_definitions`
+
+The typed registry (BR-CFG-001). Platform reference data.
+
+| Column | Type | Notes |
+|---|---|---|
+| `config_key` | `VARCHAR(128)` | `NOT NULL` **UNIQUE** |
+| `value_type` | `VARCHAR(24)` | `NOT NULL`, `INTEGER` / `DECIMAL` / `BOOLEAN` / `STRING` / `DURATION` / `ENUM` |
+| `default_value` | `TEXT` | `NOT NULL` |
+| `min_value`, `max_value` | `NUMERIC` | **Platform floor and ceiling** |
+| `allowed_values` | `JSONB` | For `ENUM` |
+| `scope_level` | `VARCHAR(16)` | `NOT NULL`, `ORG` / `SCHOOL` — lowest level permitted |
+| `is_safety_critical` | `BOOLEAN` | `NOT NULL DEFAULT false` |
+
+```sql
+CONSTRAINT uq_config_definitions_key UNIQUE (config_key),
+CONSTRAINT ck_config_definitions_type CHECK (value_type IN (
+    'INTEGER','DECIMAL','BOOLEAN','STRING','DURATION','ENUM'))
+```
+
+### `min_value` / `max_value` implement BR-CFG-003 🔴
+
+Safety-critical configuration is bounded by platform floors and ceilings a tenant **cannot exceed** (BR-SAFE-007 🔴). A tenant may tighten a safety threshold; they may not loosen it past the floor.
+
+`is_safety_critical` additionally gates the change behind `PERM-CONFIG-SAFETY-EDIT` and requires review.
+
+This is where "Configuration over Hardcoding" yields to "Child Safety First" ([`PRODUCT_PRINCIPLES.md`](../../PRODUCT_PRINCIPLES.md) resolution order). A tenant may configure *which* handover verification methods are acceptable; they cannot configure verification away (BR-HAND-001 🔴).
+
+---
+
+## `configuration_values`
+
+Tenant-scoped overrides. Tables store **deviations, not every key**.
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | → `schools`. Null = organization-wide. |
+| `config_key` | `VARCHAR(128)` | `NOT NULL` → `configuration_definitions` |
+| `config_value` | `TEXT` | `NOT NULL` |
+
+```sql
+CONSTRAINT uq_config_values UNIQUE (tenant_id, school_id, config_key)
+```
+
+Resolution order (BR-CFG-002): school → organization → region profile → platform default.
+
+Every change is audited with old and new values (BR-CFG-004). Type, range, and floor validation happen on write, not on read — misconfiguration surfaces when it is made, not during a school run.
+
+---
+
+## `reference_data` and `localisation_resources`
+
+Platform reference data, no RLS.
+
+**`reference_data`** — `category` + `code` + `label_key`, valid values for document types, credential types, relationship types, incident types. Extended by migration, never by code enum.
+
+**`localisation_resources`** — `locale` + `resource_key` + `value`. **All user-facing text** (BR-CFG-005). No string destined for a user is written inline in code.
+
+---
+
+## Verification
+
+1. `UPDATE` or `DELETE` on `audit_records` raises an exception.
+2. A failing audit write rolls back the business change.
+3. An override submitted without a reason is rejected.
+4. Every child-data read by a non-guardian writes a `data_access_records` row.
+5. Every export writes a record including `record_count`.
+6. A configuration value outside its definition's min/max is rejected on write.
+7. A safety-critical configuration change without `PERM-CONFIG-SAFETY-EDIT` is refused.
+8. Onboarding a tenant under a second region profile applies different phone validation, vehicle documents, and date formatting **with no code path selecting on country**.
+9. No controller or domain class returns a user-facing string literal.
+
+===FILE_END===
+===FILE_START:documentation/03-database/tables/README.md===
+# Table Specifications
+
+**Document tier:** 3 — Database
+
+One document per module. **Standard columns, types, naming, and RLS are defined in [`CONVENTIONS.md`](../CONVENTIONS.md) and are not repeated here** — each specification shows only the columns specific to that table.
+
+| Module | Document |
+|---|---|
+| MOD-01 Tenancy | [`MOD-01-tenancy.md`](MOD-01-tenancy.md) |
+| MOD-02 Identity & Access | [`MOD-02-identity.md`](MOD-02-identity.md) |
+| MOD-03 / 04 Students & Guardians | [`MOD-03-04-students-guardians.md`](MOD-03-04-students-guardians.md) |
+| MOD-05 / 06 Fleet & Staff | [`MOD-05-06-fleet-staff.md`](MOD-05-06-fleet-staff.md) |
+| MOD-07 Routes & Stops | [`MOD-07-routes.md`](MOD-07-routes.md) |
+| MOD-08 Trip Execution | [`MOD-08-trips.md`](MOD-08-trips.md) |
+| MOD-09 Boarding & Handover 🔒 | [`MOD-09-boarding.md`](MOD-09-boarding.md) |
+| MOD-10 / 11 Tracking & Alerts | [`MOD-10-11-tracking-alerts.md`](MOD-10-11-tracking-alerts.md) |
+| MOD-12 Notification | [`MOD-12-notification.md`](MOD-12-notification.md) |
+| MOD-13 / 14 Incidents & Absence 🔒 | [`MOD-13-14-incidents-absence.md`](MOD-13-14-incidents-absence.md) |
+| MOD-16 / 17 Audit & Configuration 🔒 | [`MOD-16-17-audit-config.md`](MOD-16-17-audit-config.md) |
+
+🔒 contains append-only tables.
+
+MOD-15 Reporting owns no tables.
+
+## Reading a Specification
+
+Each table lists: owning module, purpose, module-specific columns, constraints, indexes, and the business rules it enforces structurally.
+
+**"Enforced structurally" means the database rejects the violation** — not that the application checks it. Where a rule appears in a table's rule list, there is a constraint, a unique index, or a grant behind it, and a test proving it.
+
+===FILE_END===
+===FILE_START:documentation/04-api/API_STANDARDS.md===
+# API STANDARDS
+
+**Document tier:** 4 — API
+**Status:** Active
+
+Binding on every endpoint. Deviations require an ADR.
+
+---
+
+## Base
+
+```
+https://api.guardianplatform.io/api/v1
+```
+
+Versioning in the path. `v1` is stable: no breaking change without `v2`. Additive changes — new optional fields, new endpoints — are not breaking and ship within `v1`.
+
+All requests and responses are `application/json; charset=utf-8`. TLS 1.2+ everywhere, including device ingestion.
+
+---
+
+## Resource Naming
+
+| Rule | Example |
+|---|---|
+| Plural nouns | `/students`, `/trips` |
+| Kebab-case multi-word | `/boarding-events`, `/authorised-pickup-persons` |
+| Nesting only for ownership | `/routes/{routeId}/stops` |
+| Max two levels of nesting | `/trips/{tripId}/boarding-events` |
+| Actions as sub-resources, not verbs | `POST /trips/{tripId}/start` |
+
+Verbs in paths are permitted **only** for state transitions that are not CRUD: `start`, `end`, `close`, `cancel`, `acknowledge`, `resolve`, `revoke`. `POST /trips/{id}/start` is clearer and safer than `PATCH /trips/{id}` with a status field, because it makes the transition explicit and separately permissionable.
+
+---
+
+## Methods
+
+| Method | Use | Idempotent |
+|---|---|---|
+| `GET` | Read | Yes |
+| `POST` | Create, or a state transition | No — unless an idempotency key is supplied |
+| `PUT` | Full replace | Yes |
+| `PATCH` | Partial update | No |
+| `DELETE` | Deactivate (soft) | Yes |
+
+**`DELETE` never hard-deletes.** It sets `is_active = false`. Safety and audit records have no `DELETE` endpoint at all ([`CONVENTIONS.md`](../03-database/CONVENTIONS.md)).
+
+---
+
+## Standard Response Envelope
+
+### Single resource
+
+```json
+{
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "student",
+    "attributes": { }
+  },
+  "meta": { "requestId": "…", "timestamp": "2026-08-03T07:42:11Z" }
+}
+```
+
+### Collection
+
+```json
+{
+  "data": [ ],
+  "meta": {
+    "requestId": "…",
+    "timestamp": "2026-08-03T07:42:11Z",
+    "pagination": {
+      "cursor": "eyJpZCI6…",
+      "nextCursor": "eyJpZCI6…",
+      "limit": 50,
+      "hasMore": true
+    }
+  }
+}
+```
+
+### Error
+
+```json
+{
+  "error": {
+    "code": "TRIP_VEHICLE_DOCUMENT_EXPIRED",
+    "messageKey": "error.trip.vehicle_document_expired",
+    "message": "Vehicle document has expired and the trip cannot start.",
+    "details": [
+      { "field": "vehicleId", "issue": "Fitness certificate expired on 2026-07-15" }
+    ],
+    "businessRule": "BR-FLEET-002",
+    "requestId": "…",
+    "timestamp": "2026-08-03T07:42:11Z"
+  }
+}
+```
+
+**`businessRule` is deliberate.** When an operation is refused by a rule, the response names the rule. A driver refused at 6:30 AM needs to know *which* check failed ([`MOD-05-06-fleet-staff.md`](../03-database/tables/MOD-05-06-fleet-staff.md)), and a support engineer needs to find the rule without reading source.
+
+**`messageKey` is the localised resource key** (BR-CFG-005). `message` is a fallback in the tenant's default locale, never the authority for display.
+
+Full list: [`ERROR_CATALOG.md`](ERROR_CATALOG.md).
+
+---
+
+## Field Conventions
+
+| Concern | Rule |
+|---|---|
+| Case | `camelCase` in JSON, `snake_case` in the database ([`GLOSSARY.md`](../00-governance/GLOSSARY.md)) |
+| Identifiers | UUID strings |
+| Timestamps | ISO 8601 UTC with `Z` — `2026-08-03T07:42:11Z` |
+| Dates | `YYYY-MM-DD` |
+| Times of day | `HH:mm` — school-local, always with the school's timezone in context |
+| Enums | `SCREAMING_SNAKE_CASE` |
+| Money | String decimal, never float |
+| Distance, speed | SI — metres, m/s. Converted at display, never in transit. |
+| Absent values | Omit the field or send `null`; never send `""` or `0` as "unknown" |
+
+**All timestamps are UTC on the wire.** Clients render in the school's timezone (BR-CFG-006). A local time on the wire without a zone is the commonest source of off-by-hours bugs in a multi-region platform.
+
+---
+
+## Pagination
+
+**Cursor-based**, not offset.
+
+```
+GET /students?limit=50&cursor=eyJpZCI6…
+```
+
+Offset pagination skips or repeats rows when the underlying set changes between pages — unacceptable when the caller is exporting a student register. Cursors are opaque, encode the sort key, and are stable.
+
+Default `limit` 50, maximum 200.
+
+---
+
+## Filtering and Sorting
+
+```
+GET /trips?schoolId=…&serviceDate=2026-08-03&status=IN_PROGRESS&sort=-startedAt
+```
+
+Filters are explicit query parameters — no generic query language. `sort` takes a field name, `-` prefix for descending. Only documented sortable fields are accepted; an undocumented one returns `400`, never an unindexed scan.
+
+---
+
+## Idempotency
+
+Required for `POST` endpoints that create safety records.
+
+```
+Idempotency-Key: 7f3a9c21-4b6e-4d8f-9a1c-2e5b8d4f6a03
+```
+
+For boarding events the key is `clientEventId` in the body, which is also the database's uniqueness guarantee (BR-BOARD-009, ADR-0008). A retry after a timeout returns the original result with `200`, not a duplicate record with `201`.
+
+**This is not optional for the driver app.** Offline sync retries by design; without idempotency a child would be recorded as boarding twice.
+
+---
+
+## Authentication
+
+```
+Authorization: Bearer <access token>
+```
+
+15-minute access tokens, rotating single-use refresh tokens (ADR-0006). See [`AUTHENTICATION_API.md`](AUTHENTICATION_API.md).
+
+Every endpoint declares a permission from [`PERMISSION_MATRIX.md`](../01-product-discovery/PERMISSION_MATRIX.md). An endpoint without one is unreachable (BR-IAM-002) and fails an architecture test.
+
+### `403` vs `404`
+
+An authenticated user requesting a resource outside their scope receives **`403`**, not `404`.
+
+Returning `404` to hide existence is a common pattern, but here the tenant boundary is already enforced by RLS — cross-tenant resources are genuinely invisible and genuinely return `404`. Within a tenant, `403` is the honest answer and avoids a probing oracle where `404` would mean two different things.
+
+---
+
+## Rate Limiting
+
+Per user, per IP, per tenant. Stricter on authentication and OTP. Ingestion limited per device.
+
+```
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 987
+X-RateLimit-Reset: 1754208000
+Retry-After: 30          (on 429)
+```
+
+---
+
+## Status Codes
+
+| Code | Use |
+|---|---|
+| `200` | Success |
+| `201` | Created — `Location` header set |
+| `202` | Accepted — queued (bulk import, export) |
+| `204` | Success, no body |
+| `400` | Malformed or invalid input |
+| `401` | Missing or invalid credentials |
+| `403` | Authenticated but not permitted, or out of scope |
+| `404` | Not found, or not visible at all |
+| `409` | Conflict — duplicate, or invalid state transition |
+| `422` | Well-formed but violates a business rule — **`businessRule` is set** |
+| `429` | Rate limited |
+| `500` | Server error — never leaks internal detail |
+| `503` | Dependency unavailable |
+
+**`400` vs `422` matters here.** `400` means the request was malformed. `422` means it was understood and refused by a business rule — a trip that cannot start because a document expired is `422` with `businessRule: "BR-FLEET-002"`.
+
+---
+
+## Validation
+
+Validated at the boundary; a client-supplied identifier is never trusted. All fields in `details[]` on failure, not just the first — a bulk form should not require six round trips.
+
+---
+
+## WebSocket
+
+```
+wss://api.guardianplatform.io/ws
+```
+
+STOMP over WebSocket. JWT at connect. **Subscription authorisation is checked at subscribe time, per topic** — see [`REALTIME_TRACKING_DESIGN.md`](../02-system-design/REALTIME_TRACKING_DESIGN.md).
+
+```
+/topic/trip/{tripId}/position
+/topic/trip/{tripId}/eta
+/topic/school/{schoolId}/alerts
+/user/queue/notifications
+```
+
+Subscriptions close when a trip reaches `COMPLETED` (BR-TRACK-001).
+
+---
+
+## Documentation
+
+Every endpoint is documented with: its feature ID, its permission, the business rules it enforces, request and response schemas, and error cases.
+
+OpenAPI 3.1 is generated from annotations and validated in CI against the documented contract — the specification cannot drift from the implementation without failing the build.
+
+---
+
+## Verification
+
+1. Every endpoint declares a permission that exists in the permission matrix.
+2. Every endpoint references a feature ID from [`FEATURE_INVENTORY.md`](../01-product-discovery/FEATURE_INVENTORY.md).
+3. Every error response conforms to the envelope and its code exists in the error catalog.
+4. Idempotent replay of a boarding event returns the original record, not a duplicate.
+5. Cross-scope requests return `403`; cross-tenant return `404`.
+6. All timestamps in responses are UTC with `Z`.
+7. Undocumented sort fields return `400`.
+8. Generated OpenAPI matches the documented contract.
+
+===FILE_END===
+===FILE_START:documentation/04-api/AUTHENTICATION_API.md===
+# AUTHENTICATION API
+
+**Document tier:** 4 — API
+**Implements:** ADR-0006 · **Features:** IAM-001 … IAM-004, IAM-009 · **Rules:** BR-IAM-*
+
+Base path `/api/v1/auth`. These endpoints are **unauthenticated** except where noted, and are the most heavily rate-limited in the platform.
+
+---
+
+## `POST /auth/login` — Staff login
+
+**Feature:** IAM-001 · **Permission:** none (public) · **Rules:** BR-IAM-001, BR-IAM-011
+
+```json
+{ "email": "anil@school.example", "password": "…", "clientType": "ADMIN_WEB" }
+```
+
+**`200`**
+```json
+{
+  "data": {
+    "accessToken": "eyJhbGciOiJSUzI1NiIs…",
+    "refreshToken": "opaque-random-string",
+    "expiresIn": 900,
+    "tokenType": "Bearer",
+    "user": {
+      "id": "…", "firstName": "Anil", "lastName": "Kumar",
+      "preferredLocale": "en-IN",
+      "roles": ["TRANSPORT_MANAGER"],
+      "scopes": [{ "level": "SCHOOL", "refId": "…" }]
+    }
+  }
+}
+```
+
+`roles` and `scopes` are returned **for UI affordances only**. They are never trusted for authorisation — every request re-resolves permissions server-side (BR-IAM-001, BR-IAM-004).
+
+**Errors:** `AUTH_CREDENTIALS_INVALID` (401) · `AUTH_ACCOUNT_LOCKED` (401) · `RATE_LIMIT_EXCEEDED` (429)
+
+`AUTH_CREDENTIALS_INVALID` is returned for both an unknown email and a wrong password — distinguishing them would enumerate accounts.
+
+---
+
+## `POST /auth/otp/request` — Guardian OTP request
+
+**Feature:** IAM-002 · **Rules:** BR-IAM-011
+
+```json
+{ "phone": "+919876543210" }
+```
+
+**`202`** — always. The response never reveals whether the number is registered:
+
+```json
+{ "data": { "message": "If this number is registered, a code has been sent.", "expiresIn": 300 } }
+```
+
+Phone format is validated against the region profile (ADR-0007), not a hardcoded pattern.
+
+Rate limited per number **and** per source IP. An attacker who can enumerate registered parent phone numbers has a list of families at a specific school.
+
+---
+
+## `POST /auth/otp/verify` — Guardian login
+
+**Feature:** IAM-002
+
+```json
+{ "phone": "+919876543210", "otp": "482913", "clientType": "PARENT_APP" }
+```
+
+Response mirrors `/auth/login`. Guardians receive a **longer refresh lifetime** than staff — losing a session mid-emergency is itself a safety problem ([`SECURITY_ARCHITECTURE.md`](../02-system-design/SECURITY_ARCHITECTURE.md)).
+
+**Errors:** `AUTH_OTP_EXPIRED` · `AUTH_OTP_ALREADY_USED` · `AUTH_CREDENTIALS_INVALID` · `RATE_LIMIT_EXCEEDED`
+
+OTPs are single-use and short-lived.
+
+---
+
+## `POST /auth/refresh` — Rotate tokens
+
+**Feature:** IAM-003 · **Rules:** BR-IAM-007, BR-IAM-009
+
+```json
+{ "refreshToken": "opaque-random-string" }
+```
+
+**`200`** — returns a new access token **and a new refresh token**. The presented refresh token is consumed and can never be used again.
+
+### Reuse detection
+
+Presenting an already-consumed refresh token means it was captured. The response is `401 AUTH_REFRESH_REUSE_DETECTED`, and:
+
+1. The **entire token family** is revoked — every descendant session (BR-IAM-009).
+2. A security alert is raised (NTF-SEC-02).
+3. The event is audited.
+
+The legitimate user is logged out too. That is the correct trade: a stolen refresh token in a system holding children's locations is not something to resolve gently.
+
+---
+
+## `POST /auth/logout`
+
+**Authenticated.** Revokes the current session immediately. The driver app additionally **wipes its encrypted local store** (ADR-0008) — a shared device must not retain a previous shift's child data.
+
+**`204`**
+
+---
+
+## `GET /auth/sessions` — List own sessions
+
+**Feature:** IAM-004 · **Authenticated**
+
+```json
+{
+  "data": [
+    { "id": "…", "clientType": "PARENT_APP", "deviceIdentifier": "Pixel 8",
+      "issuedAt": "2026-08-01T06:12:00Z", "expiresAt": "2026-09-01T06:12:00Z",
+      "isCurrent": true }
+  ]
+}
+```
+
+---
+
+## `DELETE /auth/sessions/{sessionId}`
+
+**Feature:** IAM-004 · **Permission:** own session, or `PERM-SESSION-REVOKE` for others
+
+Revocation is immediate for refresh, and within the denylist window (≤15 min) for the access token (BR-IAM-007).
+
+Staff deactivation revokes **all** of that person's sessions (BR-IAM-008) — the control that matters when a driver leaves employment.
+
+---
+
+## `POST /auth/password/reset-request` / `POST /auth/password/reset`
+
+**Feature:** IAM-009
+
+Reset request always returns `202` regardless of whether the account exists. Reset tokens are single-use, short-lived, and **revoke all existing sessions on success**.
+
+---
+
+## `GET /.well-known/jwks.json`
+
+Public. Signing keys for RS256 verification, with overlap during rotation so tokens signed by the previous key remain verifiable until they expire.
+
+---
+
+## Token Reference
+
+| Property | Access token | Refresh token |
+|---|---|---|
+| Format | JWT, RS256 | Opaque random |
+| Lifetime | 15 minutes | Long (client-dependent) |
+| Storage | Client memory | Secure storage; **hashed** server-side |
+| Reusable | n/a | **No — single use** |
+| Revocable | Via denylist (≤15 min) | Immediately |
+
+### Access token claims
+
+```json
+{
+  "sub": "user-uuid",
+  "tenantId": "organization-uuid",
+  "sessionId": "session-uuid",
+  "clientType": "PARENT_APP",
+  "iat": 1754208000, "exp": 1754208900,
+  "iss": "guardian-platform", "aud": "guardian-api"
+}
+```
+
+**No permissions or roles in the token** (BR-IAM-004). They are resolved per request from a short-TTL cache invalidated on role change. A permission removed from a role takes effect on the **next request**, not the next token — which is the entire point ([`ADR-0006`](../00-governance/adr/ADR-0006-authentication-model.md)).
+
+`tenantId` seeds the RLS session variable (ADR-0001). A token cannot address another tenant.
+
+---
+
+## Device Authentication
+
+GPS devices use a **separate credential path** and never touch these endpoints (ADR-0006).
+
+```
+POST /api/v1/ingestion/positions
+Authorization: Device <deviceId>:<signature>
+```
+
+Mutual TLS where the device supports it. Device credentials are long-lived, rotatable, and rate-limited per device. An unknown device is logged and ignored, **never auto-registered** (BR-FLEET-006).
+
+---
+
+## Verification
+
+1. Refresh-token reuse revokes the family and raises an alert.
+2. A revoked session's access token is rejected within the denylist window.
+3. A role change takes effect on the next request without a new token.
+4. A token bearing tenant A cannot read tenant B data.
+5. OTP request returns `202` for both registered and unregistered numbers.
+6. OTP is single-use and expires.
+7. Logout wipes the driver app's local store.
+8. Staff deactivation revokes every session for that user.
+9. Rate limits apply per phone number and per source IP on OTP request.
+
+===FILE_END===
+===FILE_START:documentation/04-api/ERROR_CATALOG.md===
+# ERROR CATALOG
+
+**Document tier:** 4 — API
+**Status:** Active
+
+Every error code the API returns. **A code not listed here cannot be returned** — verified in CI.
+
+Envelope format: [`API_STANDARDS.md`](API_STANDARDS.md).
+
+---
+
+## Conventions
+
+- `code` is `SCREAMING_SNAKE_CASE`, stable, and never reused for a different meaning.
+- `messageKey` is the localisation key (BR-CFG-005). Clients display from this, never from `message`.
+- `businessRule` is set whenever a business rule caused the refusal — always on `422`.
+- Error messages never leak internal detail: no stack traces, no SQL, no internal identifiers.
+
+---
+
+## Authentication & Authorization
+
+| Code | HTTP | Rule | Meaning |
+|---|---|---|---|
+| `AUTH_CREDENTIALS_INVALID` | 401 | BR-IAM-001 | Wrong identifier or secret. Deliberately does not distinguish which. |
+| `AUTH_TOKEN_MISSING` | 401 | | No `Authorization` header |
+| `AUTH_TOKEN_EXPIRED` | 401 | ADR-0006 | Access token expired — refresh |
+| `AUTH_TOKEN_INVALID` | 401 | | Malformed or bad signature |
+| `AUTH_SESSION_REVOKED` | 401 | BR-IAM-007 | Session revoked |
+| `AUTH_REFRESH_REUSE_DETECTED` | 401 | BR-IAM-009 | **Token family revoked, security alert raised** |
+| `AUTH_ACCOUNT_LOCKED` | 401 | BR-IAM-011 | Too many failed attempts |
+| `AUTH_OTP_EXPIRED` | 401 | | OTP no longer valid |
+| `AUTH_OTP_ALREADY_USED` | 401 | | OTP is single-use |
+| `AUTH_PERMISSION_DENIED` | 403 | BR-IAM-002 | Permission not held |
+| `AUTH_SCOPE_DENIED` | 403 | BR-IAM-005, BR-IAM-006 | Permission held, resource out of scope |
+| `AUTH_TENANT_MISMATCH` | 404 | BR-TEN-004 | Cross-tenant — returns `404`, the resource is invisible |
+| `AUTH_JUSTIFICATION_REQUIRED` | 403 | BR-TEN-004 | Platform elevation without justification |
+
+`AUTH_CREDENTIALS_INVALID` covers both unknown identifier and wrong secret, deliberately — distinguishing them enumerates valid accounts.
+
+---
+
+## Validation
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `VALIDATION_FAILED` | 400 | One or more fields invalid; see `details[]` |
+| `VALIDATION_REQUIRED_FIELD_MISSING` | 400 | |
+| `VALIDATION_INVALID_FORMAT` | 400 | Includes phone format per region profile (ADR-0007) |
+| `VALIDATION_VALUE_OUT_OF_RANGE` | 400 | |
+| `VALIDATION_INVALID_SORT_FIELD` | 400 | Undocumented sort field — never an unindexed scan |
+| `VALIDATION_INVALID_CURSOR` | 400 | Malformed pagination cursor |
+| `REQUEST_PAYLOAD_TOO_LARGE` | 400 | |
+
+---
+
+## Tenancy
+
+| Code | HTTP | Rule |
+|---|---|---|
+| `ORG_CODE_ALREADY_EXISTS` | 409 | BR-TEN-007 |
+| `ORG_SUSPENDED` | 403 | BR-TEN-006 |
+| `ORG_LAST_SCHOOL_CANNOT_BE_REMOVED` | 422 | BR-TEN-002 |
+| `SCHOOL_CODE_ALREADY_EXISTS` | 409 | BR-TEN-007 |
+| `SCHOOL_CANNOT_CHANGE_ORGANIZATION` | 422 | BR-TEN-003 |
+
+---
+
+## Students & Guardians
+
+| Code | HTTP | Rule | Meaning |
+|---|---|---|---|
+| `STUDENT_ADMISSION_NO_EXISTS` | 409 | BR-STU-003 | |
+| `STUDENT_NOT_ACTIVE` | 422 | BR-STU-004 | Inactive students cannot be assigned or boarded |
+| `STUDENT_HAS_NO_ACTIVE_GUARDIAN` | 422 | BR-STU-002 | Blocks route assignment |
+| `STUDENT_HAS_SAFETY_RECORDS` | 422 | BR-STU-005 | Cannot hard-delete |
+| `GUARDIAN_HANDOVER_RIGHT_REQUIRED` | 422 | BR-GRD-002 | **At least one guardian must hold it** |
+| `GUARDIAN_LINK_ALREADY_EXISTS` | 409 | | |
+| `GUARDIAN_NOT_AUTHORISED_TO_NOMINATE` | 403 | BR-GRD-006 | Lacks `can_authorise_handover` |
+| `PICKUP_PERSON_OUTSIDE_VALIDITY` | 422 | BR-GRD-005 | Nomination expired or not yet valid |
+| `PICKUP_PERSON_REVOKED` | 422 | BR-GRD-007 | |
+| `CUSTODY_RESTRICTION_ACTIVE` | 403 | BR-GRD-008 🔴 | **Blocks handover and visibility** |
+| `GUARDIAN_NOT_AUTHORISED_FOR_HANDOVER` | 403 | BR-GRD-006 | Lacks `can_authorise_handover`; cannot request a release code |
+
+---
+
+## Fleet & Staff
+
+| Code | HTTP | Rule |
+|---|---|---|
+| `VEHICLE_REGISTRATION_EXISTS` | 409 | BR-FLEET-001 |
+| `VEHICLE_NOT_FOUND` | 404 | | Not found, or not visible to the caller at all |
+| `VEHICLE_DOCUMENT_NOT_FOUND` | 404 | | |
+| `VEHICLE_DOCUMENT_EXPIRED` | 422 | BR-FLEET-002 🔴 |
+| `VEHICLE_CAPACITY_EXCEEDED` | 422 | BR-FLEET-005 |
+| `VEHICLE_NOT_ACTIVE` | 422 | BR-FLEET-001 |
+| `DEVICE_ALREADY_ASSIGNED` | 409 | BR-FLEET-004 |
+| `DEVICE_NOT_REGISTERED` | 404 | BR-FLEET-006 | Also returned when the referenced device ID does not exist |
+| `STAFF_NOT_FOUND` | 404 | | Not found, or not visible to the caller at all |
+| `STAFF_EMPLOYEE_CODE_EXISTS` | 409 | | Data-integrity constraint (`uq_staff_school_employee_code`), not a documented BR — same treatment as a vehicle's registration number |
+| `STAFF_LICENCE_EXPIRED` | 422 | BR-STAFF-001 🔴 |
+| `STAFF_LICENCE_CLASS_INVALID` | 422 | BR-STAFF-001 🔴 |
+| `STAFF_NOT_VERIFIED` | 422 | BR-STAFF-002 🔴 |
+| `STAFF_VERIFICATION_LAPSED` | 422 | BR-STAFF-002 🔴 |
+| `STAFF_ALREADY_ON_ACTIVE_TRIP` | 409 | BR-STAFF-004 |
+| `ROUTE_CODE_ALREADY_EXISTS` | 409 | BR-ROUTE-001 |
+| `ROUTE_NOT_FOUND` | 404 | | Not found, or not visible to the caller at all |
+| `ROUTE_MINIMUM_STOPS_REQUIRED` | 422 | BR-ROUTE-001 |
+| `ROUTE_GEOFENCE_OUT_OF_BOUNDS` | 422 | BR-ROUTE-003 🔴 |
+| `ROUTE_STOP_TIMES_NOT_INCREASING` | 422 | BR-ROUTE-008 |
+| `ATTENDANT_REQUIRED` | 422 | BR-STAFF-005 |
+
+Each of these names the exact failing check. A generic "cannot start trip" at 6:30 AM is not actionable ([`MOD-05-06-fleet-staff.md`](../03-database/tables/MOD-05-06-fleet-staff.md)).
+
+---
+
+## Routes
+
+| Code | HTTP | Rule |
+|---|---|---|
+| `ROUTE_MINIMUM_STOPS_REQUIRED` | 422 | BR-ROUTE-001 |
+| `ROUTE_STOP_TIMES_NOT_INCREASING` | 422 | BR-ROUTE-008 |
+| `ROUTE_GEOFENCE_OUT_OF_BOUNDS` | 422 | BR-ROUTE-003, BR-CFG-003 🔴 |
+| `ROUTE_HAS_ACTIVE_ASSIGNMENTS` | 422 | BR-ROUTE-007 |
+| `STUDENT_ALREADY_ASSIGNED_FOR_DIRECTION` | 409 | BR-ROUTE-004 |
+
+---
+
+## Trips
+
+| Code | HTTP | Rule | Meaning |
+|---|---|---|---|
+| `TRIP_ALREADY_EXISTS` | 409 | BR-TRIP-001 | Same route, date, direction |
+| `TRIP_INVALID_STATUS_TRANSITION` | 409 | BR-TRIP-002 | |
+| `TRIP_VEHICLE_ON_ANOTHER_TRIP` | 409 | BR-TRIP-005 | |
+| `TRIP_NOT_STARTED` | 422 | BR-TRIP-002 | |
+| `TRIP_ALREADY_COMPLETED` | 409 | BR-TRIP-002 | |
+| `TRIP_CANCELLATION_REASON_REQUIRED` | 422 | BR-TRIP-007 | Quoted to guardians |
+| `TRIP_MANIFEST_IMMUTABLE` | 422 | BR-TRIP-003 🔴 | Use an amendment instead |
+| `TRIP_AMENDMENT_REASON_REQUIRED` | 422 | BR-AUD-004 | |
+| `TRIP_RECONCILIATION_INCOMPLETE` | 422 | BR-TRIP-009, BR-SAFE-001 🔴 | **Cannot close with an unaccounted child** |
+| `TRIP_NOT_AUTHORISED_ACTOR` | 403 | BR-TRIP-006 | |
+
+---
+
+## Boarding & Handover 🔴
+
+| Code | HTTP | Rule | Meaning |
+|---|---|---|---|
+| `BOARDING_STUDENT_NOT_ON_MANIFEST` | 422 | BR-BOARD-003 | Override path available |
+| `BOARDING_ALREADY_BOARDED` | 409 | BR-BOARD-005 | No intervening alight |
+| `BOARDING_NOT_BOARDED` | 422 | BR-BOARD-006 | Cannot alight without boarding |
+| `BOARDING_WRONG_STOP` | 422 | BR-BOARD-004 🔴 | Override notifies guardians |
+| `BOARDING_WRONG_VEHICLE` | 422 | BR-SAFE-003 🔴 | **Student expected on another active trip** |
+| `BOARDING_OVERRIDE_REASON_REQUIRED` | 422 | BR-AUD-004 | |
+| `BOARDING_EVENT_IMMUTABLE` | 422 | BR-BOARD-001 🔴 | Corrections are new records |
+| `BOARDING_CREDENTIAL_INVALID` | 422 | | Unknown or revoked credential |
+| `HANDOVER_RECEIVER_NOT_AUTHORISED` | 403 | BR-HAND-001 🔴 | |
+| `HANDOVER_VERIFICATION_FAILED` | 422 | BR-HAND-002 | |
+| `HANDOVER_ALREADY_RECORDED` | 409 | BR-HAND-004 | |
+| `HANDOVER_REQUIRES_ALIGHT_EVENT` | 422 | BR-HAND-004 | |
+| `HANDOVER_OVERRIDE_REQUIRES_RECEIVER_IDENTITY` | 422 | BR-HAND-003 🔴 | **Must record who the child was given to** |
+| `HANDOVER_REFUSED_CUSTODY_RESTRICTION` | 403 | BR-HAND-006 🔴 | Recorded and escalated |
+| `RECONCILIATION_RESOLUTION_INCOMPLETE` | 422 | BR-SAFE-001 🔴 | Outcome, actor, and time all required |
+
+`BOARDING_EVENT_IMMUTABLE` is returned on any attempt to update or delete a boarding record — the append-only guarantee surfaced to the client.
+
+---
+
+## Absence
+
+| Code | HTTP | Rule |
+|---|---|---|
+| `ABSENCE_ALREADY_DECLARED` | 409 | BR-ABS-001 |
+| `ABSENCE_TRIP_ALREADY_STARTED` | 422 | BR-ABS-003 |
+| `ABSENCE_CANNOT_CANCEL_AFTER_START` | 422 | BR-ABS-004 |
+| `ABSENCE_NOT_AUTHORISED` | 403 | BR-ABS-001 |
+
+---
+
+## Tracking, Alerts, Incidents
+
+| Code | HTTP | Rule |
+|---|---|---|
+| `TRACKING_NOT_AVAILABLE_OUTSIDE_TRIP` | 422 | BR-TRACK-001 |
+| `TRACKING_POSITION_IMPLAUSIBLE` | 400 | BR-TRACK-004 |
+| `TRACKING_SUBSCRIPTION_DENIED` | 403 | BR-TRACK-002 |
+| `ALERT_ALREADY_RESOLVED` | 409 | BR-ALERT-006 |
+| `ALERT_RESOLUTION_OUTCOME_REQUIRED` | 422 | BR-ALERT-006 |
+| `SOS_ALREADY_ACKNOWLEDGED` | 409 | BR-INC-001 |
+| `SOS_CANNOT_BE_DELETED` | 422 | BR-INC-006 🔴 |
+| `INCIDENT_RESOLUTION_REQUIRED` | 422 | BR-INC-005 |
+
+---
+
+## Notification & Configuration
+
+| Code | HTTP | Rule |
+|---|---|---|
+| `NOTIFICATION_TEMPLATE_MISSING` | 422 | BR-NTF-002 |
+| `NOTIFICATION_PREFERENCE_NOT_APPLICABLE` | 422 | BR-NTF-006 🔴 — safety-critical cannot be disabled |
+| `CONFIG_VALUE_OUT_OF_BOUNDS` | 422 | BR-CFG-003 🔴 — platform floor or ceiling |
+| `CONFIG_KEY_UNKNOWN` | 400 | BR-CFG-001 |
+| `CONFIG_SCOPE_NOT_PERMITTED` | 422 | BR-CFG-001 |
+| `CONFIG_SAFETY_CRITICAL_PERMISSION_REQUIRED` | 403 | BR-CFG-003 🔴 |
+
+---
+
+## System
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `RATE_LIMIT_EXCEEDED` | 429 | `Retry-After` set |
+| `IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD` | 409 | Same key, different body |
+| `DEPENDENCY_UNAVAILABLE` | 503 | Named dependency down |
+| `INTERNAL_ERROR` | 500 | Generic. `requestId` is the only detail returned. |
+
+---
+
+## Adding an Error
+
+1. Add the code here with its HTTP status and business rule.
+2. Add the `messageKey` to localisation resources for every supported locale (BR-CFG-005).
+3. Reference it in the endpoint's API document.
+4. Add a test asserting the code is returned in that condition.
+
+A code returned by the application but absent here fails the CI check.
+
+===FILE_END===

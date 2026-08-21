@@ -1,0 +1,1871 @@
+===FILE_START:documentation/03-database/DATA_MODEL_OVERVIEW.md===
+# DATA MODEL OVERVIEW
+
+**Document tier:** 3 — Database
+**Status:** Active
+**Conventions:** [`CONVENTIONS.md`](CONVENTIONS.md) — standard columns, types, and RLS are defined there and not repeated per table.
+
+---
+
+## Shape of the Model
+
+Three groups of data with different characteristics, different retention, and different guarantees:
+
+| Group | Character | Volume | Mutability |
+|---|---|---|---|
+| **Configuration** | Organizations, schools, students, guardians, vehicles, staff, routes | Low, slow-changing | Mutable, soft-deleted, versioned |
+| **Operational** | Trips, manifests, assignments, alerts | Moderate, daily churn | Mutable within a lifecycle |
+| **Evidentiary** | Boarding events, handovers, SOS, audit | High, append-only | **Immutable** |
+
+The distinction drives everything: evidentiary tables have no update path and no delete path (BR-BOARD-001, BR-AUD-001), while configuration tables carry full soft-delete and optimistic locking.
+
+A fourth group, **telemetry** (`position_history`), is high-volume, append-only, and partitioned for retention by partition drop.
+
+---
+
+## Table Inventory
+
+### MOD-01 Tenancy
+`organizations` · `schools` · `branches` · `school_calendars`
+
+### MOD-02 Identity & Access
+`users` · `user_credentials` · `sessions` · `roles` · `permissions` · `role_permissions` · `user_roles` · `user_scopes`
+
+### MOD-03 Student Registry
+`students` · `student_classes` · `student_credentials`
+
+### MOD-04 Guardian Management
+`guardians` · `guardian_student_links` · `authorised_pickup_persons` · `custody_restrictions`
+
+### MOD-05 Fleet
+`vehicles` · `vehicle_documents` · `devices`
+
+### MOD-06 Transport Staff
+`transport_staff` · `staff_credentials` · `duty_assignments`
+
+### MOD-07 Routes & Stops
+`routes` · `stops` · `route_student_assignments`
+
+### MOD-08 Trip Execution
+`trips` · `trip_manifests` · `trip_manifest_amendments` · `trip_staff`
+
+### MOD-09 Boarding & Attendance 🔒
+`boarding_events` · `handovers` · `reconciliations` · `reconciliation_items`
+
+### MOD-10 Tracking
+`position_history` *(partitioned)* · `trip_etas`
+
+### MOD-11 Geofencing & Alerts
+`alert_rules` · `alerts`
+
+### MOD-12 Notification
+`notification_templates` · `notification_preferences` · `notifications` · `notification_deliveries`
+
+### MOD-13 Incident & Emergency 🔒
+`sos_alerts` · `incidents` · `incident_escalations`
+
+### MOD-14 Absence
+`absence_declarations`
+
+### MOD-16 Audit 🔒
+`audit_records` · `data_access_records`
+
+### MOD-17 Configuration
+`region_profiles` · `configuration_definitions` · `configuration_values` · `reference_data` · `localisation_resources`
+
+🔒 = append-only, enforced by grants and triggers ([`CONVENTIONS.md`](CONVENTIONS.md)).
+
+MOD-15 Reporting owns no tables — it reads across modules through their application layers.
+
+---
+
+## Core Relationships
+
+```mermaid
+erDiagram
+    ORGANIZATIONS ||--o{ SCHOOLS : contains
+    SCHOOLS ||--o{ BRANCHES : "may have"
+    SCHOOLS ||--o{ STUDENTS : enrols
+    SCHOOLS ||--o{ VEHICLES : operates
+    SCHOOLS ||--o{ ROUTES : defines
+    SCHOOLS ||--o{ TRANSPORT_STAFF : employs
+
+    STUDENTS ||--o{ GUARDIAN_STUDENT_LINKS : "linked via"
+    GUARDIANS ||--o{ GUARDIAN_STUDENT_LINKS : "linked via"
+    GUARDIAN_STUDENT_LINKS ||--o{ AUTHORISED_PICKUP_PERSONS : nominates
+
+    ROUTES ||--o{ STOPS : "ordered by sequence"
+    STOPS ||--o{ ROUTE_STUDENT_ASSIGNMENTS : "assigned at"
+    STUDENTS ||--o{ ROUTE_STUDENT_ASSIGNMENTS : "assigned to"
+
+    ROUTES ||--o{ TRIPS : "executed as"
+    VEHICLES ||--o{ TRIPS : "operated by"
+    TRIPS ||--o{ TRIP_MANIFESTS : "materialised into"
+    STUDENTS ||--o{ TRIP_MANIFESTS : "expected on"
+
+    TRIPS ||--o{ BOARDING_EVENTS : records
+    STUDENTS ||--o{ BOARDING_EVENTS : "subject of"
+    BOARDING_EVENTS ||--o| HANDOVERS : "alight completes"
+
+    TRIPS ||--o| RECONCILIATIONS : "closed by"
+    TRIPS ||--o{ ABSENCE_DECLARATIONS : "excluded by"
+```
+
+Full diagram: [`ERD.md`](ERD.md).
+
+---
+
+## Design Decisions Worth Stating
+
+### The manifest is materialised, not derived
+`trip_manifests` is written at trip start from route assignments minus absences, and is thereafter immutable (BR-TRIP-003).
+
+**Why not derive it on read?** Because route assignments change. A trip that ran three months ago must show who was *expected on it that day*, not who is assigned to that route today. Deriving it would silently rewrite history — unacceptable in a system whose records are evidence.
+
+Later changes append to `trip_manifest_amendments` with actor and reason.
+
+### Boarding events are append-only, and corrections are new rows
+`boarding_events` has no update path (BR-BOARD-001). A correction inserts a new row with `corrects_event_id` pointing at the original, plus actor and reason. The original stays visible.
+
+**Why:** an attendant who mis-scans and fixes it produces two records, both true — one about the child, one about the correction. Overwriting would destroy the second fact.
+
+### Handover references the alight event, not the student
+`handovers.boarding_event_id` is `NOT NULL` (BR-HAND-004). A handover cannot exist without the alight record it completes. The database enforces the ordering the business rule describes.
+
+### Reconciliation blocks trip closure structurally
+`trips.status` cannot reach `CLOSED` while any `reconciliation_items` row is unresolved (BR-TRIP-009, BR-SAFE-001). Enforced by a check in the domain **and** a constraint — the single most safety-critical invariant in the schema deserves both.
+
+### Guardian rights are explicit columns, not inferred from relationship type
+`guardian_student_links` carries `can_view`, `can_receive_notifications`, `can_authorise_handover`, `can_declare_absence` (BR-GRD-001).
+
+**Why not infer from "mother"/"father"/"uncle"?** Because relationship type does not determine authority — custody arrangements, and the specific case of a restricted parent (BR-GRD-008), make inference dangerous. Rights are granted, never assumed.
+
+### Position history is separate and partitioned
+It is 99% of row volume and 0% of business logic. Partitioned by day so retention is a partition drop (BR-TRACK-007), and so its size never affects operational queries.
+
+---
+
+## Cardinality Notes
+
+| Relationship | Cardinality | Rule |
+|---|---|---|
+| Student → Guardians | 1..* | At least one; ≥1 with handover right (BR-GRD-002) |
+| Student → Route assignment | 0..1 per direction | Pickup and drop may differ (BR-ROUTE-004) |
+| Student → Routes | May differ by direction | (BR-ROUTE-005) |
+| Route → Stops | 2..* | Ordered, strictly increasing times (BR-ROUTE-001, BR-ROUTE-008) |
+| Trip → Vehicle | 1 | One active trip per vehicle (BR-TRIP-005) |
+| Trip → Driver | 1 | One active trip per driver (BR-STAFF-004) |
+| Vehicle → Device | 0..1 active | (BR-FLEET-004) |
+| Boarding event → Handover | 0..1 | Only alight events on DROP trips |
+
+---
+
+## Volume Projections at Reference Scale
+
+200,000 students, 3,000 vehicles ([`SCALABILITY.md`](SCALABILITY.md)):
+
+| Table | Rows/day | Rows/year |
+|---|---|---|
+| `position_history` | ~17M | ~3.2B *(partitioned, retention-bounded)* |
+| `boarding_events` | ~800K | ~150M |
+| `notifications` | ~800K | ~150M |
+| `trips` | ~6K | ~1.1M |
+| `audit_records` | ~1M | ~190M |
+
+Excluding `position_history`, the operational dataset is well within a single PostgreSQL primary. That table is the only one whose growth requires structural management, which is exactly why it is the only one partitioned.
+
+===FILE_END===
+===FILE_START:documentation/03-database/ERD.md===
+# ENTITY RELATIONSHIP DIAGRAM
+
+**Document tier:** 3 — Database
+**Status:** Active
+
+Diagrams show key columns only. Standard columns (`id`, `tenant_id`, audit columns, `version`) are omitted — see [`CONVENTIONS.md`](CONVENTIONS.md). Full specifications in [`tables/`](tables/).
+
+---
+
+## Tenancy, Identity, Configuration
+
+```mermaid
+erDiagram
+    ORGANIZATIONS {
+        varchar code UK
+        varchar name
+        uuid region_profile_id FK
+        varchar status
+    }
+    SCHOOLS {
+        uuid organization_id FK
+        varchar code
+        varchar name
+        varchar timezone
+    }
+    BRANCHES {
+        uuid school_id FK
+        varchar name
+    }
+    USERS {
+        varchar email
+        varchar phone
+        varchar status
+    }
+    ROLES {
+        varchar code
+        varchar name
+    }
+    PERMISSIONS {
+        varchar code UK
+    }
+    USER_ROLES {
+        uuid user_id FK
+        uuid role_id FK
+    }
+    USER_SCOPES {
+        uuid user_id FK
+        varchar scope_level
+        uuid scope_ref_id
+    }
+    SESSIONS {
+        uuid user_id FK
+        varchar refresh_token_hash
+        timestamptz expires_at
+        boolean is_revoked
+    }
+    REGION_PROFILES {
+        varchar code UK
+        varchar country_code
+    }
+
+    ORGANIZATIONS ||--o{ SCHOOLS : contains
+    SCHOOLS ||--o{ BRANCHES : "may have"
+    REGION_PROFILES ||--o{ ORGANIZATIONS : configures
+    USERS ||--o{ USER_ROLES : has
+    ROLES ||--o{ USER_ROLES : "granted via"
+    ROLES ||--o{ ROLE_PERMISSIONS : grants
+    PERMISSIONS ||--o{ ROLE_PERMISSIONS : "granted via"
+    USERS ||--o{ USER_SCOPES : "scoped by"
+    USERS ||--o{ SESSIONS : holds
+```
+
+`permissions` is platform reference data — no `tenant_id`, no RLS. Tenants assign permissions to roles; they cannot invent permissions ([`PERMISSION_MATRIX.md`](../01-product-discovery/PERMISSION_MATRIX.md)).
+
+---
+
+## Students and Guardians
+
+```mermaid
+erDiagram
+    STUDENTS {
+        uuid school_id FK
+        varchar admission_no
+        varchar first_name
+        varchar last_name
+        date date_of_birth
+        varchar enrolment_status
+        uuid student_class_id FK
+        varchar photo_ref
+    }
+    STUDENT_CREDENTIALS {
+        uuid student_id FK
+        varchar credential_type
+        varchar credential_hash
+        boolean is_active
+    }
+    GUARDIANS {
+        uuid user_id FK
+        varchar first_name
+        varchar last_name
+        varchar phone
+    }
+    GUARDIAN_STUDENT_LINKS {
+        uuid guardian_id FK
+        uuid student_id FK
+        varchar relationship_type
+        boolean can_view
+        boolean can_receive_notifications
+        boolean can_authorise_handover
+        boolean can_declare_absence
+        boolean is_active
+    }
+    AUTHORISED_PICKUP_PERSONS {
+        uuid student_id FK
+        uuid nominated_by_guardian_id FK
+        varchar full_name
+        varchar phone
+        varchar photo_ref
+        timestamptz valid_from
+        timestamptz valid_until
+        boolean is_active
+    }
+    CUSTODY_RESTRICTIONS {
+        uuid student_id FK
+        uuid restricted_guardian_id FK
+        varchar restriction_type
+        text reason
+        boolean is_active
+    }
+
+    STUDENTS ||--o{ STUDENT_CREDENTIALS : carries
+    STUDENTS ||--o{ GUARDIAN_STUDENT_LINKS : "linked to"
+    GUARDIANS ||--o{ GUARDIAN_STUDENT_LINKS : "linked to"
+    STUDENTS ||--o{ AUTHORISED_PICKUP_PERSONS : "may be collected by"
+    GUARDIAN_STUDENT_LINKS ||--o{ AUTHORISED_PICKUP_PERSONS : nominates
+    STUDENTS ||--o{ CUSTODY_RESTRICTIONS : protected_by
+    GUARDIANS ||--o{ CUSTODY_RESTRICTIONS : restricted_by
+```
+
+**The four boolean rights columns are the design point** (BR-GRD-001). `relationship_type` is descriptive; the booleans are authoritative. `custody_restrictions` overrides them entirely (BR-GRD-008, BR-HAND-006).
+
+---
+
+## Fleet, Staff, Routes
+
+```mermaid
+erDiagram
+    VEHICLES {
+        uuid school_id FK
+        varchar registration_no
+        integer seating_capacity
+        varchar status
+    }
+    VEHICLE_DOCUMENTS {
+        uuid vehicle_id FK
+        varchar document_type
+        date issued_on
+        date expires_on
+        boolean is_mandatory
+    }
+    DEVICES {
+        uuid vehicle_id FK
+        varchar device_identifier UK
+        varchar vendor_code
+        boolean is_active
+    }
+    TRANSPORT_STAFF {
+        uuid school_id FK
+        uuid user_id FK
+        varchar staff_type
+        varchar verification_status
+        date verified_until
+    }
+    STAFF_CREDENTIALS {
+        uuid staff_id FK
+        varchar credential_type
+        varchar credential_class
+        date expires_on
+    }
+    ROUTES {
+        uuid school_id FK
+        varchar name
+        uuid default_vehicle_id FK
+        boolean is_active
+    }
+    STOPS {
+        uuid route_id FK
+        integer sequence_no
+        varchar name
+        numeric latitude
+        numeric longitude
+        integer geofence_radius_m
+        time scheduled_pickup_time
+        time scheduled_drop_time
+    }
+    ROUTE_STUDENT_ASSIGNMENTS {
+        uuid route_id FK
+        uuid stop_id FK
+        uuid student_id FK
+        varchar direction
+        boolean is_active
+    }
+
+    VEHICLES ||--o{ VEHICLE_DOCUMENTS : holds
+    VEHICLES ||--o| DEVICES : "fitted with"
+    TRANSPORT_STAFF ||--o{ STAFF_CREDENTIALS : holds
+    ROUTES ||--o{ STOPS : "ordered by sequence_no"
+    ROUTES ||--o{ ROUTE_STUDENT_ASSIGNMENTS : serves
+    STOPS ||--o{ ROUTE_STUDENT_ASSIGNMENTS : "boarding point"
+    VEHICLES ||--o{ ROUTES : "default vehicle"
+```
+
+`document_type` and `credential_type` values come from the region profile (ADR-0007) — they are reference data, not an enum in code.
+
+---
+
+## Trips and Safety Events
+
+The evidentiary core of the platform.
+
+```mermaid
+erDiagram
+    TRIPS {
+        uuid route_id FK
+        uuid vehicle_id FK
+        date service_date
+        varchar direction
+        varchar status
+        timestamptz started_at
+        timestamptz completed_at
+        timestamptz closed_at
+    }
+    TRIP_STAFF {
+        uuid trip_id FK
+        uuid staff_id FK
+        varchar role
+        timestamptz assigned_at
+    }
+    TRIP_MANIFESTS {
+        uuid trip_id FK
+        uuid student_id FK
+        uuid expected_stop_id FK
+        varchar status
+    }
+    TRIP_MANIFEST_AMENDMENTS {
+        uuid trip_id FK
+        uuid student_id FK
+        varchar amendment_type
+        uuid actor_id
+        text reason
+    }
+    BOARDING_EVENTS {
+        uuid trip_id FK
+        uuid student_id FK
+        uuid stop_id FK
+        varchar event_type
+        varchar verification_method
+        uuid actor_id
+        uuid client_event_id UK
+        uuid corrects_event_id FK
+        boolean is_override
+        text override_reason
+        timestamptz occurred_at
+        timestamptz recorded_at
+        integer clock_skew_seconds
+    }
+    HANDOVERS {
+        uuid boarding_event_id FK
+        uuid received_by_guardian_id FK
+        uuid received_by_pickup_person_id FK
+        varchar verification_method
+        boolean is_override
+        text override_reason
+        varchar unverified_receiver_name
+    }
+    RECONCILIATIONS {
+        uuid trip_id FK
+        varchar status
+        timestamptz started_at
+        timestamptz resolved_at
+    }
+    RECONCILIATION_ITEMS {
+        uuid reconciliation_id FK
+        uuid student_id FK
+        varchar exception_type
+        varchar resolution_outcome
+        uuid resolved_by FK
+        timestamptz resolved_at
+    }
+    ABSENCE_DECLARATIONS {
+        uuid student_id FK
+        uuid declared_by_guardian_id FK
+        date absence_date
+        varchar direction
+        boolean is_cancelled
+    }
+
+    TRIPS ||--o{ TRIP_STAFF : "crewed by"
+    TRIPS ||--o{ TRIP_MANIFESTS : "expects"
+    TRIPS ||--o{ TRIP_MANIFEST_AMENDMENTS : amended_by
+    TRIPS ||--o{ BOARDING_EVENTS : records
+    BOARDING_EVENTS ||--o| HANDOVERS : "alight completed by"
+    BOARDING_EVENTS ||--o| BOARDING_EVENTS : corrects
+    TRIPS ||--o| RECONCILIATIONS : "closed by"
+    RECONCILIATIONS ||--o{ RECONCILIATION_ITEMS : "exceptions"
+```
+
+Structural safety properties visible in this diagram:
+
+- `boarding_events.client_event_id` is unique — idempotent offline sync (BR-BOARD-009, ADR-0008).
+- `boarding_events.corrects_event_id` self-references — corrections append, never overwrite (BR-BOARD-001).
+- `handovers.boarding_event_id` is `NOT NULL` — no handover without an alight record (BR-HAND-004).
+- `handovers` has both a guardian and a pickup-person FK, exactly one of which is set unless `is_override` is true (BR-HAND-001, BR-HAND-003).
+- `reconciliation_items` gates `trips.status = CLOSED` (BR-SAFE-001, BR-TRIP-009).
+
+---
+
+## Tracking, Alerts, Notifications
+
+```mermaid
+erDiagram
+    POSITION_HISTORY {
+        uuid vehicle_id FK
+        uuid trip_id FK
+        numeric latitude
+        numeric longitude
+        numeric speed_mps
+        integer heading_deg
+        boolean ignition_on
+        timestamptz device_time
+        timestamptz received_at
+    }
+    TRIP_ETAS {
+        uuid trip_id FK
+        uuid stop_id FK
+        timestamptz estimated_arrival
+        timestamptz calculated_at
+    }
+    ALERT_RULES {
+        varchar rule_type
+        numeric threshold_value
+        integer duration_seconds
+        boolean is_enabled
+    }
+    ALERTS {
+        uuid trip_id FK
+        uuid vehicle_id FK
+        varchar alert_type
+        varchar severity
+        varchar status
+        timestamptz opened_at
+        timestamptz resolved_at
+        uuid resolved_by FK
+    }
+    NOTIFICATIONS {
+        varchar catalog_id
+        varchar priority_class
+        uuid subject_student_id FK
+        uuid trip_id FK
+        timestamptz created_at
+    }
+    NOTIFICATION_DELIVERIES {
+        uuid notification_id FK
+        uuid recipient_user_id FK
+        varchar channel
+        varchar status
+        varchar provider_reference
+        text failure_reason
+        integer attempt_no
+    }
+    NOTIFICATION_PREFERENCES {
+        uuid user_id FK
+        varchar catalog_id
+        varchar channel
+        boolean is_enabled
+    }
+    NOTIFICATION_TEMPLATES {
+        varchar catalog_id
+        varchar channel
+        varchar locale
+        text body_template
+    }
+
+    TRIPS ||--o{ POSITION_HISTORY : "tracked by"
+    TRIPS ||--o{ TRIP_ETAS : estimates
+    TRIPS ||--o{ ALERTS : raises
+    ALERT_RULES ||--o{ ALERTS : "evaluated into"
+    NOTIFICATIONS ||--o{ NOTIFICATION_DELIVERIES : "attempted via"
+```
+
+`position_history` is partitioned by `received_at` (daily) — see [`INDEXING_AND_PARTITIONING.md`](INDEXING_AND_PARTITIONING.md).
+
+`notification_deliveries` holds one row **per attempt**, not per notification — that is what makes "why was I not told?" answerable (BR-NTF-005).
+
+---
+
+## Incidents and Audit
+
+```mermaid
+erDiagram
+    SOS_ALERTS {
+        uuid trip_id FK
+        uuid raised_by_user_id FK
+        numeric latitude
+        numeric longitude
+        varchar status
+        timestamptz raised_at
+        timestamptz acknowledged_at
+        uuid acknowledged_by FK
+        varchar resolution_outcome
+    }
+    INCIDENTS {
+        uuid trip_id FK
+        uuid student_id FK
+        varchar incident_type
+        varchar severity
+        varchar status
+        text description
+        varchar resolution_outcome
+    }
+    INCIDENT_ESCALATIONS {
+        uuid incident_id FK
+        uuid sos_alert_id FK
+        integer level
+        timestamptz notified_at
+        timestamptz acknowledged_at
+    }
+    AUDIT_RECORDS {
+        uuid actor_id
+        varchar actor_role
+        varchar action
+        varchar subject_type
+        uuid subject_id
+        text reason
+        varchar source
+        uuid correlation_id
+        jsonb before_values
+        jsonb after_values
+        timestamptz occurred_at
+    }
+    DATA_ACCESS_RECORDS {
+        uuid actor_id
+        uuid student_id FK
+        varchar access_type
+        varchar purpose
+        uuid correlation_id
+        timestamptz occurred_at
+    }
+
+    SOS_ALERTS ||--o{ INCIDENT_ESCALATIONS : escalates
+    INCIDENTS ||--o{ INCIDENT_ESCALATIONS : escalates
+    TRIPS ||--o{ SOS_ALERTS : "raised on"
+    TRIPS ||--o{ INCIDENTS : "occurred on"
+```
+
+`audit_records` and `data_access_records` deliberately carry **no foreign keys to the entities they describe** — a subject may be soft-deleted or archived while its audit trail must remain readable and intact. They store `subject_type` + `subject_id` instead (BR-AUD-001).
+
+===FILE_END===
+===FILE_START:documentation/03-database/INDEXING_AND_PARTITIONING.md===
+# INDEXING AND PARTITIONING
+
+**Document tier:** 3 — Database
+**Status:** Active
+
+---
+
+## The Governing Rule
+
+**Every tenant-scoped index leads with `tenant_id`.**
+
+The RLS predicate `tenant_id = current_setting('app.tenant_id')` applies to *every* query against *every* tenant-scoped table ([`RLS_POLICIES.md`](RLS_POLICIES.md)). An index not leading with `tenant_id` cannot serve that predicate efficiently, so the planner falls back to a scan filtered by RLS.
+
+```sql
+-- correct
+CREATE INDEX idx_students_tenant_school ON students (tenant_id, school_id);
+
+-- wrong: cannot serve the RLS predicate
+CREATE INDEX idx_students_school ON students (school_id);
+```
+
+An index review is part of the definition of done for any query added to a hot path.
+
+---
+
+## Indexes by Access Pattern
+
+Ordered by how often they run, not by table.
+
+### Very high frequency (peak windows)
+
+| Query | Index |
+|---|---|
+| Guardian's children's trips today | `route_student_assignments (tenant_id, student_id, direction) WHERE is_active` |
+| Active trips for a school | `trips (tenant_id, school_id, status) WHERE status IN ('STARTED','IN_PROGRESS')` |
+| Trip manifest | `trip_manifests (tenant_id, trip_id)` |
+| Guardian → students | `guardian_student_links (tenant_id, guardian_id) WHERE is_active` |
+| Student → guardians | `guardian_student_links (tenant_id, student_id) WHERE is_active` |
+
+Live position is served from Redis and needs no index (ADR-0004).
+
+### High frequency
+
+| Query | Index |
+|---|---|
+| Boarding events for a trip | `boarding_events (tenant_id, trip_id, occurred_at)` |
+| Student's boarding history | `boarding_events (tenant_id, student_id, occurred_at DESC)` |
+| Idempotency check on sync | `boarding_events (client_event_id)` **UNIQUE** |
+| Open alerts for a school | `alerts (tenant_id, school_id, status) WHERE status = 'OPEN'` |
+| Pending notification deliveries | `notification_deliveries (tenant_id, status) WHERE status = 'PENDING'` |
+| Session lookup by refresh token | `sessions (refresh_token_hash)` **UNIQUE** |
+
+`boarding_events (client_event_id)` is unique **globally, not per tenant** — it is a client-generated UUID and uniqueness is what makes offline sync idempotent (BR-BOARD-009, ADR-0008).
+
+### Moderate frequency
+
+| Query | Index |
+|---|---|
+| Trip by route and date | `trips (tenant_id, route_id, service_date, direction)` **UNIQUE** |
+| Stops in route order | `stops (tenant_id, route_id, sequence_no)` **UNIQUE** |
+| Students by school | `students (tenant_id, school_id) WHERE enrolment_status = 'ACTIVE'` |
+| Admission number lookup | `students (tenant_id, school_id, admission_no)` **UNIQUE** |
+| Absences for a date | `absence_declarations (tenant_id, absence_date, student_id) WHERE NOT is_cancelled` |
+| Expiring vehicle documents | `vehicle_documents (tenant_id, expires_on) WHERE is_mandatory` |
+| Expiring staff credentials | `staff_credentials (tenant_id, expires_on)` |
+| Unresolved reconciliation items | `reconciliation_items (tenant_id, reconciliation_id) WHERE resolution_outcome IS NULL` |
+
+### Audit and reporting
+
+| Query | Index |
+|---|---|
+| Audit by subject | `audit_records (tenant_id, subject_type, subject_id, occurred_at DESC)` |
+| Audit by actor | `audit_records (tenant_id, actor_id, occurred_at DESC)` |
+| Audit by correlation | `audit_records (correlation_id)` |
+| Overrides register | `audit_records (tenant_id, action, occurred_at DESC) WHERE reason IS NOT NULL` |
+| Child data access | `data_access_records (tenant_id, student_id, occurred_at DESC)` |
+
+Reporting runs against a read replica (BR-RPT-004), so these indexes cost write throughput on the primary without serving it — they are kept deliberately few.
+
+---
+
+## Partial Indexes
+
+Used heavily, because most hot queries filter on a small active subset:
+
+```sql
+CREATE INDEX idx_trips_active ON trips (tenant_id, school_id, status)
+    WHERE status IN ('STARTED', 'IN_PROGRESS');
+```
+
+At any moment a tiny fraction of trips are active, a tiny fraction of alerts are open, and a tiny fraction of deliveries are pending. Partial indexes on those predicates are a fraction of the size of full indexes and stay in cache.
+
+---
+
+## Partitioning: `position_history`
+
+The only partitioned table. It is ~99% of row volume and 0% of business logic ([`DATA_MODEL_OVERVIEW.md`](DATA_MODEL_OVERVIEW.md)).
+
+```sql
+CREATE TABLE position_history (
+    id          UUID        NOT NULL DEFAULT gen_random_uuid(),
+    tenant_id   UUID        NOT NULL,
+    vehicle_id  UUID        NOT NULL,
+    trip_id     UUID,
+    latitude    NUMERIC(9,6) NOT NULL,
+    longitude   NUMERIC(9,6) NOT NULL,
+    speed_mps   NUMERIC(6,2),
+    heading_deg INTEGER,
+    ignition_on BOOLEAN,
+    device_time TIMESTAMPTZ NOT NULL,
+    received_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (id, received_at)
+) PARTITION BY RANGE (received_at);
+```
+
+**Daily range partitions on `received_at`.**
+
+- `received_at`, not `device_time` — a device buffering through a coverage gap can report hours-old positions, and partitioning on device time would write into old partitions unpredictably.
+- The primary key includes the partition key, as PostgreSQL requires.
+- Per-partition index: `(tenant_id, vehicle_id, received_at)` and `(tenant_id, trip_id, received_at)`.
+
+### Why daily
+
+| Interval | Assessment |
+|---|---|
+| Hourly | Too many partitions; planning overhead grows |
+| **Daily** | **Chosen.** Aligns with the service day; retention drops are granular; ~17M rows/partition at reference scale |
+| Monthly | Partitions too large to drop granularly; retention becomes coarse |
+
+### Lifecycle
+
+Managed by a scheduled job, not migrations ([`MIGRATION_STRATEGY.md`](MIGRATION_STRATEGY.md)):
+
+```
+Daily job:
+  1. Create partitions for the next N days (N > 1, so one failed run is not an outage)
+  2. APPLY RLS to each new partition       ← mandatory, RLS is not inherited
+  3. Create indexes on each new partition
+  4. Drop partitions past retention        BR-TRACK-007
+  5. Alert if the next partition is missing
+```
+
+**Step 2 is the one that must never be missed.** A partition created without a policy exposes every tenant's vehicle positions for that day. Verification test 8 in [`RLS_POLICIES.md`](RLS_POLICIES.md) covers it.
+
+**Step 5 matters because a missing partition breaks ingestion** — the insert has nowhere to go. The alert fires with days of margin.
+
+### Pruning
+
+Queries must filter on `received_at` to prune. Repositories always include a time range; a history query without one is a defect, caught by a test asserting single-day queries touch a single partition.
+
+---
+
+## Tables Deliberately Not Partitioned
+
+| Table | Rows/year | Why not |
+|---|---|---|
+| `boarding_events` | ~150M | Queried by student and by trip across arbitrary time ranges; partitioning would hurt those more than it helps. Revisit if size becomes the constraint. |
+| `audit_records` | ~190M | Retention is long and legally bounded; queries are by subject and actor, not by time range. |
+| `notifications` | ~150M | Short practical query window; archival is simpler than partitioning. |
+
+Each has a documented trigger for reconsideration ([`SCALABILITY.md`](SCALABILITY.md)).
+
+---
+
+## Maintenance
+
+Autovacuum tuned more aggressively on high-churn tables (`trips`, `notification_deliveries`, `alerts`). `position_history` partitions are effectively append-only and need little vacuuming, but are `ANALYZE`d after creation so the planner has statistics.
+
+Index bloat and unused indexes are reviewed periodically — an unused index costs write throughput on every insert at peak.
+
+---
+
+## Verification
+
+1. Every tenant-scoped index leads with `tenant_id`.
+2. A single-day history query touches exactly one partition (pruning works).
+3. A newly created partition has RLS enabled, forced, and policied.
+4. Every hot-path query in the repository layer has a supporting index — query plans asserted in integration tests.
+5. The partition job creates ahead and alerts when the next partition is absent.
+6. `boarding_events.client_event_id` uniqueness rejects a duplicate replay.
+
+===FILE_END===
+===FILE_START:documentation/03-database/MIGRATION_STRATEGY.md===
+# MIGRATION STRATEGY
+
+**Document tier:** 3 — Database
+**Status:** Active
+
+---
+
+## Tool and Layout
+
+Flyway, versioned, forward-only. Migrations live in `backend/guardian-api/src/main/resources/db/migration/`.
+
+```
+V1__baseline_tenancy.sql
+V2__identity_and_access.sql
+V3__students_and_guardians.sql
+V4__fleet_and_staff.sql
+V5__routes_and_stops.sql
+V6__trips_and_manifests.sql
+V7__boarding_and_handover.sql
+V8__tracking_and_partitions.sql
+V9__alerts_and_notifications.sql
+V10__incidents.sql
+V11__audit.sql
+V12__configuration_and_reference.sql
+R__seed_permissions.sql          -- repeatable
+R__seed_region_profiles.sql      -- repeatable
+```
+
+Naming: `V<n>__<snake_case_description>.sql`. Repeatable migrations (`R__`) hold idempotent reference-data seeding and re-run whenever their checksum changes.
+
+Migrations run at application startup in a single, ordered, locked sequence.
+
+---
+
+## Rules
+
+1. **Never edit an applied migration.** Flyway checksums fail, and any environment that already ran it silently diverges. Fix forward with a new migration.
+2. **Forward-only.** No `undo` scripts. Rollback is a new migration or a restore from backup — see below.
+3. **Every migration is idempotent-safe to attempt**: `IF NOT EXISTS` where the construct supports it.
+4. **Every new tenant-scoped table gets RLS in the same migration that creates it** ([`RLS_POLICIES.md`](RLS_POLICIES.md)). Not the next one.
+5. **No data loss without an expand-contract sequence.**
+6. **Tested against realistic data volumes** before production, not against an empty schema.
+
+---
+
+## Why Forward-Only
+
+A rollback script is written when the change is fresh and is executed, if ever, during an incident — untested, under pressure, against data the original author never saw.
+
+Forward-only means the recovery path is the same path used every day. Combined with expand-contract, it means a bad deploy is reverted by deploying the previous application version, with the schema still compatible.
+
+---
+
+## Expand-Contract
+
+Any change that could break the running application is done in phases, each independently deployable. **The old and new application versions must both work against the intermediate schema** — that is the property that makes deploys reversible.
+
+### Renaming a column
+
+```
+1  EXPAND   Add new column, nullable. Deploy.
+2  BACKFILL Migrate data in batches. Deploy code writing BOTH columns.
+3  SWITCH   Deploy code reading the new column.
+4  CONTRACT Drop the old column — a later release, once rollback is no longer wanted.
+```
+
+### Adding a NOT NULL column
+
+```
+1  Add nullable, with a default for new rows.
+2  Backfill existing rows in batches.
+3  Add the NOT NULL constraint (validate separately to avoid a long lock).
+```
+
+### Dropping a table
+
+Stop writing → stop reading → verify no access for a full retention cycle → drop. **Never in the same release as the code change.**
+
+---
+
+## Locking and Large Tables
+
+At reference scale, some tables are large enough that a careless migration locks the platform during a school run.
+
+| Operation | Safe approach |
+|---|---|
+| Add column | Nullable with no default is fast. A volatile default rewrites the table — avoid. |
+| Add index | `CREATE INDEX CONCURRENTLY`, outside a transaction. |
+| Add FK / check constraint | `NOT VALID` first, then `VALIDATE CONSTRAINT` separately — avoids a full-table lock. |
+| Backfill | Batched with commits between; never one statement over millions of rows. |
+| `position_history` | Never altered in place. Change applies to new partitions only. |
+
+`lock_timeout` and `statement_timeout` are set for migration sessions so a migration fails fast rather than blocking the platform.
+
+**Migrations run outside peak windows.** The load profile ([`SCALABILITY.md`](SCALABILITY.md)) makes the safe window obvious and generous.
+
+---
+
+## Partition Management
+
+`position_history` partitions are created ahead of time by a scheduled job, not by migrations.
+
+The job **must** apply RLS to each new partition ([`RLS_POLICIES.md`](RLS_POLICIES.md)). It also drops partitions past their retention (BR-TRACK-007).
+
+A missing future partition breaks ingestion, so the job alerts if the next partition does not exist well before it is needed.
+
+---
+
+## Testing
+
+| Test | Purpose |
+|---|---|
+| Clean-schema apply | All migrations run from empty against Testcontainers PostgreSQL. |
+| Repeat apply | Running twice is a no-op. |
+| RLS coverage | Every `tenant_id` table has a forced policy — **fails the build otherwise**. |
+| Isolation | Cross-tenant reads return zero rows. |
+| Realistic volume | Migrations applied to a seeded dataset; duration measured. |
+| Backward compatibility | The previous application version starts against the new schema — proves the deploy is reversible. |
+
+---
+
+## Environments
+
+```
+Local → CI → Staging → Production
+```
+
+Staging runs against a sanitised production-shaped dataset. **Production migrations always run on a database with a verified recent backup** ([`BACKUP_AND_DR.md`](../08-deployment/BACKUP_AND_DR.md)).
+
+---
+
+## Failure Handling
+
+Flyway holds a lock, so migrations never run concurrently across instances. On failure the application does not start — it does not serve traffic against a half-migrated schema.
+
+Recovery: diagnose, write a corrective forward migration, redeploy. Restoring from backup is the last resort and is why the pre-migration backup is verified rather than assumed.
+
+Because every migration is expand-contract, the previous application version can be redeployed against the new schema while the fix is prepared.
+
+===FILE_END===
+===FILE_START:documentation/03-database/RLS_POLICIES.md===
+# ROW-LEVEL SECURITY POLICIES
+
+**Document tier:** 3 — Database
+**Status:** Active
+**Implements:** ADR-0001 · **Enforces:** BR-TEN-004 🔴
+
+This is the enforcement boundary for tenant isolation. If this document's rules are not followed exactly, the platform's primary security guarantee does not hold.
+
+---
+
+## Roles
+
+| Role | Purpose | RLS |
+|---|---|---|
+| `guardian_owner` | Owns schema objects; used only by migrations | Bypassed — hence `FORCE` on every table |
+| `guardian_app` | The application's runtime role | **Subject to RLS.** No `BYPASSRLS`. Not the owner. |
+| `guardian_readonly` | Reporting replica reads | Subject to RLS |
+
+```sql
+CREATE ROLE guardian_app LOGIN PASSWORD :'app_password' NOBYPASSRLS;
+```
+
+A test asserts `guardian_app` has neither `BYPASSRLS` nor `SUPERUSER` and does not own tables. **This is checked because it is the single misconfiguration that silently removes all isolation.**
+
+---
+
+## The Standard Policy
+
+Applied to **every** table carrying `tenant_id`:
+
+```sql
+ALTER TABLE <table> ENABLE ROW LEVEL SECURITY;
+ALTER TABLE <table> FORCE  ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON <table>
+    FOR ALL
+    TO guardian_app
+    USING      (tenant_id = current_setting('app.tenant_id', true)::uuid)
+    WITH CHECK (tenant_id = current_setting('app.tenant_id', true)::uuid);
+```
+
+### Why each clause is exactly this
+
+| Clause | Consequence of omitting it |
+|---|---|
+| `FORCE` | The owning role bypasses the policy. Any process connecting as owner reads everything. |
+| `WITH CHECK` | Reads are protected; **writes are not**. A bug could insert a row bearing another tenant's `tenant_id`. |
+| `current_setting(..., true)` | Without `true`, an unset variable raises an error instead of returning null. Errors get caught and worked around; null yields zero rows. |
+| `FOR ALL` | Separate per-command policies invite one being forgotten. |
+| Unset ⇒ zero rows | `NULL = uuid` is null, never true. **No tenant context means no access** — the safe default. |
+
+---
+
+## Setting Tenant Context
+
+```sql
+SET LOCAL app.tenant_id = '550e8400-e29b-41d4-a716-446655440000';
+```
+
+**`SET LOCAL`, never `SET`.** `SET LOCAL` is transaction-scoped and expires on commit or rollback. Plain `SET` persists for the session — and with a connection pool, the session outlives the request, so the next tenant to borrow that connection inherits the previous tenant's context.
+
+That is a cross-tenant data leak with no error, no log entry, and no test failure unless specifically tested for. Verification test 5 exists solely for this.
+
+Application implementation: `TenantContextFilter` → transaction listener issuing `SET LOCAL` at transaction start ([`MULTI_TENANCY.md`](../02-system-design/MULTI_TENANCY.md)).
+
+---
+
+## Tables With Policies
+
+Every table listed under a tenant-scoped module in [`DATA_MODEL_OVERVIEW.md`](DATA_MODEL_OVERVIEW.md) carries the standard policy. Named explicitly so omissions are visible:
+
+**Tenancy** `schools` · `branches` · `school_calendars`
+**Identity** `users` · `user_credentials` · `sessions` · `roles` · `role_permissions` · `user_roles` · `user_scopes`
+**Students** `students` · `student_classes` · `student_credentials`
+**Guardians** `guardians` · `guardian_student_links` · `authorised_pickup_persons` · `custody_restrictions`
+**Fleet** `vehicles` · `vehicle_documents` · `devices`
+**Staff** `transport_staff` · `staff_credentials` · `duty_assignments`
+**Routes** `routes` · `stops` · `route_student_assignments`
+**Trips** `trips` · `trip_manifests` · `trip_manifest_amendments` · `trip_staff`
+**Boarding** `boarding_events` · `handovers` · `reconciliations` · `reconciliation_items`
+**Tracking** `position_history` *(and every partition)* · `trip_etas`
+**Alerts** `alert_rules` · `alerts`
+**Notification** `notification_templates` · `notification_preferences` · `notifications` · `notification_deliveries`
+**Incidents** `sos_alerts` · `incidents` · `incident_escalations`
+**Absence** `absence_declarations`
+**Audit** `audit_records` · `data_access_records`
+**Configuration** `configuration_values`
+
+### `organizations` — the special case
+
+`organizations` is the tenant table itself. Its policy compares `id`, not `tenant_id`:
+
+```sql
+CREATE POLICY tenant_isolation ON organizations
+    FOR ALL TO guardian_app
+    USING      (id = current_setting('app.tenant_id', true)::uuid)
+    WITH CHECK (id = current_setting('app.tenant_id', true)::uuid);
+```
+
+### Tables with no RLS
+
+Platform reference data, readable by all tenants, writable only by migrations and platform operations:
+
+`permissions` · `region_profiles` · `configuration_definitions` · `reference_data` · `localisation_resources`
+
+These carry no `tenant_id`. `guardian_app` holds `SELECT` only.
+
+---
+
+## Partitioned Tables
+
+RLS on a partitioned parent **does not automatically cover partitions created later**. Since `position_history` partitions are created by a scheduled job, that job must apply the policy to each new partition.
+
+The partition-creation function applies `ENABLE`/`FORCE` and the policy as part of creating the partition, and verification test 2 covers partitions as well as base tables. A partition created without a policy would expose every tenant's vehicle positions for that day.
+
+---
+
+## Platform Operations
+
+The one permitted crossing (BR-TEN-004). It does **not** disable RLS — it sets context to the target tenant after an audited elevation:
+
+```
+PERM-PLATFORM-TENANT-ACCESS verified
+   → justification required
+   → audit record written BEFORE access
+   → SET LOCAL app.tenant_id = <target org>
+   → time-boxed; every read logged
+```
+
+There is no code path that turns RLS off, and none may be added. Genuine cross-tenant platform reporting runs against dedicated aggregate views owned by platform operations, not by lifting isolation.
+
+---
+
+## Adding a Table
+
+1. Add `tenant_id UUID NOT NULL REFERENCES organizations(id)`.
+2. `ENABLE` **and** `FORCE` row level security.
+3. Create the standard policy with both `USING` and `WITH CHECK`.
+4. Add the table to the list above.
+5. Index leading with `tenant_id`.
+
+Steps 2–3 are verified automatically. A migration adding a `tenant_id` table without a forced policy **fails the build** — this is the guard that keeps the guarantee true as the schema grows, and it matters more than any individual policy.
+
+---
+
+## Verification
+
+| # | Test |
+|---|---|
+| 1 | Data written under tenant A returns zero rows read under tenant B — for every tenant-scoped repository. |
+| 2 | Every table (and partition) with a `tenant_id` column has RLS enabled **and forced**. |
+| 3 | Every policy declares both `USING` and `WITH CHECK`. |
+| 4 | `guardian_app` lacks `BYPASSRLS` and `SUPERUSER` and owns no tables. |
+| 5 | Two sequential transactions on one pooled connection with different tenants do not leak context. |
+| 6 | With no context set, every tenant-scoped read returns zero rows. |
+| 7 | Inserting a row with a foreign `tenant_id` is rejected by `WITH CHECK`. |
+| 8 | A newly created `position_history` partition carries the policy. |
+| 9 | No code path issues `SET` (session-scoped) for `app.tenant_id` — only `SET LOCAL`. |
+
+===FILE_END===
+===FILE_START:documentation/03-database/tables/MOD-01-tenancy.md===
+# MOD-01 — Tenancy Tables
+
+**Owning module:** `com.guardian.tenancy` · **Implements:** ADR-0002 · **Rules:** BR-TEN-*
+
+This module is the **reference implementation** — its tables, repositories, and use cases are the pattern other modules copy.
+
+---
+
+## `organizations`
+
+The tenant. `tenant_id` on every other table references this.
+
+| Column | Type | Notes |
+|---|---|---|
+| `code` | `VARCHAR(32)` | `NOT NULL`, globally unique, immutable once operational data exists (BR-TEN-007) |
+| `name` | `VARCHAR(255)` | `NOT NULL` |
+| `region_profile_id` | `UUID` | `NOT NULL` → `region_profiles` (ADR-0007) |
+| `status` | `VARCHAR(24)` | `NOT NULL`, `ACTIVE` / `SUSPENDED` / `CLOSED` |
+| `contact_email` | `VARCHAR(255)` | |
+| `contact_phone` | `VARCHAR(32)` | |
+
+Standard columns apply, **except `tenant_id`** — this table *is* the tenant.
+
+```sql
+CONSTRAINT uq_organizations_code       UNIQUE (code),
+CONSTRAINT ck_organizations_status     CHECK (status IN ('ACTIVE','SUSPENDED','CLOSED'))
+```
+
+**RLS is special-cased** — the policy compares `id`, not `tenant_id`. See [`RLS_POLICIES.md`](../RLS_POLICIES.md).
+
+**Indexes:** `idx_organizations_status (status) WHERE status = 'ACTIVE'`
+
+**Rules enforced structurally:** BR-TEN-001 (every scoped table FKs here), BR-TEN-007 (unique code)
+
+---
+
+## `schools`
+
+Operational data belongs to a school, not directly to an organization.
+
+| Column | Type | Notes |
+|---|---|---|
+| `organization_id` | `UUID` | `NOT NULL` → `organizations`, `ON DELETE RESTRICT` |
+| `code` | `VARCHAR(32)` | `NOT NULL`, unique within organization |
+| `name` | `VARCHAR(255)` | `NOT NULL` |
+| `timezone` | `VARCHAR(64)` | `NOT NULL`, IANA identifier (BR-CFG-006) |
+| `address_line1`, `address_line2`, `city`, `state`, `postal_code` | `VARCHAR` | Format per region profile |
+| `latitude`, `longitude` | `NUMERIC(9,6)` | School geofence centre (ALT-003) |
+| `geofence_radius_m` | `INTEGER` | `NOT NULL`, bounded by platform limits |
+| `status` | `VARCHAR(24)` | `NOT NULL` |
+
+```sql
+CONSTRAINT uq_schools_org_code     UNIQUE (tenant_id, organization_id, code),
+CONSTRAINT ck_schools_status       CHECK (status IN ('ACTIVE','INACTIVE')),
+CONSTRAINT ck_schools_geofence     CHECK (geofence_radius_m BETWEEN 20 AND 2000),
+CONSTRAINT fk_schools_organization FOREIGN KEY (organization_id)
+    REFERENCES organizations(id) ON DELETE RESTRICT
+```
+
+`ON DELETE RESTRICT` implements BR-TEN-003 — a school cannot be orphaned or moved between organizations.
+
+**Indexes:** `idx_schools_tenant_org (tenant_id, organization_id)`
+
+**Rules:** BR-TEN-002 (last-school deletion refused — application), BR-TEN-003 (FK restrict), BR-CFG-006 (timezone stored)
+
+**Note:** `timezone` is `NOT NULL` deliberately. Every displayed time depends on it, and a null would silently default to server time — wrong for any school outside the server's zone.
+
+---
+
+## `branches`
+
+Optional subdivision (ADR-0002). Present so chains need no redesign; unused by most tenants.
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | `NOT NULL` → `schools` |
+| `code` | `VARCHAR(32)` | `NOT NULL`, unique within school |
+| `name` | `VARCHAR(255)` | `NOT NULL` |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+```sql
+CONSTRAINT uq_branches_school_code UNIQUE (tenant_id, school_id, code)
+```
+
+**Rules:** BR-TEN-005 — a null `branch_id` on any school-scoped record means "school-wide" and is valid.
+
+---
+
+## `school_calendars`
+
+Operating days. Drives trip generation (BR-TRIP-011).
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | `NOT NULL` → `schools` |
+| `calendar_date` | `DATE` | `NOT NULL` |
+| `day_type` | `VARCHAR(24)` | `NOT NULL`, `OPERATING` / `HOLIDAY` / `EXAM` / `SPECIAL` |
+| `notes` | `TEXT` | |
+
+```sql
+CONSTRAINT uq_school_calendars_date UNIQUE (tenant_id, school_id, calendar_date),
+CONSTRAINT ck_school_calendars_type CHECK (day_type IN ('OPERATING','HOLIDAY','EXAM','SPECIAL'))
+```
+
+**Indexes:** `idx_school_calendars_lookup (tenant_id, school_id, calendar_date)`
+
+**Rules:** BR-TRIP-011 — non-operating days suppress trip generation.
+
+---
+
+## Reference Implementation Notes
+
+This module demonstrates the patterns every other module follows:
+
+| Pattern | Where to see it |
+|---|---|
+| Domain entity free of JPA | `tenancy/domain/School.java` |
+| Separate persistence model | `tenancy/infrastructure/persistence/SchoolEntity.java` |
+| Repository port in application | `tenancy/application/port/SchoolRepository.java` |
+| Adapter in infrastructure | `tenancy/infrastructure/persistence/SchoolRepositoryAdapter.java` |
+| Use case per operation | `tenancy/application/usecase/CreateSchoolUseCase.java` |
+| Audit in the same transaction | Any write use case (BR-AUD-002) |
+| RLS integration test | `tenancy/…/SchoolTenantIsolationTest.java` |
+
+See [`PROJECT_STRUCTURE.md`](../../06-development/PROJECT_STRUCTURE.md).
+
+===FILE_END===
+===FILE_START:documentation/03-database/tables/MOD-02-identity.md===
+# MOD-02 — Identity & Access Tables
+
+**Owning module:** `com.guardian.identity` · **Implements:** ADR-0006 · **Rules:** BR-IAM-*
+
+---
+
+## `users`
+
+One row per person. A person may be both guardian and staff (BR-IAM-010) — one user, several roles.
+
+| Column | Type | Notes |
+|---|---|---|
+| `email` | `VARCHAR(255)` | Unique within tenant where present |
+| `phone` | `VARCHAR(32)` | Unique within tenant where present; format per region profile |
+| `first_name`, `last_name` | `VARCHAR(128)` | `NOT NULL` |
+| `preferred_locale` | `VARCHAR(16)` | `NOT NULL`, drives notification language |
+| `status` | `VARCHAR(24)` | `NOT NULL`, `ACTIVE` / `INACTIVE` / `LOCKED` |
+| `last_login_at` | `TIMESTAMPTZ` | |
+
+```sql
+CONSTRAINT uq_users_tenant_email CHECK/UNIQUE (tenant_id, lower(email)) WHERE email IS NOT NULL,
+CONSTRAINT uq_users_tenant_phone UNIQUE (tenant_id, phone) WHERE phone IS NOT NULL,
+CONSTRAINT ck_users_identifier    CHECK (email IS NOT NULL OR phone IS NOT NULL),
+CONSTRAINT ck_users_status        CHECK (status IN ('ACTIVE','INACTIVE','LOCKED'))
+```
+
+`ck_users_identifier` matters: guardians authenticate by phone (many have no email), staff by email. At least one must exist.
+
+**Indexes:** `idx_users_tenant_status (tenant_id, status) WHERE status = 'ACTIVE'`
+
+---
+
+## `user_credentials`
+
+Separated from `users` so credential material is never loaded by ordinary user queries.
+
+| Column | Type | Notes |
+|---|---|---|
+| `user_id` | `UUID` | `NOT NULL` → `users` |
+| `credential_type` | `VARCHAR(24)` | `NOT NULL`, `PASSWORD` / `OTP` |
+| `secret_hash` | `VARCHAR(255)` | `NOT NULL` — Argon2id |
+| `expires_at` | `TIMESTAMPTZ` | Set for OTP |
+| `consumed_at` | `TIMESTAMPTZ` | OTP single-use |
+| `failed_attempts` | `INTEGER` | `NOT NULL DEFAULT 0` (BR-IAM-011) |
+| `locked_until` | `TIMESTAMPTZ` | |
+
+**Never** returned by any API. Not logged. See [`SECURITY_ARCHITECTURE.md`](../../02-system-design/SECURITY_ARCHITECTURE.md).
+
+---
+
+## `sessions`
+
+Opaque refresh tokens, server-stored (ADR-0006).
+
+| Column | Type | Notes |
+|---|---|---|
+| `user_id` | `UUID` | `NOT NULL` → `users` |
+| `refresh_token_hash` | `VARCHAR(255)` | `NOT NULL` **UNIQUE** — hashed, never stored raw |
+| `family_id` | `UUID` | `NOT NULL` — rotation lineage |
+| `previous_session_id` | `UUID` | → `sessions` |
+| `client_type` | `VARCHAR(24)` | `NOT NULL`, `PARENT_APP` / `DRIVER_APP` / `ADMIN_WEB` |
+| `device_identifier` | `VARCHAR(255)` | |
+| `issued_at`, `expires_at` | `TIMESTAMPTZ` | `NOT NULL` |
+| `consumed_at` | `TIMESTAMPTZ` | Set on rotation — single-use |
+| `is_revoked` | `BOOLEAN` | `NOT NULL DEFAULT false` |
+| `revoked_reason` | `VARCHAR(64)` | |
+
+```sql
+CONSTRAINT uq_sessions_refresh_hash UNIQUE (refresh_token_hash)
+```
+
+**`family_id` implements reuse detection** (BR-IAM-009). Presenting an already-consumed refresh token means the token was stolen — the entire family is revoked and a security alert raised. Without `family_id` this attack is undetectable.
+
+**Indexes:** `uq_sessions_refresh_hash`, `idx_sessions_user_active (tenant_id, user_id) WHERE NOT is_revoked`, `idx_sessions_family (family_id)`
+
+**Rules:** BR-IAM-007, BR-IAM-009
+
+---
+
+## `roles`, `permissions`, `role_permissions`, `user_roles`
+
+**`permissions` is platform reference data** — no `tenant_id`, no RLS, `SELECT` only for the application. Tenants assign permissions; they cannot invent them ([`PERMISSION_MATRIX.md`](../../01-product-discovery/PERMISSION_MATRIX.md)).
+
+| Table | Key columns |
+|---|---|
+| `permissions` | `code` (`PERM-TRIP-VIEW`) UNIQUE, `area`, `description_key` |
+| `roles` | `tenant_id`, `code`, `name`, `is_system_role` — unique `(tenant_id, code)` |
+| `role_permissions` | `role_id`, `permission_id` — unique together |
+| `user_roles` | `user_id`, `role_id` — unique together |
+
+`is_system_role` marks the templates in the permission matrix. Tenants may define custom roles from the same permission set.
+
+---
+
+## `user_scopes`
+
+Permission answers *what*; scope answers *which* (BR-IAM-006).
+
+| Column | Type | Notes |
+|---|---|---|
+| `user_id` | `UUID` | `NOT NULL` → `users` |
+| `scope_level` | `VARCHAR(24)` | `NOT NULL`, `PLATFORM` / `ORG` / `SCHOOL` / `ROUTE` |
+| `scope_ref_id` | `UUID` | Null for `PLATFORM` and `ORG` |
+
+```sql
+CONSTRAINT ck_user_scopes_level CHECK (scope_level IN ('PLATFORM','ORG','SCHOOL','ROUTE')),
+CONSTRAINT ck_user_scopes_ref   CHECK (
+    (scope_level IN ('PLATFORM','ORG') AND scope_ref_id IS NULL)
+ OR (scope_level IN ('SCHOOL','ROUTE') AND scope_ref_id IS NOT NULL))
+```
+
+`OWN_CHILDREN`, `TRIP`, and `SELF` are **not** stored here — they are derived at request time from `guardian_student_links` and `trip_staff`. Storing them would duplicate the source of truth and let the two diverge.
+
+**Indexes:** `idx_user_scopes_user (tenant_id, user_id)`
+
+---
+
+## Verification
+
+1. Refresh-token reuse revokes the whole `family_id` and raises an alert.
+2. `user_credentials` never appears in any API response.
+3. A user with neither email nor phone cannot be created.
+4. A role cannot reference a permission code absent from `permissions`.
+5. Permission changes take effect on the next request without a new token (BR-IAM-004).
+6. Deactivating a user revokes all their sessions (BR-IAM-008).
+
+===FILE_END===
+===FILE_START:documentation/03-database/tables/MOD-03-04-students-guardians.md===
+# MOD-03 / MOD-04 — Students & Guardians Tables
+
+**Owning modules:** `com.guardian.student`, `com.guardian.guardian` · **Rules:** BR-STU-*, BR-GRD-*
+
+These tables answer the platform's most consequential question: **may this adult collect this child?**
+
+---
+
+## `students`
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | `NOT NULL` → `schools` |
+| `branch_id` | `UUID` | → `branches`. Null = school-wide (BR-TEN-005) |
+| `student_class_id` | `UUID` | → `student_classes` |
+| `admission_no` | `VARCHAR(64)` | `NOT NULL`, unique within school |
+| `first_name`, `last_name` | `VARCHAR(128)` | `NOT NULL` |
+| `date_of_birth` | `DATE` | Drives self-release eligibility (BR-HAND-005) |
+| `photo_ref` | `VARCHAR(255)` | Storage reference, not a URL — served through an authorising endpoint |
+| `enrolment_status` | `VARCHAR(24)` | `NOT NULL`, `ACTIVE` / `INACTIVE` / `WITHDRAWN` / `TRANSFERRED` |
+| `transport_eligible` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+```sql
+CONSTRAINT uq_students_admission UNIQUE (tenant_id, school_id, admission_no),
+CONSTRAINT ck_students_enrolment CHECK (
+    enrolment_status IN ('ACTIVE','INACTIVE','WITHDRAWN','TRANSFERRED'))
+```
+
+**`photo_ref` is a storage key, never a public URL.** A guessable photo URL for a child is a safety problem, so images are served through an endpoint that checks permission and scope ([`SECURITY_ARCHITECTURE.md`](../../02-system-design/SECURITY_ARCHITECTURE.md)).
+
+Students are **never hard-deleted** while a safety record references them (BR-STU-005); withdrawal sets `enrolment_status` and removes future route assignments.
+
+**Indexes:** `idx_students_tenant_school (tenant_id, school_id) WHERE enrolment_status = 'ACTIVE'`, `uq_students_admission`
+
+**Rules:** BR-STU-001, BR-STU-003, BR-STU-004, BR-STU-005
+
+---
+
+## `student_classes`
+
+| Column | Type |
+|---|---|
+| `school_id` | `UUID NOT NULL` → `schools` |
+| `grade`, `section` | `VARCHAR(32) NOT NULL` |
+| `academic_year` | `VARCHAR(16) NOT NULL` |
+
+Unique `(tenant_id, school_id, academic_year, grade, section)`.
+
+---
+
+## `student_credentials`
+
+Boarding credential — QR or card (STU-007).
+
+| Column | Type | Notes |
+|---|---|---|
+| `student_id` | `UUID` | `NOT NULL` → `students` |
+| `credential_type` | `VARCHAR(24)` | `NOT NULL`, `QR` / `NFC_CARD` / `BARCODE` |
+| `credential_hash` | `VARCHAR(255)` | `NOT NULL` **UNIQUE** — hashed, never stored raw |
+| `issued_at` | `TIMESTAMPTZ` | `NOT NULL` |
+| `revoked_at` | `TIMESTAMPTZ` | |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+**Hashed, like a password.** A leaked credential table would let anyone forge a boarding scan. Lookup is by hash on scan.
+
+**Indexes:** `uq_student_credentials_hash (credential_hash)`, `idx_student_credentials_student (tenant_id, student_id) WHERE is_active`
+
+---
+
+## `guardians`
+
+| Column | Type | Notes |
+|---|---|---|
+| `user_id` | `UUID` | → `users`. Null until the guardian activates their account. |
+| `first_name`, `last_name` | `VARCHAR(128)` | `NOT NULL` |
+| `phone` | `VARCHAR(32)` | `NOT NULL` — the primary channel ([`PRODUCT_PRINCIPLES.md`](../../PRODUCT_PRINCIPLES.md) §6) |
+| `email` | `VARCHAR(255)` | |
+| `photo_ref` | `VARCHAR(255)` | For handover visual verification |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+`user_id` is nullable because a guardian exists as a *record* — receiving SMS and being authorised for handover — before ever installing the app. Requiring an account first would exclude exactly the parents the platform must reach.
+
+---
+
+## `guardian_student_links` 🔴
+
+**The authorisation table for child collection.** Rights are explicit columns, never inferred (BR-GRD-001).
+
+| Column | Type | Notes |
+|---|---|---|
+| `guardian_id` | `UUID` | `NOT NULL` → `guardians` |
+| `student_id` | `UUID` | `NOT NULL` → `students` |
+| `relationship_type` | `VARCHAR(32)` | `NOT NULL` — **descriptive only** |
+| `can_view` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+| `can_receive_notifications` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+| `can_authorise_handover` | `BOOLEAN` | `NOT NULL DEFAULT false` |
+| `can_declare_absence` | `BOOLEAN` | `NOT NULL DEFAULT false` |
+| `is_primary` | `BOOLEAN` | `NOT NULL DEFAULT false` |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+```sql
+CONSTRAINT uq_guardian_student UNIQUE (tenant_id, guardian_id, student_id)
+```
+
+### Why rights are columns, not inferred from `relationship_type`
+
+`relationship_type` records *"mother"*, *"father"*, *"uncle"*. It does **not** determine authority. Custody arrangements exist; a parent may be legally barred from collection (BR-GRD-008). Inferring "father ⇒ may collect" would encode an assumption that is wrong in exactly the cases where being wrong is most harmful.
+
+**`can_authorise_handover` defaults to `false`.** Rights are granted deliberately, never by default. BR-GRD-002 requires at least one guardian per student to hold it — enforced by the application at link creation and route assignment, since PostgreSQL cannot express a cross-row minimum as a constraint. **This is a documented deviation from "enforce structurally"**, and is covered by a dedicated test.
+
+**Indexes:** `idx_gsl_guardian (tenant_id, guardian_id) WHERE is_active`, `idx_gsl_student (tenant_id, student_id) WHERE is_active`, `idx_gsl_handover (tenant_id, student_id) WHERE is_active AND can_authorise_handover`
+
+**Rules:** BR-GRD-001 🔴, BR-GRD-002 🔴, BR-GRD-003, BR-GRD-004, BR-IAM-005
+
+---
+
+## `authorised_pickup_persons`
+
+An adult who may collect a child but is not a guardian (BR-GRD-005).
+
+| Column | Type | Notes |
+|---|---|---|
+| `student_id` | `UUID` | `NOT NULL` → `students` |
+| `nominated_by_guardian_id` | `UUID` | `NOT NULL` → `guardians` |
+| `full_name` | `VARCHAR(255)` | `NOT NULL` |
+| `phone` | `VARCHAR(32)` | `NOT NULL` |
+| `relationship_note` | `VARCHAR(255)` | |
+| `photo_ref` | `VARCHAR(255)` | |
+| `valid_from`, `valid_until` | `TIMESTAMPTZ` | `NOT NULL` — **always time-bounded** |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+| `revoked_at`, `revoked_by` | | Immediate effect (BR-GRD-007) |
+
+```sql
+CONSTRAINT ck_app_validity CHECK (valid_until > valid_from)
+```
+
+**`valid_until` is `NOT NULL`** — nominations always expire. A permanent nomination made once and forgotten is a standing authorisation nobody reviews. Extending is an explicit act.
+
+Nomination requires the nominating guardian to hold `can_authorise_handover` (BR-GRD-006) and is audited; all guardians with that right are notified (NTF-ADM-04).
+
+**Indexes:** `idx_app_student_valid (tenant_id, student_id, valid_from, valid_until) WHERE is_active`
+
+---
+
+## `custody_restrictions` 🔴
+
+Overrides everything above (BR-GRD-008, BR-HAND-006).
+
+| Column | Type | Notes |
+|---|---|---|
+| `student_id` | `UUID` | `NOT NULL` → `students` |
+| `restricted_guardian_id` | `UUID` | → `guardians` |
+| `restricted_person_name` | `VARCHAR(255)` | For a non-guardian |
+| `restriction_type` | `VARCHAR(32)` | `NOT NULL`, `NO_HANDOVER` / `NO_VISIBILITY` / `FULL` |
+| `reason` | `TEXT` | `NOT NULL` |
+| `effective_from`, `effective_until` | `TIMESTAMPTZ` | |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+```sql
+CONSTRAINT ck_custody_subject CHECK (
+    restricted_guardian_id IS NOT NULL OR restricted_person_name IS NOT NULL),
+CONSTRAINT ck_custody_type CHECK (restriction_type IN ('NO_HANDOVER','NO_VISIBILITY','FULL'))
+```
+
+**Evaluated before any handover and before any visibility check** — a restriction beats an active guardian link with `can_authorise_handover = true`. An attempted collection by a restricted person is refused, recorded, and escalated (NTF-HAND-04). It creates no `handovers` row; the trace lives in `incidents` and `audit_records`.
+
+Managed only by `PERM-CUSTODY-RESTRICTION-MANAGE`. Every change is audited.
+
+**Indexes:** `idx_custody_student (tenant_id, student_id) WHERE is_active`
+
+---
+
+## Verification
+
+1. A guardian link with no handover right anywhere for a student blocks route assignment (BR-GRD-002).
+2. A guardian without `can_authorise_handover` cannot nominate a pickup person.
+3. A pickup person outside their validity window is refused at handover.
+4. Revoking a pickup person takes effect immediately.
+5. A custody restriction blocks handover even where the guardian link grants it.
+6. A restricted guardian cannot read the student's location.
+7. Student photos are not retrievable without permission and scope.
+8. Student credential lookup works by hash; raw credential values are absent from the database.
+
+===FILE_END===
+===FILE_START:documentation/03-database/tables/MOD-05-06-fleet-staff.md===
+# MOD-05 / MOD-06 — Fleet & Staff Tables
+
+**Owning modules:** `com.guardian.fleet`, `com.guardian.staff` · **Rules:** BR-FLEET-*, BR-STAFF-*
+
+Both modules exist to answer one question at trip start: **is this vehicle and this crew permitted to carry children today?**
+
+---
+
+## `vehicles`
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | `NOT NULL` → `schools` |
+| `registration_no` | `VARCHAR(32)` | `NOT NULL`, unique within organization |
+| `display_name` | `VARCHAR(64)` | `NOT NULL` — "Bus 12"; what parents see |
+| `vehicle_type` | `VARCHAR(24)` | `NOT NULL`, `BUS` / `VAN` / `MINIBUS` |
+| `seating_capacity` | `INTEGER` | `NOT NULL`, `> 0` |
+| `vendor_name` | `VARCHAR(255)` | Set for outsourced fleets |
+| `status` | `VARCHAR(24)` | `NOT NULL`, `ACTIVE` / `MAINTENANCE` / `RETIRED` |
+
+```sql
+CONSTRAINT uq_vehicles_registration UNIQUE (tenant_id, registration_no),
+CONSTRAINT ck_vehicles_capacity     CHECK (seating_capacity > 0),
+CONSTRAINT ck_vehicles_status       CHECK (status IN ('ACTIVE','MAINTENANCE','RETIRED'))
+```
+
+`display_name` is separate from `registration_no` because notifications say "Bus 12", not a plate number (NTF-BOARD-01).
+
+**Indexes:** `idx_vehicles_tenant_school (tenant_id, school_id) WHERE status = 'ACTIVE'`
+
+**Rules:** BR-FLEET-001, BR-FLEET-005
+
+---
+
+## `vehicle_documents` 🔴
+
+Compliance artefacts. Expiry **blocks trip assignment** (BR-FLEET-002).
+
+| Column | Type | Notes |
+|---|---|---|
+| `vehicle_id` | `UUID` | `NOT NULL` → `vehicles` |
+| `document_type` | `VARCHAR(48)` | `NOT NULL` — value from the region profile, **not a code enum** |
+| `document_number` | `VARCHAR(128)` | |
+| `issued_on` | `DATE` | |
+| `expires_on` | `DATE` | `NOT NULL` |
+| `is_mandatory` | `BOOLEAN` | `NOT NULL` — from the region profile |
+| `file_ref` | `VARCHAR(255)` | Scanned copy; served through an authorising endpoint |
+
+```sql
+CONSTRAINT ck_vehicle_documents_dates CHECK (issued_on IS NULL OR expires_on > issued_on)
+```
+
+**`document_type` is free-form against region reference data, not a database enum** (ADR-0007). Registration, fitness, insurance, and permit types differ by country. A code enum here would mean a code change to onboard a new market — the exact failure ADR-0007 forbids.
+
+**What is *not* configurable:** that a mandatory expired document blocks assignment. Tenants configure *which* documents are mandatory; they cannot configure the block away (BR-FLEET-002 🔴).
+
+**Indexes:** `idx_vehicle_documents_expiry (tenant_id, expires_on) WHERE is_mandatory`
+
+Serves both the daily expiry-warning job (BR-FLEET-003) and the trip-start eligibility check.
+
+---
+
+## `devices`
+
+| Column | Type | Notes |
+|---|---|---|
+| `vehicle_id` | `UUID` | → `vehicles`. Null when unassigned. |
+| `device_identifier` | `VARCHAR(128)` | `NOT NULL` **globally unique** |
+| `vendor_code` | `VARCHAR(48)` | `NOT NULL` — selects the adapter (ADR-0004) |
+| `credential_hash` | `VARCHAR(255)` | `NOT NULL` — device authentication |
+| `last_seen_at` | `TIMESTAMPTZ` | Drives signal-loss detection (BR-TRACK-005) |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+```sql
+CONSTRAINT uq_devices_identifier UNIQUE (device_identifier),
+CONSTRAINT uq_devices_vehicle_active UNIQUE (tenant_id, vehicle_id) WHERE is_active
+```
+
+**`uq_devices_vehicle_active` enforces BR-FLEET-004 structurally** — at most one active device per vehicle. Two devices reporting for one bus would produce contradictory positions.
+
+`device_identifier` is globally unique because ingestion resolves the device *before* it knows the tenant ([`REALTIME_TRACKING_DESIGN.md`](../../02-system-design/REALTIME_TRACKING_DESIGN.md)). An unknown device is logged and ignored, **never auto-registered** (BR-FLEET-006) — auto-registration would let anyone inject positions for a vehicle they do not own.
+
+---
+
+## `transport_staff`
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | `NOT NULL` → `schools` |
+| `user_id` | `UUID` | → `users`. Null until the account is activated. |
+| `staff_type` | `VARCHAR(24)` | `NOT NULL`, `DRIVER` / `ATTENDANT` |
+| `employee_code` | `VARCHAR(64)` | Unique within school where present |
+| `first_name`, `last_name` | `VARCHAR(128)` | `NOT NULL` |
+| `phone` | `VARCHAR(32)` | `NOT NULL` |
+| `photo_ref` | `VARCHAR(255)` | |
+| `vendor_name` | `VARCHAR(255)` | Set for outsourced staff |
+| `verification_status` | `VARCHAR(24)` | `NOT NULL`, `PENDING` / `VERIFIED` / `LAPSED` / `REJECTED` |
+| `verified_until` | `DATE` | |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+```sql
+CONSTRAINT ck_staff_type   CHECK (staff_type IN ('DRIVER','ATTENDANT')),
+CONSTRAINT ck_staff_verify CHECK (
+    verification_status IN ('PENDING','VERIFIED','LAPSED','REJECTED')),
+CONSTRAINT ck_staff_verified_until CHECK (
+    verification_status <> 'VERIFIED' OR verified_until IS NOT NULL)
+```
+
+**`ck_staff_verified_until`** prevents a permanently-verified staff member. Background verification expires; a record claiming `VERIFIED` with no end date is a verification nobody will ever revisit (BR-STAFF-002 🔴).
+
+**Indexes:** `idx_staff_tenant_school (tenant_id, school_id) WHERE is_active`, `idx_staff_verification (tenant_id, verified_until) WHERE verification_status = 'VERIFIED'`
+
+---
+
+## `staff_credentials` 🔴
+
+| Column | Type | Notes |
+|---|---|---|
+| `staff_id` | `UUID` | `NOT NULL` → `transport_staff` |
+| `credential_type` | `VARCHAR(48)` | `NOT NULL` — from region profile |
+| `credential_number` | `VARCHAR(128)` | |
+| `credential_class` | `VARCHAR(32)` | Licence class — checked against vehicle type (BR-STAFF-001) |
+| `issued_on` | `DATE` | |
+| `expires_on` | `DATE` | `NOT NULL` |
+| `is_mandatory` | `BOOLEAN` | `NOT NULL` |
+| `file_ref` | `VARCHAR(255)` | |
+
+**Indexes:** `idx_staff_credentials_expiry (tenant_id, expires_on) WHERE is_mandatory`
+
+**Rules:** BR-STAFF-001 🔴 (valid licence of required class), BR-STAFF-003 (warnings then blocking)
+
+Like vehicle documents, `credential_type` and `credential_class` come from region reference data (ADR-0007).
+
+---
+
+## `duty_assignments`
+
+Which staff normally crew which route.
+
+| Column | Type | Notes |
+|---|---|---|
+| `staff_id` | `UUID` | `NOT NULL` → `transport_staff` |
+| `route_id` | `UUID` | `NOT NULL` → `routes` |
+| `role` | `VARCHAR(24)` | `NOT NULL`, `DRIVER` / `ATTENDANT` |
+| `direction` | `VARCHAR(16)` | `PICKUP` / `DROP` / null = both |
+| `effective_from`, `effective_until` | `DATE` | |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+This is the *default* crew. Actual crew for a specific trip lives in `trip_staff` ([`MOD-08-trips.md`](MOD-08-trips.md)) — separated so a substitution (BR-STAFF-006) does not rewrite the standing roster.
+
+**Rules:** BR-STAFF-004 (one active trip per staff member — enforced at trip start against `trip_staff`)
+
+---
+
+## Trip-Start Eligibility
+
+These tables converge into one check (BR-TRIP-004). All must pass:
+
+```
+Vehicle ACTIVE
+  ∧ no mandatory vehicle_document with expires_on < today        BR-FLEET-002 🔴
+  ∧ driver verification_status = VERIFIED ∧ verified_until ≥ today   BR-STAFF-002 🔴
+  ∧ driver holds unexpired credential of required class          BR-STAFF-001 🔴
+  ∧ attendant present if tenant configuration requires one       BR-STAFF-005
+  ∧ neither vehicle nor driver on another active trip            BR-TRIP-005, BR-STAFF-004
+```
+
+Failure refuses trip start with a specific reason — never a generic error. A driver told only "cannot start" at 6:30 AM cannot fix the problem.
+
+An **in-progress** trip is never interrupted by an expiry occurring mid-journey (BR-FLEET-002 note, J8).
+
+---
+
+## Verification
+
+1. A vehicle with an expired mandatory document cannot be assigned to a trip.
+2. A driver with an expired licence cannot be assigned.
+3. A driver whose verification has lapsed cannot be assigned.
+4. Two active devices cannot exist for one vehicle.
+5. An unknown device's position report is logged and ignored, not auto-registered.
+6. A `VERIFIED` staff record cannot be saved without `verified_until`.
+7. Trip-start refusal names the specific failing check.
+8. A document expiring mid-trip does not stop the in-progress trip.
+
+===FILE_END===
+===FILE_START:documentation/03-database/tables/MOD-07-routes.md===
+# MOD-07 — Routes & Stops Tables
+
+**Owning module:** `com.guardian.route` · **Rules:** BR-ROUTE-*
+
+These tables define what *should* happen. [`MOD-08-trips.md`](MOD-08-trips.md) records what *did*.
+
+---
+
+## `routes`
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | `NOT NULL` → `schools` |
+| `code` | `VARCHAR(32)` | `NOT NULL`, unique within school |
+| `name` | `VARCHAR(255)` | `NOT NULL` |
+| `default_vehicle_id` | `UUID` | → `vehicles` |
+| `corridor_width_m` | `INTEGER` | Deviation threshold (BR-ALERT-002); null = tenant default |
+| `path_geometry` | `JSONB` | Encoded polyline for corridor calculation and map display |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+```sql
+CONSTRAINT uq_routes_school_code UNIQUE (tenant_id, school_id, code)
+```
+
+`path_geometry` is `JSONB` — one of the few permitted uses ([`CONVENTIONS.md`](../CONVENTIONS.md)). It is read as a whole for map rendering and corridor computation, never queried by its internal structure, and no business rule depends on a field inside it.
+
+`corridor_width_m` is nullable so a route inherits the tenant default unless it needs its own — a narrow lane and a highway stretch warrant different tolerances.
+
+**Rules:** BR-ROUTE-001, BR-ROUTE-007 (deactivation requires reassigning every student)
+
+---
+
+## `stops`
+
+| Column | Type | Notes |
+|---|---|---|
+| `route_id` | `UUID` | `NOT NULL` → `routes` |
+| `sequence_no` | `INTEGER` | `NOT NULL`, `> 0` |
+| `name` | `VARCHAR(255)` | `NOT NULL` — appears in notifications |
+| `latitude`, `longitude` | `NUMERIC(9,6)` | `NOT NULL` |
+| `geofence_radius_m` | `INTEGER` | `NOT NULL` |
+| `scheduled_pickup_time` | `TIME` | School time zone |
+| `scheduled_drop_time` | `TIME` | |
+| `landmark` | `VARCHAR(255)` | Helps parents locate the stop |
+
+```sql
+CONSTRAINT uq_stops_route_sequence UNIQUE (tenant_id, route_id, sequence_no),
+CONSTRAINT ck_stops_sequence  CHECK (sequence_no > 0),
+CONSTRAINT ck_stops_latitude  CHECK (latitude  BETWEEN -90  AND 90),
+CONSTRAINT ck_stops_longitude CHECK (longitude BETWEEN -180 AND 180),
+CONSTRAINT ck_stops_geofence  CHECK (geofence_radius_m BETWEEN 20 AND 500)
+```
+
+### Geofence radius bounds
+
+`ck_stops_geofence` implements BR-ROUTE-003 and BR-CFG-003 🔴 in the schema. The bounds are not arbitrary:
+
+- **Too small** (< 20 m) and GPS drift means arrival is never detected — parents get no approach notification and the stop appears skipped.
+- **Too large** (> 500 m) and geofences overlap, so the vehicle registers as arriving at several stops simultaneously and arrival events become meaningless.
+
+A tenant may tune within this window (ADR-0007); they cannot leave it (BR-SAFE-007). Placing the floor and ceiling in the database means no configuration path, present or future, can violate them.
+
+**Times are `TIME`, not `TIMESTAMPTZ`** — a stop is scheduled for "07:40 local", every operating day. The date comes from the trip; the zone from the school (BR-CFG-006).
+
+**BR-ROUTE-008** (strictly increasing times along the sequence) is a cross-row invariant PostgreSQL cannot express as a check constraint. It is enforced in the domain on route save and covered by a test — **a documented deviation** from enforce-structurally.
+
+**Indexes:** `uq_stops_route_sequence` serves ordered retrieval directly.
+
+---
+
+## `route_student_assignments`
+
+Which student boards where, in which direction.
+
+| Column | Type | Notes |
+|---|---|---|
+| `route_id` | `UUID` | `NOT NULL` → `routes` |
+| `stop_id` | `UUID` | `NOT NULL` → `stops` |
+| `student_id` | `UUID` | `NOT NULL` → `students` |
+| `direction` | `VARCHAR(16)` | `NOT NULL`, `PICKUP` / `DROP` |
+| `effective_from`, `effective_until` | `DATE` | |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
+
+```sql
+CONSTRAINT ck_rsa_direction CHECK (direction IN ('PICKUP','DROP')),
+CONSTRAINT uq_rsa_student_direction
+    UNIQUE (tenant_id, student_id, direction) WHERE is_active
+```
+
+### The unique constraint is the important part
+
+`uq_rsa_student_direction` enforces BR-ROUTE-004 structurally: **a student has at most one active pickup assignment and at most one active drop assignment.** Two active pickup assignments would put one child on two manifests, and the wrong-vehicle control (BR-SAFE-003) would fire on a legitimate boarding — or worse, fail to fire on an illegitimate one.
+
+Note the constraint is on `(student_id, direction)` and deliberately **not** on `route_id` — a student may use different routes for pickup and drop (BR-ROUTE-005), which is common where parents drop off but the bus returns.
+
+**Indexes:** `idx_rsa_route_direction (tenant_id, route_id, direction) WHERE is_active` — this is the query that materialises a manifest at trip start (BR-TRIP-003), so it runs for every trip.
+
+**Rules:** BR-ROUTE-004, BR-ROUTE-005, BR-STU-002 (assignment requires an active guardian), BR-STU-004 (active enrolment only)
+
+---
+
+## Change Semantics
+
+**Editing a route does not alter trips already started** (BR-ROUTE-006). The manifest is materialised at trip start and immutable thereafter (BR-TRIP-003), so route edits apply only to trips generated afterwards.
+
+This is why `trip_manifests` exists as its own table rather than being derived from these assignments on read. A trip that ran three months ago must show who was expected *that day* — see [`DATA_MODEL_OVERVIEW.md`](../DATA_MODEL_OVERVIEW.md).
+
+**Deactivating a route** requires every assigned student to be reassigned or explicitly released first (BR-ROUTE-007). Enforced in the application; a route with active assignments cannot be deactivated.
+
+---
+
+## Verification
+
+1. A stop with a geofence radius outside 20–500 m is rejected by the database.
+2. A second active pickup assignment for the same student is rejected by constraint.
+3. A student may hold pickup on route A and drop on route B.
+4. Stop times not strictly increasing along the sequence are rejected on save.
+5. Editing a route does not change an in-progress trip's manifest.
+6. A route with active student assignments cannot be deactivated.
+7. Assigning a student with no active guardian is refused (BR-STU-002).
+
+===FILE_END===

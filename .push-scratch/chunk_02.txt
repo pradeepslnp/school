@@ -1,3 +1,31 @@
+===FILE_START:AI_CONTENT/agents/workflows/README.md===
+# Reusable Workflows
+
+Task-specific workflows for common categories of work. Created as they're needed, not all at once — a workflow file that exists "just in case" is dead documentation nobody maintains.
+
+Anticipated workflows (create the ones you actually need, in this style, when you need them):
+
+- `feature_workflow.md` — end-to-end steps for adding a new product feature spanning backend, Flutter, and documentation.
+- `backend_feature_workflow.md` — backend-only feature workflow (module layout, ArchUnit, migration + RLS).
+- `flutter_feature_workflow.md` — Flutter-only feature workflow (five-part feature shape, BLoC).
+- `database_change_workflow.md` — schema change, migration, RLS policy update, `tables/` documentation.
+- `api_change_workflow.md` — endpoint addition/change, permission declaration, contract test, API doc update.
+- `testing_workflow.md` — test-level selection (unit/integration/contract/e2e) and business-rule-ID traceability.
+- `code_review_workflow.md` — what a reviewer checks against `documentation/ENGINEERING_PRINCIPLES.md` and the quality gate in root `CLAUDE.md` §20.
+- `documentation_workflow.md` — how to add or amend a `documentation/` tier document, including the ADR path.
+
+Each workflow file, once created, should follow the same shape as `AI_CONTENT/AGENT_WORKFLOW.md`: a numbered process an agent can follow without re-deriving it from first principles each time.
+
+===FILE_END===
+===FILE_START:AI_CONTENT/prompts/README.md===
+# Prompts
+
+Reusable prompt templates for this repository — for example, the "adopt repository architecture" prompt template already established in `documentation/FLUTTER_APP_INSTRUCTIONS.md` and the agent prompt template in `AGENTS.md`.
+
+Add a prompt here when it's been used more than once and is worth not re-deriving. Name files descriptively, e.g. `flutter_feature_prompt.md`, `backend_feature_prompt.md`, `research_task_prompt.md`. Keep each prompt's placeholders (`[PROJECT_NAME]`, `[SHORT_REQUIREMENT]`, etc.) explicit and consistent with the style already used elsewhere in this repository, so a prompt copied from here doesn't need to be re-learned.
+
+===FILE_END===
+===FILE_START:CLAUDE.md===
 # Guardian Platform
 
 **Repository root control document.** Every AI agent and human contributor working anywhere in this repository reads this file first.
@@ -242,3 +270,412 @@ Never: invent a requirement, API, or database field; hardcode any tenant-specifi
 ---
 
 **Final operating principle:** the goal is not to generate code quickly. It is to build a secure, scalable, maintainable, production-quality platform that genuinely improves child safety and gives parents peace of mind. Every agent, workflow, research task, code change, document, and architectural decision in this repository should be judged against that.
+
+===FILE_END===
+===FILE_START:README.md===
+# Guardian Platform
+
+Enterprise, multi-tenant SaaS platform for school transportation and child safety. The product Guardian builds is not "where is the bus" — it is *knowing a child is safe throughout the journey between home and school*, with every stage of that journey timestamped, attributable, auditable, and notification-capable.
+
+## Start here
+
+- [`CLAUDE.md`](CLAUDE.md) — the repository-root control document for AI agents and human contributors: project context, product vision, engineering/security/multi-tenant rules, naming conventions, folder structure, and the quality gate every change is checked against.
+- [`AGENTS.md`](AGENTS.md) — the shared entry point for every AI tool working in this workspace (Claude, Copilot, Codex), and the single most important rule: size the task before doing it.
+- [`documentation/`](documentation/) — the full governance, product, architecture, database, API, UI, development, testing, and deployment documentation, in tiers 0–8. `documentation/INSTRUCTIONS.md` is the contribution protocol; `documentation/00-governance/DOCUMENT_HIERARCHY.md` is the authority order when documents disagree.
+- [`AI_CONTENT/`](AI_CONTENT/) — how AI agents work in this repository: the standard agent workflow, notes convention, reusable process workflows, and the specialised research agent.
+
+## Repository layout
+
+Each project below is its own independent git repository, cloned side by side in this workspace directory because several of them resolve each other by relative path (see `documentation/06-development/PROJECT_STRUCTURE.md`).
+
+| Path | What it is |
+|---|---|
+| `backend/` | Gradle multi-module Java/Spring backend — Clean Architecture, PostgreSQL with row-level security |
+| `flutter/parent_app/` | Flutter — parent/guardian app |
+| `flutter/driver_attender_app/` | Flutter — driver & attendant app, offline-first |
+| `flutter/teacher_app/` | Placeholder — not yet implemented |
+| `flutter/shared_packages/guardian_theme/` | Shared Dart package — design tokens and theme |
+| `admin/` | Flutter Web — school/transport admin console |
+| `infrastructure/` | docker-compose and local database bootstrap |
+| `documentation/` | Product, architecture, and process documentation (tiers 0–8) |
+| `api/`, `deployment/`, `operations/`, `scripts/` | Placeholders reserved for API contracts, deployment configs, operational runbooks, and repo-wide scripts as the platform grows |
+
+## Getting set up locally
+
+See [`documentation/06-development/LOCAL_SETUP.md`](documentation/06-development/LOCAL_SETUP.md) for environment setup, and `.vscode/launch.json` / `.vscode/tasks.json` at this root for preconfigured dev/prod run and terminal tasks for each project.
+
+## Working on this repository with AI assistance
+
+Read `CLAUDE.md` and `AGENTS.md` before making a change of any real size. The short version of both: size the request (Trivial / Standard / Architectural) before deciding how much process it needs, and never guess at a requirement that isn't written down — ask.
+
+===FILE_END===
+===FILE_START:analysis_options.yaml===
+# Root-level analysis options to avoid analyzing Flutter subprojects from the repository root.
+# Individual Flutter projects should still run `flutter analyze` from their own folders.
+analyzer:
+  exclude:
+    - flutter/driver_attender_app/**
+    - flutter/parent_app/**
+    - admin/**
+
+# Keep the file minimal — it prevents the workspace-level analyzer from attempting
+# to resolve `package:flutter/*` when run from the repository root.
+
+===FILE_END===
+===FILE_START:api/README.md===
+# api/
+
+Placeholder. Reserved for API contracts (OpenAPI/Swagger specs) and contract-test fixtures shared across backend and client consumers, distinct from `documentation/04-api/` which documents API standards, the error catalog, and authentication in prose.
+
+Not yet populated — do not add generated code or examples here speculatively. Populate it when the first machine-readable contract (e.g. an OpenAPI spec generated from or validated against `backend/`) is actually introduced, and record that decision as an ADR if it changes how contracts are produced or consumed today.
+
+===FILE_END===
+===FILE_START:deployment/README.md===
+# deployment/
+
+Placeholder. Reserved for deployment scripts and environment-specific configuration (as opposed to `documentation/08-deployment/`, which documents environments, CI/CD, observability, and backup/DR in prose, and `infrastructure/`, which holds local docker-compose and DB bootstrap for development).
+
+Populate this when there's an actual deployment script or environment config to check in — not with placeholder pipeline stubs.
+
+===FILE_END===
+===FILE_START:documentation/.gitignore===
+# Generated documentation output, if a site generator is ever added
+_site/
+.cache/
+
+*.log
+.DS_Store
+
+===FILE_END===
+===FILE_START:documentation/00-governance/DOCUMENT_HIERARCHY.md===
+# DOCUMENT HIERARCHY
+
+**Document tier:** 0 — Governance
+**Status:** Active
+
+This document is the map of the repository's documentation and the authority for resolving conflicts between documents.
+
+---
+
+## Authority Order
+
+When two documents disagree, the one higher in this list wins. Always.
+
+```
+ 1  INSTRUCTIONS.md
+ 2  PROJECT_CHARTER.md
+ 3  PRODUCT_PRINCIPLES.md  /  ENGINEERING_PRINCIPLES.md
+ 4  Architecture Decision Records (accepted)
+ 5  BUSINESS_RULES.md
+ 6  FEATURE_INVENTORY.md
+ 7  System Design
+ 8  Database
+ 9  API
+10  UI
+11  Development
+12  Testing
+13  Deployment
+```
+
+**Why this order.** Rules of intent (charter, principles, business rules) constrain rules of construction (design, database, API). A convenient API shape never justifies weakening a business rule; a database limitation never justifies changing what the product promises without amending the tier that made the promise.
+
+---
+
+## Conflict Procedure
+
+1. Identify both documents and their tiers.
+2. The higher tier is correct **by definition**; the lower document is defective.
+3. Fix the lower document, or — if the higher document is genuinely wrong — raise an ADR to amend it. Never resolve a conflict by editing the lower document to disagree quietly.
+4. Record the resolution where the next reader will find it.
+
+**Never invent a requirement to resolve a conflict.** If neither document answers the question, the answer does not exist yet — ask.
+
+---
+
+## The Tiers
+
+### Tier 0 — Governance (repository root and `documentation/00-governance/`)
+
+| Document | Purpose |
+|---|---|
+| [`INSTRUCTIONS.md`](../INSTRUCTIONS.md) | Contribution protocol |
+| [`PROJECT_CHARTER.md`](../PROJECT_CHARTER.md) | Mission, scope, non-goals, commitments |
+| [`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) | Product trade-off resolution |
+| [`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md) | Code structure and standards |
+| [`AI_MASTER_PROMPT.md`](../AI_MASTER_PROMPT.md) | AI contributor contract |
+| [`DOCUMENT_HIERARCHY.md`](DOCUMENT_HIERARCHY.md) | This document |
+| [`GLOSSARY.md`](GLOSSARY.md) | Canonical vocabulary |
+| [`adr/`](adr/) | Architecture decision records |
+
+### Tier 1 — Product Discovery (`documentation/01-product-discovery/`)
+
+The origin tier. Everything below is derived from it.
+
+[`STAKEHOLDERS.md`](../01-product-discovery/STAKEHOLDERS.md) · [`PERSONAS.md`](../01-product-discovery/PERSONAS.md) · [`MODULE_MAP.md`](../01-product-discovery/MODULE_MAP.md) · [`FEATURE_INVENTORY.md`](../01-product-discovery/FEATURE_INVENTORY.md) · [`BUSINESS_RULES.md`](../01-product-discovery/BUSINESS_RULES.md) · [`USER_JOURNEYS.md`](../01-product-discovery/USER_JOURNEYS.md) · [`PERMISSION_MATRIX.md`](../01-product-discovery/PERMISSION_MATRIX.md) · [`NOTIFICATION_CATALOG.md`](../01-product-discovery/NOTIFICATION_CATALOG.md)
+
+### Tier 2 — System Design (`documentation/02-system-design/`)
+
+[`ARCHITECTURE_OVERVIEW.md`](../02-system-design/ARCHITECTURE_OVERVIEW.md) · [`MULTI_TENANCY.md`](../02-system-design/MULTI_TENANCY.md) · [`SECURITY_ARCHITECTURE.md`](../02-system-design/SECURITY_ARCHITECTURE.md) · [`REALTIME_TRACKING_DESIGN.md`](../02-system-design/REALTIME_TRACKING_DESIGN.md) · [`NOTIFICATION_ARCHITECTURE.md`](../02-system-design/NOTIFICATION_ARCHITECTURE.md) · [`AUDIT_AND_LOGGING.md`](../02-system-design/AUDIT_AND_LOGGING.md) · [`INTEGRATION_ARCHITECTURE.md`](../02-system-design/INTEGRATION_ARCHITECTURE.md) · [`SCALABILITY.md`](../02-system-design/SCALABILITY.md)
+
+### Tier 3 — Database (`documentation/03-database/`)
+
+[`DATA_MODEL_OVERVIEW.md`](../03-database/DATA_MODEL_OVERVIEW.md) · [`ERD.md`](../03-database/ERD.md) · [`CONVENTIONS.md`](../03-database/CONVENTIONS.md) · [`RLS_POLICIES.md`](../03-database/RLS_POLICIES.md) · [`MIGRATION_STRATEGY.md`](../03-database/MIGRATION_STRATEGY.md) · [`INDEXING_AND_PARTITIONING.md`](../03-database/INDEXING_AND_PARTITIONING.md) · [`tables/`](../03-database/tables/)
+
+### Tier 4 — API (`documentation/04-api/`)
+
+[`API_STANDARDS.md`](../04-api/API_STANDARDS.md) · [`ERROR_CATALOG.md`](../04-api/ERROR_CATALOG.md) · [`AUTHENTICATION_API.md`](../04-api/AUTHENTICATION_API.md) · plus one document per module.
+
+### Tier 5 — UI (`documentation/05-ui/`)
+
+[`DESIGN_SYSTEM.md`](../05-ui/DESIGN_SYSTEM.md) · [`SCREEN_INVENTORY.md`](../05-ui/SCREEN_INVENTORY.md) · [`PARENT_APP.md`](../05-ui/PARENT_APP.md) · [`DRIVER_ATTENDANT_APP.md`](../05-ui/DRIVER_ATTENDANT_APP.md) · [`ADMIN_WEB.md`](../05-ui/ADMIN_WEB.md) · [`ACCESSIBILITY.md`](../05-ui/ACCESSIBILITY.md)
+
+### Tier 6 — Development (`documentation/06-development/`)
+
+[`PROJECT_STRUCTURE.md`](../06-development/PROJECT_STRUCTURE.md) · [`CODING_STANDARDS_BACKEND.md`](../06-development/CODING_STANDARDS_BACKEND.md) · [`CODING_STANDARDS_FLUTTER.md`](../06-development/CODING_STANDARDS_FLUTTER.md) · [`ARCHITECTURE_ENFORCEMENT.md`](../06-development/ARCHITECTURE_ENFORCEMENT.md) · [`GIT_WORKFLOW.md`](../06-development/GIT_WORKFLOW.md) · [`LOCAL_SETUP.md`](../06-development/LOCAL_SETUP.md) · [`DEFINITION_OF_DONE.md`](../06-development/DEFINITION_OF_DONE.md)
+
+### Tier 7 — Testing (`documentation/07-testing/`)
+
+[`TEST_STRATEGY.md`](../07-testing/TEST_STRATEGY.md) · [`SAFETY_CRITICAL_TEST_MATRIX.md`](../07-testing/SAFETY_CRITICAL_TEST_MATRIX.md) · [`TEST_CASES.md`](../07-testing/TEST_CASES.md)
+
+### Tier 8 — Deployment (`documentation/08-deployment/`)
+
+[`ENVIRONMENTS.md`](../08-deployment/ENVIRONMENTS.md) · [`CI_CD.md`](../08-deployment/CI_CD.md) · [`OBSERVABILITY.md`](../08-deployment/OBSERVABILITY.md) · [`BACKUP_AND_DR.md`](../08-deployment/BACKUP_AND_DR.md)
+
+---
+
+## Traceability Model
+
+Identifiers connect the tiers. This is what makes the hierarchy real rather than decorative.
+
+| ID form | Defined in | Referenced by |
+|---|---|---|
+| `MOD-xx` | `MODULE_MAP.md` | Feature inventory, package names |
+| `TRK-001` (feature) | `FEATURE_INVENTORY.md` | API docs, UI docs, test cases |
+| `BR-BOARD-004` (business rule) | `BUSINESS_RULES.md` | Code comments, tests, API docs |
+| `PERM-TRIP-VIEW` | `PERMISSION_MATRIX.md` | API docs, security config |
+| `NTF-BOARD-01` | `NOTIFICATION_CATALOG.md` | Notification templates, API docs |
+| `ADR-0001` | `adr/` | Any document affected by the decision |
+
+**Invariants**, verified in CI:
+
+1. Every feature ID appears in at least one API document and one test case.
+2. Every business rule ID has at least one test referencing it.
+3. Every endpoint declares a permission ID that exists in the permission matrix.
+4. No document links to a path that does not exist.
+
+---
+
+## Adding a Document
+
+1. Place it in the correct tier directory.
+2. Add it to the tier listing above.
+3. Add a header block: tier, status, and what it settles.
+4. If it introduces an architectural decision, write an ADR instead of embedding the decision in prose.
+
+## Document Status Values
+
+| Status | Meaning |
+|---|---|
+| `Draft` | Being written; not authoritative |
+| `Active` | Authoritative |
+| `Superseded by X` | Historical; read X |
+| `Deprecated` | No longer applies; retained for history |
+
+===FILE_END===
+===FILE_START:documentation/00-governance/GLOSSARY.md===
+# GLOSSARY
+
+**Document tier:** 0 — Governance
+**Status:** Active
+
+Canonical vocabulary. These terms mean exactly this in documentation, code, database columns, API fields, and UI copy. Synonyms listed under "Not called" are forbidden — consistency of naming is what lets the traceability model work.
+
+---
+
+## Tenancy
+
+**Organization**
+A school group. **The tenant** — the isolation and billing boundary. A single independent school is an organization containing one school.
+*Not called:* client, customer, account, group.
+
+**School**
+A school within an organization. Has its own address, timings, and staff.
+
+**Branch**
+An optional subdivision of a school (campus, wing, shift). Present in the model so chains do not need a redesign; may be unused by a tenant.
+
+**Tenant Context**
+The resolved organization for the current request. Established once by a filter and propagated implicitly; never passed as a method argument.
+
+---
+
+## People
+
+**Student**
+A child transported by the platform. Belongs to exactly one school.
+
+**Guardian**
+An adult with a recorded relationship to a student and a defined set of rights over that student (view, receive notifications, authorise handover). A student may have several.
+*Not called:* parent (in code). "Parent" is used in UI copy where it reads more naturally.
+
+**Authorised Pickup Person**
+An adult permitted to receive a student at handover who is not a guardian — for example, a relative or a domestic helper. Time-bounded and revocable.
+
+**Driver**
+The person operating a vehicle. Holds credentials with expiry tracked for compliance.
+
+**Attendant**
+The staff member responsible for students inside the vehicle. Performs boarding and handover verification.
+*Also known as:* bus matron, conductor, helper. Use **Attendant** in code.
+
+**Transport Manager**
+School staff member who owns fleet, routes, and incident response.
+
+**Super Admin**
+Platform operator. Can act across organizations; every such action is audited.
+
+---
+
+## Fleet
+
+**Vehicle**
+A bus or van. Belongs to a school. Carries documents with expiry dates.
+
+**Device**
+A GPS unit fitted to a vehicle. Reports position; may report ignition, speed, and panic.
+
+**Vehicle Document**
+A compliance artefact (registration, fitness, insurance, permit) with an expiry date. Document *types* are tenant configuration, not code — see [`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) §5.
+
+---
+
+## Routes and Trips
+
+**Route**
+A named, ordered sequence of stops served by a school, normally with a default vehicle.
+
+**Stop**
+A geographic point on a route with a name, coordinates, geofence radius, and scheduled time.
+
+**Route Assignment**
+The link between a student and a stop on a route, for a direction. A student may have a different pickup and drop stop.
+
+**Trip**
+**One execution of a route, on one date, in one direction.** The central operational entity. Has a lifecycle:
+
+```
+SCHEDULED → STARTED → IN_PROGRESS → COMPLETED → CLOSED
+                  ↘ CANCELLED
+```
+
+**Direction**
+`PICKUP` (home → school) or `DROP` (school → home).
+
+**Trip Close**
+The reconciliation step after a trip completes, at which every expected student must be accounted for. See `BR-TRIP-020`.
+
+---
+
+## Safety Events
+
+**Boarding Event**
+An immutable record that a student boarded (`BOARD`) or alighted (`ALIGHT`) a vehicle, with actor, time, location, method, and trip.
+*Immutable:* corrections are new compensating records, never updates.
+
+**Handover**
+Verified release of a student to a guardian or authorised pickup person at a drop stop.
+
+**Handover Verification Method**
+How the receiving adult was verified — QR code, OTP, PIN, or attendant visual confirmation. Which methods are acceptable is tenant configuration.
+
+**Override**
+A permitted deviation from a rule (for example, releasing a student to an unverified adult). Requires a reason, an authorised actor, and an audit record. Overrides are never silent.
+
+**Left-Behind Detection**
+The control that identifies a student who boarded but has no corresponding alight record at trip close. See `BR-SAFE-001`.
+
+**SOS**
+A panic alert raised by a driver, attendant, or device. Highest-priority event class; escalates on a timer until acknowledged.
+
+**Incident**
+A recorded event affecting safety or service — breakdown, accident, behavioural issue, medical event. Has severity, status, and an escalation trail.
+
+---
+
+## Tracking
+
+**Position**
+A timestamped location report from a device: coordinates, speed, heading, ignition state.
+
+**Live Position**
+The most recent position of a vehicle, held in a hot cache for fast reads.
+
+**Position History**
+The durable time-series record of positions, retained per tenant policy.
+
+**Geofence**
+A circular area around a stop or school. Entry and exit generate events.
+
+**Route Deviation**
+A vehicle exceeding the configured corridor distance from its route path.
+
+**ETA**
+Estimated time of arrival of a trip at a specific stop.
+
+---
+
+## Notifications
+
+**Notification Event**
+A domain occurrence that may notify someone — for example `STUDENT_BOARDED`.
+
+**Notification Template**
+Tenant- and locale-specific rendering of an event into channel content.
+
+**Channel**
+A delivery mechanism: push, SMS, email, in-app.
+
+**Notification Preference**
+A recipient's per-event, per-channel opt-in. Safety-critical notifications ignore preferences — see `BR-NTF-006`.
+
+---
+
+## Access Control
+
+**Role**
+A named set of permissions, scoped to an organization.
+
+**Permission**
+A single capability, identified as `PERM-<AREA>-<ACTION>`, for example `PERM-TRIP-VIEW`.
+
+**Scope**
+The boundary within which a permission applies: platform, organization, school, route, or own-children.
+
+---
+
+## Records
+
+**Audit Record**
+Append-only entry: actor, action, subject, timestamp, source, reason. Written in the same transaction as the change it describes.
+
+**Soft Delete**
+Marking a row inactive rather than removing it. Safety and audit records are never deleted, soft or otherwise, before their retention period elapses.
+
+---
+
+## Naming Conventions
+
+| Context | Style | Example |
+|---|---|---|
+| Java class | PascalCase | `BoardingEvent` |
+| Java package | lowercase, feature-first | `com.guardian.trip.domain` |
+| Database table | snake_case, plural | `boarding_events` |
+| Database column | snake_case | `boarded_at` |
+| JSON field | camelCase | `boardedAt` |
+| Dart class | PascalCase | `BoardingEvent` |
+| Dart file | snake_case | `boarding_event.dart` |
+| Enum value | SCREAMING_SNAKE | `IN_PROGRESS` |
+| Feature ID | `AREA-nnn` | `TRK-003` |
+| Business rule ID | `BR-AREA-nnn` | `BR-BOARD-004` |
+
+===FILE_END===

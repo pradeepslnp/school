@@ -1,0 +1,2038 @@
+===FILE_START:documentation/05-ui/PARENT_APP.md===
+# PARENT APP
+
+**Document tier:** 5 — UI
+**Client:** `flutter/parent_app` (Flutter) · **Persona:** Meera ([`PERSONAS.md`](../01-product-discovery/PERSONAS.md))
+
+---
+
+## Design Brief
+
+**Conditions of use:** 10–20 second glances, one-handed, between other tasks, often on mobile data with variable signal.
+
+**The app must answer "is my child fine?" in the first screen, without a tap.** Everything else is secondary.
+
+This is not a tracking app that happens to send notifications. It is a **reassurance product** where the map is a detail view, not the entry point ([`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) §2).
+
+---
+
+## P-02 — Home
+
+The screen that matters.
+
+```
+┌─────────────────────────────────┐
+│ Good morning, Meera             │
+│                                 │
+│ ┌─────────────────────────────┐ │
+│ │ [photo] Aarav Sharma        │ │
+│ │         Class 5-B           │ │
+│ │                             │ │
+│ │ [✓] On the bus              │ │
+│ │ Boarded Green Park, 7:42 AM │ │
+│ │ Arriving at school ~8:15 AM │ │
+│ │ ● Live · updated 6s ago     │ │
+│ │                    [Track →]│ │
+│ └─────────────────────────────┘ │
+│ ┌─────────────────────────────┐ │
+│ │ [photo] Ananya Sharma       │ │
+│ │ [–] Not travelling today    │ │
+│ │ You marked her absent       │ │
+│ └─────────────────────────────┘ │
+└─────────────────────────────────┘
+```
+
+**Rules:**
+- One card per child, complete status without interaction.
+- Freshness indicator always present (BR-TRACK-003) — never show stale as current.
+- ETA always labelled as an estimate, with its calculation time (BR-TRACK-006).
+- **Between trips the card is calm, not empty**: "At school · next bus 3:10 PM". Absence of news is itself communicated.
+- Times in the **school's** timezone, not the device's (BR-CFG-006) — a parent travelling abroad still sees school-local times.
+
+### States
+
+| State | Display |
+|---|---|
+| No trip today | "At school · afternoon bus 3:10 PM" |
+| Trip scheduled | "Bus 12 starts at 7:15 AM" |
+| Waiting at stop | "Bus 12 arriving in ~4 min" |
+| On the bus | Live tracking available |
+| Arrived | "Arrived at school, 8:15 AM" |
+| Handed over | "Handed to you at 3:20 PM" |
+| No-show | ⚠ "Aarav did not board at Green Park" |
+| **Unaccounted** | 🔴 Full-width critical banner, top of screen |
+| Absent | "Not travelling today" |
+
+**The critical banner is the only element permitted to dominate the home screen.** It appears for NTF-SAFE-01 and NTF-HAND-05 only — the events where a parent must act immediately.
+
+---
+
+## P-04 — Live Trip Map
+
+Reached by tapping *Track*, never the default view.
+
+- Vehicle marker with heading; route polyline; the parent's stop emphasised.
+- **Other students are never shown** — no markers, no count, no names (BR-NTF-007 🔴).
+- Text summary above the map, always: *"Bus 12 · 3 stops away · ~7 min to Green Park"*. The map is an enhancement; the information is available without it ([`ACCESSIBILITY.md`](ACCESSIBILITY.md)).
+- Freshness indicator persistent.
+- Available only while the trip is active (BR-TRACK-001) — outside a trip the screen explains that tracking is trip-scoped, rather than showing an empty map.
+
+---
+
+## P-06 — Declare Absence
+
+```
+Which child?      [Aarav ▾]
+When?             ( ) Today  ( ) Tomorrow  ( ) Date range
+Which journey?    ( ) Both  ( ) Morning only  ( ) Afternoon only
+Reason (optional) [                    ]
+                             [Confirm]
+```
+
+**Reason is optional** (BR-ABS-001) — requiring a parent to justify their child's absence is friction with no safety value.
+
+Confirmation states the effect plainly: *"Aarav will not be expected on Bus 12 tomorrow morning."*
+
+After trip start, declaration is refused with an explanation and a route to contacting the school (BR-ABS-003).
+
+---
+
+## P-07 — Authorised Pickup Persons
+
+Visible only to guardians holding `canAuthoriseHandover` (BR-GRD-006).
+
+```
+Sunil Kumar (Uncle)
++91 98123 45678
+Valid 5–12 Aug 2026                    [Revoke]
+
+                        [+ Add pickup person]
+```
+
+**The validity window is mandatory and prominent** — nominations always expire (BR-GRD-005). The form defaults to a short window rather than a long one.
+
+Adding or revoking notifies **all** guardians with the handover right (NTF-ADM-04/05), so one guardian cannot quietly authorise someone the others would object to.
+
+Custody restrictions are **never displayed here** or anywhere in this app.
+
+---
+
+## P-12 — Handover Verification
+
+Shown when the parent is collecting their child at a drop stop.
+
+```
+      ┌───────────────┐
+      │               │
+      │   [QR code]   │      Show this to the bus attendant
+      │               │
+      └───────────────┘
+      Code: 4 8 2 9 1 3      (if the attendant cannot scan)
+
+      Aarav Sharma · Bus 12 · Green Park
+```
+
+Large, high-contrast, **screen brightness raised automatically** — it is scanned outdoors, often in sunlight.
+
+The numeric code is a fallback for a failed scan, not a lesser option (BR-HAND-002).
+
+---
+
+## P-08 — Notification Centre
+
+The durable record. A parent who missed a push must be able to scroll back and find it.
+
+Grouped by day, newest first. Critical items are visually distinct and stay unread until acknowledged. Each entry links to the relevant child or trip.
+
+---
+
+## Behaviour Under Poor Conditions
+
+The parent app is a **read surface** and is deliberately **not** offline-first (ADR-0008) — stale data here is a display problem, not data loss.
+
+| Condition | Behaviour |
+|---|---|
+| Slow network | Last known state shown with an explicit freshness indicator |
+| Offline | Cached state with "Not connected · last updated 07:44"; never a blank screen |
+| Live position stale | Downgraded indicator, never presented as current (BR-TRACK-003) |
+| Push token expired | Silent re-registration; SMS remains the floor channel |
+
+---
+
+## Notifications
+
+Copy principles are in [`NOTIFICATION_CATALOG.md`](../01-product-discovery/NOTIFICATION_CATALOG.md). For this client specifically:
+
+- **Readable from the lock screen without opening the app.** Complete in the first line.
+- Deep-link to the relevant child, not the app root.
+- Critical notifications bypass mute and quiet hours (BR-NTF-006 🔴) and use a distinct sound.
+- **SMS is the floor.** A parent on a low-end device with no app installed still receives the safety-critical messages ([`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) §6).
+
+---
+
+## Accessibility & Localisation
+
+- Minimum 16 px body text; scales to 200%.
+- 48 × 48 minimum touch targets.
+- Full screen-reader labels on every status; **color is never the only signal**.
+- Language is per-user, independent of school default — a family may prefer a language the school does not use by default.
+- Full RTL support.
+- Screenshots suppressed on screens showing child personal data.
+
+---
+
+## Verification
+
+1. Home shows complete child status with zero taps.
+2. Every live-data element carries a freshness indicator.
+3. No other family's child appears anywhere, including on the map.
+4. All times display in the school's timezone with the zone labelled.
+5. Live tracking is unavailable outside an active trip, with an explanation.
+6. Critical notifications arrive with the app muted and during quiet hours.
+7. Offline shows cached state with a freshness label, never a blank screen.
+8. Pickup-person nomination requires the handover right and an expiry.
+9. Custody restrictions never appear in any response rendered by this app.
+10. The app functions at 200% text scale and in RTL.
+
+===FILE_END===
+===FILE_START:documentation/05-ui/SCREEN_INVENTORY.md===
+# SCREEN INVENTORY
+
+**Document tier:** 5 — UI
+**Status:** Active
+
+Every screen across the three clients, with its feature IDs and the permission that gates it.
+
+---
+
+## Parent App — `flutter/parent_app`
+
+| ID | Screen | Features | Permission |
+|---|---|---|---|
+| P-01 | Login (phone + OTP) | IAM-002 | public |
+| P-02 | **Home — children status** | TRK-003, BRD-001 | authenticated |
+| P-03 | Child detail | STU-001, BRD-003 | `OWN_CHILDREN` |
+| P-04 | Live trip map | TRK-003, TRK-005 | `PERM-TRACKING-LIVE-VIEW` |
+| P-05 | Journey history | BRD-003, TRK-006 | `PERM-BOARDING-VIEW` |
+| P-06 | Declare absence | ABS-001, ABS-002 | `PERM-ABSENCE-DECLARE` |
+| P-07 | Authorised pickup persons | GRD-004, GRD-005 | `PERM-PICKUP-PERSON-MANAGE` |
+| P-08 | Notification centre | NTF-006 | authenticated |
+| P-09 | Notification preferences | NTF-007 | `PERM-NOTIFICATION-PREFERENCE-SELF` |
+| P-10 | Profile & language | GRD-007 | `PERM-PROFILE-SELF-EDIT` |
+| P-11 | Incident detail | INC-005 | `PERM-INCIDENT-VIEW` |
+| P-12 | Handover verification (QR/OTP) | BRD-008 | `OWN_CHILDREN` |
+
+**P-02 is the product.** It answers "is my child fine?" without a tap. Everything else is secondary.
+
+---
+
+## Driver & Attendant App — `flutter/driver_attender_app`
+
+| ID | Screen | Features | Permission |
+|---|---|---|---|
+| D-01 | Login | IAM-001 | public |
+| D-02 | Today's trips | TRP-004 | `PERM-TRIP-VIEW` |
+| D-03 | Pre-trip eligibility check | TRP-002, FLT-003, STF-003 | `PERM-TRIP-START` |
+| D-04 | **Active trip — next stop** | TRP-004, TRK-001 | `PERM-TRIP-VIEW` |
+| D-05 | **Stop boarding (scan)** | BRD-001, BRD-002 | `PERM-BOARDING-RECORD` |
+| D-06 | Manifest list | TRP-003 | `PERM-TRIP-VIEW` |
+| D-07 | Alighting at stop | BRD-003 | `PERM-BOARDING-RECORD` |
+| D-08 | **Handover verification** | BRD-008, BRD-009 | `PERM-HANDOVER-RECORD` |
+| D-09 | Handover override | BRD-010 | `PERM-HANDOVER-OVERRIDE` |
+| D-10 | No-receiver exception | BRD-012 | `PERM-HANDOVER-RECORD` |
+| D-11 | Trip end & reconciliation | TRP-008, BRD-013 | `PERM-TRIP-END` |
+| D-12 | Reconciliation resolution | BRD-013 | `PERM-RECONCILIATION-RESOLVE` |
+| D-13 | Report incident | INC-004 | `PERM-INCIDENT-CREATE` |
+| D-14 | Sync status | BRD-004 | authenticated |
+| D-15 | **SOS** (overlay, every screen) | INC-001 | `PERM-SOS-RAISE` |
+
+**D-15 is present on every screen** and reachable in one action without looking (ADR-0008 context: the app is operated near a moving vehicle).
+
+**D-14 is not optional.** Silent offline queuing hides failure from the person who most needs to know ([`PERSONAS.md`](../01-product-discovery/PERSONAS.md), Sunita).
+
+---
+
+## Admin Web — `admin`
+
+### Dashboard & Operations
+
+| ID | Screen | Features | Permission |
+|---|---|---|---|
+| A-01 | Operations dashboard | RPT-007, ALT-007 | `PERM-REPORT-OPERATIONAL` |
+| A-02 | Fleet live map | TRK-004 | `PERM-TRACKING-LIVE-VIEW` |
+| A-03 | Active trips monitor | TRP-004 | `PERM-TRIP-VIEW` |
+| A-04 | Alert inbox | ALT-007 | `PERM-ALERT-VIEW` |
+| A-05 | SOS & incident console | INC-002, INC-003 | `PERM-SOS-ACKNOWLEDGE` |
+| A-06 | Safety exceptions | BRD-014, RPT-003 | `PERM-REPORT-SAFETY` |
+
+### Students & Guardians
+
+| ID | Screen | Features | Permission |
+|---|---|---|---|
+| A-10 | Student register | STU-001 | `PERM-STUDENT-VIEW` |
+| A-11 | Student detail | STU-001, STU-006, STU-007 | `PERM-STUDENT-VIEW` |
+| A-12 | Bulk student import | STU-002 | `PERM-STUDENT-IMPORT` |
+| A-13 | Guardian links & rights | GRD-001, GRD-002, GRD-003 | `PERM-GUARDIAN-LINK` |
+| A-14 | Custody restrictions | GRD-006 | `PERM-CUSTODY-RESTRICTION-MANAGE` |
+| A-15 | Classes | STU-003 | `PERM-STUDENT-EDIT` |
+
+### Fleet & Staff
+
+| ID | Screen | Features | Permission |
+|---|---|---|---|
+| A-20 | Vehicle register | FLT-001 | `PERM-VEHICLE-VIEW` |
+| A-21 | Vehicle documents & expiry | FLT-002, FLT-003 | `PERM-VEHICLE-DOCUMENT-MANAGE` |
+| A-22 | Device assignment | FLT-004 | `PERM-DEVICE-MANAGE` |
+| A-23 | Staff register | STF-001 | `PERM-STAFF-MANAGE` |
+| A-24 | Staff credentials & verification | STF-002, STF-003 | `PERM-STAFF-VERIFY` |
+| A-25 | Duty assignments | STF-004 | `PERM-DUTY-ASSIGN` |
+| A-26 | Compliance overview | RPT-004 | `PERM-REPORT-COMPLIANCE` |
+
+### Routes & Trips
+
+| ID | Screen | Features | Permission |
+|---|---|---|---|
+| A-30 | Route list | RTE-001 | `PERM-ROUTE-VIEW` |
+| A-31 | Route editor (map) | RTE-001, RTE-002, RTE-005 | `PERM-ROUTE-MANAGE` |
+| A-32 | Student route assignment | RTE-003, RTE-004 | `PERM-ROUTE-ASSIGN-STUDENT` |
+| A-33 | Trip schedule | TRP-001 | `PERM-TRIP-VIEW` |
+| A-34 | Trip detail & manifest | TRP-003, TRP-006 | `PERM-TRIP-VIEW` |
+| A-35 | Trip replay | TRK-006 | `PERM-TRACKING-HISTORY-VIEW` |
+
+### Administration
+
+| ID | Screen | Features | Permission |
+|---|---|---|---|
+| A-40 | Organizations | TEN-001, TEN-004 | `PERM-ORG-VIEW` |
+| A-41 | Schools | TEN-002 | `PERM-SCHOOL-VIEW` |
+| A-42 | School calendar | TEN-005 | `PERM-SCHOOL-EDIT` |
+| A-43 | Users | IAM-005, IAM-008 | `PERM-USER-VIEW` |
+| A-44 | Roles & permissions | IAM-005, IAM-006 | `PERM-ROLE-MANAGE` |
+| A-45 | Configuration | CFG-001, CFG-002 | `PERM-CONFIG-VIEW` |
+| A-46 | Notification templates | NTF-002 | `PERM-NOTIFICATION-TEMPLATE-MANAGE` |
+| A-47 | Alert rules | ALT-004…006 | `PERM-CONFIG-EDIT` |
+
+### Reporting & Audit
+
+| ID | Screen | Features | Permission |
+|---|---|---|---|
+| A-50 | Trip operations report | RPT-001 | `PERM-REPORT-OPERATIONAL` |
+| A-51 | Attendance report | RPT-002 | `PERM-REPORT-OPERATIONAL` |
+| A-52 | Incident report | RPT-005 | `PERM-REPORT-SAFETY` |
+| A-53 | Data export | RPT-006 | `PERM-DATA-EXPORT` |
+| A-54 | Audit trail | AUD-002 | `PERM-AUDIT-VIEW` |
+| A-55 | Override register | AUD-003 | `PERM-AUDIT-VIEW` |
+| A-56 | Child data access log | IAM-010 | `PERM-AUDIT-VIEW` |
+| A-57 | Platform access log | AUD-004 | `PERM-AUDIT-VIEW` |
+
+### Platform Operations
+
+| ID | Screen | Permission |
+|---|---|---|
+| A-60 | Tenant list & onboarding | `PERM-PLATFORM-TENANT-ACCESS` |
+| A-61 | Region profiles | `PERM-PLATFORM-REGION-MANAGE` |
+| A-62 | Platform health | `PERM-PLATFORM-HEALTH-VIEW` |
+
+---
+
+## Coverage
+
+Every feature in [`FEATURE_INVENTORY.md`](../01-product-discovery/FEATURE_INVENTORY.md) marked `R1` appears on at least one screen. Features marked `R2`/`L` have screens listed so navigation and information architecture accommodate them without restructuring later.
+
+A CI check asserts every `R1` feature ID appears here.
+
+## Adding a Screen
+
+1. Assign the next ID for its client.
+2. List feature IDs and the gating permission — a screen without a permission is unreachable (BR-IAM-002).
+3. Add it to the relevant client document: [`PARENT_APP.md`](PARENT_APP.md), [`DRIVER_ATTENDANT_APP.md`](DRIVER_ATTENDANT_APP.md), or [`ADMIN_WEB.md`](ADMIN_WEB.md).
+4. Define empty, loading, and error states ([`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md)).
+
+===FILE_END===
+===FILE_START:documentation/06-development/ARCHITECTURE_ENFORCEMENT.md===
+# ARCHITECTURE ENFORCEMENT
+
+**Document tier:** 6 — Development
+**Status:** Active
+
+Architecture that is only documented erodes. Every rule below is an **automated test that fails the build**.
+
+Location: `guardian-common/src/test/java/com/guardian/architecture/`.
+
+---
+
+## Layer Dependencies
+
+```java
+@AnalyzeClasses(packages = "com.guardian", importOptions = DoNotIncludeTests.class)
+class LayerDependencyTest {
+
+    @ArchTest
+    static final ArchRule domain_depends_on_nothing =
+        noClasses().that().resideInAPackage("..domain..")
+            .should().dependOnClassesThat()
+            .resideInAnyPackage("..application..", "..infrastructure..", "..interfaces..");
+
+    @ArchTest
+    static final ArchRule application_does_not_depend_on_infrastructure =
+        noClasses().that().resideInAPackage("..application..")
+            .should().dependOnClassesThat().resideInAPackage("..infrastructure..");
+
+    @ArchTest
+    static final ArchRule interfaces_do_not_touch_infrastructure =
+        noClasses().that().resideInAPackage("..interfaces..")
+            .should().dependOnClassesThat().resideInAPackage("..infrastructure..");
+}
+```
+
+---
+
+## Framework Isolation
+
+The domain must survive a framework change.
+
+```java
+@ArchTest
+static final ArchRule domain_is_framework_free =
+    noClasses().that().resideInAPackage("..domain..")
+        .should().dependOnClassesThat().resideInAnyPackage(
+            "org.springframework..", "jakarta.persistence..",
+            "jakarta.servlet..", "com.fasterxml.jackson..");
+```
+
+Also asserted: no domain class carries `@Entity`, `@Service`, `@Component`, or `@Transactional`.
+
+---
+
+## JPA Entities Stay in Infrastructure
+
+```java
+@ArchTest
+static final ArchRule jpa_entities_confined =
+    classes().that().areAnnotatedWith(Entity.class)
+        .should().resideInAPackage("..infrastructure.persistence..");
+
+@ArchTest
+static final ArchRule entities_never_returned_from_controllers =
+    noMethods().that().areDeclaredInClassesThat().resideInAPackage("..interfaces..")
+        .should().haveRawReturnType(resideInAPackage("..infrastructure.persistence.."));
+```
+
+A JPA entity reaching a client leaks the schema and couples the wire format to the ORM.
+
+---
+
+## Module Boundaries
+
+```java
+@ArchTest
+static final ArchRule no_module_cycles =
+    slices().matching("com.guardian.(*)..").should().beFreeOfCycles();
+
+@ArchTest
+static final ArchRule modules_do_not_reach_into_each_others_internals =
+    noClasses().that().resideInAPackage("com.guardian.(*)..")
+        .should().dependOnClassesThat()
+        .resideInAnyPackage("com.guardian.*.infrastructure..",
+                            "com.guardian.*.domain..");
+```
+
+Cross-module access goes through the owning module's **application layer** ([`MODULE_MAP.md`](../01-product-discovery/MODULE_MAP.md) rule 1). Reaching into another module's repository or domain is the first step to a distributed ball of mud.
+
+---
+
+## Dependency Injection
+
+```java
+@ArchTest
+static final ArchRule no_field_injection =
+    noFields().should().beAnnotatedWith(Autowired.class);
+
+@ArchTest
+static final ArchRule dependencies_are_final =
+    fields().that().areDeclaredInClassesThat().areAnnotatedWith(Service.class)
+        .and().areNotStatic()
+        .should().beFinal();
+```
+
+Constructor injection only ([`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md) §5).
+
+---
+
+## Security 🔴
+
+```java
+@ArchTest
+static final ArchRule every_endpoint_declares_a_permission =
+    methods().that().areAnnotatedWith(RequestMapping.class)
+        .or().areAnnotatedWith(GetMapping.class)
+        .or().areAnnotatedWith(PostMapping.class)
+        .or().areAnnotatedWith(PutMapping.class)
+        .or().areAnnotatedWith(PatchMapping.class)
+        .or().areAnnotatedWith(DeleteMapping.class)
+        .should().beAnnotatedWith(RequiresPermission.class)
+        .orShould().beAnnotatedWith(PublicEndpoint.class);
+```
+
+**Deny by default** (BR-IAM-002 🔴). An endpoint with no declared permission fails the build rather than shipping unprotected.
+
+A companion test asserts every `@RequiresPermission` value exists in [`PERMISSION_MATRIX.md`](../01-product-discovery/PERMISSION_MATRIX.md), parsed from the document itself — so the code cannot drift from the matrix.
+
+```java
+@ArchTest
+static final ArchRule no_raw_sql_string_concatenation =
+    noClasses().should().callMethod(Statement.class, "executeQuery", String.class);
+```
+
+---
+
+## Tenant Isolation 🔴
+
+```java
+@ArchTest
+static final ArchRule no_session_scoped_tenant_setting =
+    noClasses().should().callMethodWhere(target(nameMatching(".*"))
+        .and(declaredIn(JdbcTemplate.class)))
+        .andShould().containStringLiteral("SET app.tenant_id");
+```
+
+Only `SET LOCAL` is permitted. A session-scoped `SET` survives a pooled connection into the next request — a silent cross-tenant leak with no error and no log entry ([`RLS_POLICIES.md`](../03-database/RLS_POLICIES.md)).
+
+A migration test additionally asserts **every table with a `tenant_id` column has RLS enabled and forced**, so a new table cannot ship without a policy.
+
+---
+
+## Integration Boundaries
+
+```java
+@ArchTest
+static final ArchRule no_provider_sdks_in_domain_or_application =
+    noClasses().that().resideInAnyPackage("..domain..", "..application..")
+        .should().dependOnClassesThat().resideInAnyPackage(
+            "com.google.firebase..", "com.twilio..", "software.amazon.awssdk..");
+```
+
+Providers live behind ports (ADR-0004, ADR-0005). A new vendor is a new adapter, never a change to a use case.
+
+---
+
+## Localisation
+
+```java
+@ArchTest
+static final ArchRule no_user_facing_string_literals =
+    noClasses().that().resideInAnyPackage("..interfaces..", "..domain..")
+        .should().callConstructorWhere(
+            owner(assignableTo(RuntimeException.class))
+            .and(rawParameterTypes(String.class)));
+```
+
+All user-facing text is a localised resource key (BR-CFG-005). Exceptions carry an `ErrorCode`, not a message.
+
+---
+
+## Append-Only Tables 🔴
+
+Verified against the live schema in an integration test rather than by static analysis:
+
+```java
+@Test
+void append_only_tables_reject_mutation() {
+    for (String table : List.of("audit_records", "boarding_events", "handovers")) {
+        assertThatThrownBy(() -> jdbc.update("UPDATE " + table + " SET tenant_id = tenant_id"))
+            .hasMessageContaining("append-only");
+        assertThatThrownBy(() -> jdbc.update("DELETE FROM " + table))
+            .hasMessageContaining("append-only");
+    }
+}
+
+@Test
+void application_role_lacks_bypass_rls() { … }
+```
+
+---
+
+## Traceability
+
+Run in CI against the documentation itself:
+
+| Check | Rule |
+|---|---|
+| Every `@RequiresPermission` exists in the permission matrix | BR-IAM-002 |
+| Every business rule ID has ≥1 test referencing it | [`DOCUMENT_HIERARCHY.md`](../00-governance/DOCUMENT_HIERARCHY.md) invariant 2 |
+| Every `R1` feature ID appears in an API doc and a test case | invariant 1 |
+| Every error code returned exists in the error catalog | [`ERROR_CATALOG.md`](../04-api/ERROR_CATALOG.md) |
+| No documentation link points at a missing path | invariant 4 |
+
+Business rule references use an annotation, making them greppable and countable:
+
+```java
+@BusinessRule("BR-SAFE-001")
+@Test
+void trip_cannot_close_with_unaccounted_student() { … }
+```
+
+---
+
+## Flutter Enforcement
+
+```dart
+// test/architecture_test.dart
+test('guardian_core domain does not depend on Flutter widgets', () { … });
+test('no widget contains a hardcoded user-facing string', () { … });
+test('no business rule is evaluated inside a widget', () { … });
+```
+
+Plus `flutter analyze` with a strict lint set ([`CODING_STANDARDS_FLUTTER.md`](CODING_STANDARDS_FLUTTER.md)).
+
+---
+
+## When a Rule Blocks Legitimate Work
+
+Three options, in order of preference:
+
+1. **Restructure the code** — usually the rule is right.
+2. **Narrow the rule** with a documented, reviewed exception naming the specific class and reason.
+3. **Change the rule**, via an ADR amending the principle behind it.
+
+**Never** disable a test to unblock a merge. A disabled architecture test is an architecture that has already eroded.
+
+===FILE_END===
+===FILE_START:documentation/06-development/CODING_STANDARDS_BACKEND.md===
+# BACKEND CODING STANDARDS
+
+**Document tier:** 6 — Development
+**Stack:** Java 21, Spring Boot 3.x, Gradle (Kotlin DSL), PostgreSQL, Flyway
+
+Structural rules are in [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md); their enforcement in [`ARCHITECTURE_ENFORCEMENT.md`](ARCHITECTURE_ENFORCEMENT.md). This document covers how the code inside those structures is written.
+
+---
+
+## Language
+
+Java 21. Use `record` for immutable carriers (commands, DTOs, value objects), sealed interfaces for closed hierarchies, pattern-matching `switch` for exhaustive dispatch, and text blocks for SQL.
+
+`var` only where the type is obvious from the right-hand side.
+
+**No Lombok.** Records cover most of what it was used for, and IDE-generated boilerplate is greppable in a way annotation processing is not.
+
+---
+
+## Immutability
+
+Domain objects are immutable. State changes return new instances:
+
+```java
+public School deactivate() {
+    return new School(id, organizationId, code, name, timezone, Status.INACTIVE, version);
+}
+```
+
+Fields `final`. Collections defensively copied on the way in and returned unmodifiable.
+
+---
+
+## Null
+
+**`null` never crosses a public boundary.** Use `Optional` for absent return values.
+
+`Optional` is a return type only — never a field, never a parameter. An optional parameter means two methods.
+
+Constructor parameters are validated:
+
+```java
+public School(SchoolId id, /* … */) {
+    this.id = Objects.requireNonNull(id, "id");
+    this.code = Objects.requireNonNull(code, "code");
+}
+```
+
+---
+
+## Value Objects Over Primitives
+
+```java
+public record SchoolId(UUID value) {
+    public SchoolId {
+        Objects.requireNonNull(value, "value");
+    }
+}
+```
+
+```java
+// wrong — nothing stops these being swapped
+void assign(UUID studentId, UUID stopId);
+
+// right — the compiler stops it
+void assign(StudentId studentId, StopId stopId);
+```
+
+In a domain with a dozen UUID-keyed entities, swapping two arguments is a defect the type system should catch. It matters more here than in most systems: swapping a student and a stop in a boarding call produces a plausible-looking, wrong safety record.
+
+Validation lives in the value object, so an invalid `Coordinates` cannot exist.
+
+---
+
+## Errors
+
+Typed domain exceptions carrying an error code — never strings or booleans.
+
+```java
+public abstract class DomainException extends RuntimeException {
+    private final ErrorCode errorCode;
+    private final Map<String, Object> context;
+}
+
+public class VehicleDocumentExpiredException extends DomainException {
+    public VehicleDocumentExpiredException(VehicleId vehicleId, String documentType, LocalDate expiredOn) {
+        super(ErrorCode.VEHICLE_DOCUMENT_EXPIRED,
+              Map.of("vehicleId", vehicleId, "documentType", documentType, "expiredOn", expiredOn));
+    }
+}
+```
+
+**No user-facing message in the exception** (BR-CFG-005). The `ErrorCode` maps to a localised `messageKey`, and the `context` populates its variables.
+
+One `@RestControllerAdvice` maps domain exceptions to the envelope in [`ERROR_CATALOG.md`](../04-api/ERROR_CATALOG.md). Never catch and rethrow at multiple layers; never swallow.
+
+Errors returned to clients leak no internal detail — no stack traces, no SQL, no internal identifiers.
+
+---
+
+## Transactions
+
+`@Transactional` on the **use case**, never on a repository or a controller.
+
+```java
+@Transactional
+public BoardingEvent execute(RecordBoardingCommand command) {
+    var event = boardingRepository.save(domainEvent);
+    auditPort.record(AuditRecord.of(...));   // SAME transaction — BR-AUD-002 🔴
+    domainEvents.publishAfterCommit(new StudentBoarded(event));
+    return event;
+}
+```
+
+Three rules:
+
+1. **Audit writes share the transaction.** If audit fails, the change rolls back (BR-AUD-002 🔴).
+2. **Domain events publish after commit** — a consumer must never observe state that later rolls back.
+3. **No outbound call inside a transaction** — no HTTP, no provider SDK, no notification dispatch. A slow provider would hold a database transaction open and turn a provider outage into a database outage ([`INTEGRATION_ARCHITECTURE.md`](../02-system-design/INTEGRATION_ARCHITECTURE.md)).
+
+Keep transactions short. Read-only where applicable.
+
+---
+
+## Business Rule References
+
+Every rule implementation cites its ID:
+
+```java
+/** BR-FLEET-002: a vehicle with an expired mandatory document may not be assigned. */
+private void assertVehicleEligible(Vehicle vehicle) { … }
+```
+
+This is what makes the traceability check meaningful and lets a reader find the *why* without guessing.
+
+---
+
+## Repository Methods
+
+Named for intent, not mechanism:
+
+```java
+List<Trip> findActiveTripsForVehicle(VehicleId vehicleId);   // yes
+List<TripEntity> findByVehicleIdAndStatusIn(...);            // no — leaks the ORM
+```
+
+**Every history or list query is bounded** — a time range, a limit, or both. An unbounded query against `position_history` will find billions of rows ([`INDEXING_AND_PARTITIONING.md`](../03-database/INDEXING_AND_PARTITIONING.md)).
+
+Explicit fetch strategies; no lazy-loading surprises escaping the adapter.
+
+---
+
+## Logging
+
+```java
+log.info("Trip started tripId={} vehicleId={} manifestSize={}",
+         trip.id(), trip.vehicleId(), manifest.size());
+```
+
+Structured JSON with correlation ID and tenant ID on every entry.
+
+**Never logged:** passwords, tokens, OTPs, provider credentials, full child records, guardian contact details. **Students appear as IDs, never names** — verified by a test scanning log output against a sensitive-field denylist ([`AUDIT_AND_LOGGING.md`](../02-system-design/AUDIT_AND_LOGGING.md)).
+
+Log at the boundary where a decision is made, not at every layer the call passes through.
+
+---
+
+## Concurrency
+
+Optimistic locking via the `version` column; a conflict returns `409`, never a silent overwrite.
+
+No shared mutable state. No `synchronized` in application code — if coordination is needed, the database is the coordination point.
+
+Scheduled jobs are idempotent and safe to run concurrently across instances, guarded by a database lock.
+
+---
+
+## Comments
+
+Comment **why**, not what.
+
+```java
+// received_at, not device_time: a device buffering through a coverage gap
+// reports hours-old positions, which would scatter writes into old partitions.
+```
+
+Javadoc on public application and domain APIs. **No commented-out code. No `TODO` without a linked issue** ([`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md) §15).
+
+---
+
+## Formatting
+
+Google Java Format, 120 columns, enforced by Spotless in CI. Import order fixed; no wildcard imports. Static analysis via Error Prone and SpotBugs; findings above threshold fail the build.
+
+---
+
+## Dependencies
+
+Every addition is justified in review. Prefer the JDK, then Spring Boot's managed dependencies. Versions come from the Spring Boot BOM. Dependency and container scanning runs in CI; findings above threshold fail the build.
+
+---
+
+## Checklist Before Merge
+
+- [ ] Business rule IDs cited on rule implementations
+- [ ] Audit write in the same transaction, where applicable
+- [ ] No outbound calls inside a transaction
+- [ ] Domain free of framework imports
+- [ ] Endpoint declares a permission
+- [ ] Errors typed, with codes in the catalog
+- [ ] No sensitive data in logs
+- [ ] Queries bounded and indexed
+- [ ] Tenant isolation test present for new tables
+
+Full gate: [`DEFINITION_OF_DONE.md`](DEFINITION_OF_DONE.md).
+
+===FILE_END===
+===FILE_START:documentation/06-development/CODING_STANDARDS_FLUTTER.md===
+# FLUTTER CODING STANDARDS
+
+**Document tier:** 6 — Development
+**Stack:** Flutter 3.x, Dart 3.x · **Clients:** parent app, driver app, admin web
+
+---
+
+## Layering
+
+Feature-first, mirroring the backend ([`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md)):
+
+```
+features/<feature>/
+├── bloc/            events in, states out — every decision lives here
+├── ui/              the screen; composes the feature's dependencies
+├── widgets/         feature-local pieces; render state, emit events
+├── repository/      Result<T> outcomes + models/ — NO Flutter imports
+└── data_provider/   HTTP only — no interpretation
+```
+
+Dependencies point one way: `ui / widgets → bloc → repository → data_provider`. Full responsibilities table in [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md).
+
+**State management is `flutter_bloc`.** One `Bloc` per feature, `sealed` events and a single state class.
+
+```dart
+// Events are what the user did — never what the app should do.
+final class LoginOtpSubmitted extends LoginEvent { … }   // right
+final class ShowLoginError extends LoginEvent { … }      // wrong — UI issuing orders
+```
+
+An event named `Show…` or `Navigate…` means the decision moved back into the widget.
+
+Blocs depend on a **repository**, never a data provider — that is what lets a bloc test run with no HTTP, no fake server, and an injected clock instead of real waiting. See `test/features/login/login_bloc_test.dart`.
+
+**No business logic in widgets** ([`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md) §8). Widgets render state and emit intents.
+
+```dart
+// wrong — a business rule evaluated in a widget
+if (student.boardedAt != null && student.alightedAt == null) {
+  showCriticalAlert();
+}
+
+// right — the decision belongs to the domain
+if (state.hasUnaccountedStudents) {
+  showCriticalAlert();
+}
+```
+
+A rule checked in the UI is checked **for user experience only**. The server decides (BR-IAM-001).
+
+---
+
+## `guardian_core`
+
+Shared across all three clients. Its domain layers **must not import `package:flutter/material.dart`** — enforced by a dependency test.
+
+This keeps the domain portable if ADR-0003 is reversed and the admin console is rebuilt in React. The design layer is separate from the domain layer for exactly this reason.
+
+---
+
+## Immutability
+
+All models immutable, with `copyWith`, value equality, and exhaustive `fromJson`/`toJson`.
+
+State classes are immutable and describe the whole screen state, including loading and error:
+
+```dart
+sealed class TripState {}
+final class TripLoading extends TripState {}
+final class TripLoaded extends TripState {
+  final Trip trip;
+  final List<ManifestEntry> manifest;
+  final SyncStatus syncStatus;
+  const TripLoaded({required this.trip, required this.manifest, required this.syncStatus});
+}
+final class TripError extends TripState {
+  final ErrorCode code;      // never a raw string
+  const TripError(this.code);
+}
+```
+
+Sealed classes force every state to be handled — a missing case is a compile error, not a blank screen.
+
+---
+
+## Null Safety
+
+Sound null safety throughout. **No `!` on values that can genuinely be null** — handle absence explicitly. `late` only where initialisation is provably guaranteed.
+
+---
+
+## Errors
+
+Domain results are typed. `ErrorCode` mirrors [`ERROR_CATALOG.md`](../04-api/ERROR_CATALOG.md).
+
+```dart
+sealed class Result<T> {}
+final class Success<T> extends Result<T> { final T value; }
+final class Failure<T> extends Result<T> { final ErrorCode code; final String? detail; }
+```
+
+The UI renders the **localised `messageKey`** returned by the API, never a raw code and never an internal detail.
+
+---
+
+## Localisation
+
+**No user-facing string literal in any widget** (BR-CFG-005) — enforced by a lint and an architecture test.
+
+```dart
+Text(context.l10n.studentBoardedAt(student.name, time))   // yes
+Text('${student.name} boarded at $time')                  // no
+```
+
+Layouts tolerate ±40% string length; no fixed-width text containers. Full RTL with logical start/end rather than left/right. Dates, times, and numbers formatted per locale (ADR-0007).
+
+**All times render in the school's timezone** (BR-CFG-006), never the device's — a parent travelling abroad must still see school-local times.
+
+---
+
+## Networking
+
+All API access through `guardian_core`'s generated client. Interceptors handle auth, refresh, correlation ID, and retry.
+
+- Every request carries a timeout.
+- Token refresh is transparent and single-flight — concurrent 401s must not trigger parallel refreshes.
+- Certificate pinning on both mobile apps.
+- **Retries carry the same idempotency key** (BR-BOARD-009). A retried boarding submission must not create a second record.
+
+---
+
+## Offline — Driver App Only (ADR-0008)
+
+```dart
+Future<void> recordBoarding(BoardingEvent event) async {
+  await _localStore.insert(event);        // 1. local first
+  _ui.confirm(event);                      // 2. immediate feedback
+  unawaited(_syncQueue.enqueue(event));    // 3. sync in background
+}
+```
+
+**The UI is never blocked on a network call for a safety action.** A child does not wait for a spinner.
+
+Rules:
+- Local store is **encrypted**; wiped on logout and on remote session revocation.
+- Every record carries a client-generated UUID for idempotency.
+- The queue survives app restart and device reboot.
+- `occurredAt` (device clock) and measured clock skew are both recorded — the device clock is never authoritative (BR-BOARD-008).
+- **Pending-sync count is always visible.** Silent queuing hides failure from the person who most needs to know.
+
+**The parent app is not offline-first.** It is a read surface; stale data there is a display problem, not data loss.
+
+---
+
+## Performance
+
+- `const` constructors wherever possible.
+- Long lists always use `ListView.builder`; admin grids are virtualised.
+- Images cached and correctly sized; student photos load through the authorising endpoint.
+- No expensive work in `build()`.
+- Live updates arrive via WebSocket, not polling — polling at the freshness target drains phone batteries.
+
+Admin web tracks a load budget in CI; a sustained breach reopens ADR-0003 ([`ADMIN_WEB.md`](../05-ui/ADMIN_WEB.md)).
+
+---
+
+## Accessibility
+
+Non-negotiable ([`ACCESSIBILITY.md`](../05-ui/ACCESSIBILITY.md)):
+
+- `Semantics` on every custom component; `excludeSemantics` on decorative layers.
+- Custom-painted elements carry semantic labels — a canvas marker is invisible to a screen reader otherwise.
+- Touch targets: 48 px parent, **64 px driver**, 88 px SOS.
+- Text scales to 200% without loss of function.
+- Critical alerts use assertive live regions.
+- Motion respects `prefers-reduced-motion`.
+
+---
+
+## Security
+
+- Tokens in platform secure storage, never in shared preferences.
+- Screenshots suppressed on screens showing child personal data.
+- No child data in device logs.
+- Certificate pinning on mobile.
+- Local store encrypted and wiped on logout.
+
+---
+
+## Testing
+
+| Level | Scope |
+|---|---|
+| Unit | Domain logic and state notifiers, no widgets |
+| Widget | Screens including empty, loading, and error states |
+| Golden | Key screens in light and dark, LTR and RTL |
+| Integration | Critical journeys, including a full offline trip |
+
+Every screen's three states are tested — an untested error state becomes a blank screen in production.
+
+---
+
+## Analysis
+
+`flutter analyze` clean, with a strict lint set: `prefer_const_constructors`, `avoid_print`, `always_declare_return_types`, `require_trailing_commas`, plus custom lints for hardcoded user-facing strings and business logic in widgets.
+
+Warnings are errors in CI.
+
+---
+
+## Checklist Before Merge
+
+- [ ] No business logic in widgets
+- [ ] No user-facing string literals
+- [ ] Empty, loading, and error states defined and tested
+- [ ] Times rendered in the school's timezone
+- [ ] Live data carries a freshness indicator
+- [ ] Touch targets meet the per-client minimum
+- [ ] Semantics on custom components
+- [ ] Offline path tested (driver app)
+- [ ] Idempotency key on retried writes
+- [ ] `flutter analyze` clean
+
+===FILE_END===
+===FILE_START:documentation/06-development/DEFINITION_OF_DONE.md===
+# DEFINITION OF DONE
+
+**Document tier:** 6 — Development
+**Status:** Active
+**Implements:** [`INSTRUCTIONS.md`](../INSTRUCTIONS.md) STEP 6
+
+A change is done when **every** item applies or is explicitly marked not applicable with a reason. Partial completion is not done — it is a change that has not landed.
+
+---
+
+## 1. Business Rules
+
+- [ ] Every rule implemented cites its ID in code (`/** BR-SAFE-001: … */`)
+- [ ] No rule invented — if it was not written down, it was added to [`BUSINESS_RULES.md`](../01-product-discovery/BUSINESS_RULES.md) first
+- [ ] Rule conflicts resolved by document hierarchy, not by preference
+- [ ] 🔴 changes carry an ADR and a stated preserved safety property
+
+## 2. Validation
+
+- [ ] Input validated at the boundary; client-supplied identifiers never trusted
+- [ ] All field errors returned together, not one per submission
+- [ ] Domain invariants enforced in the domain, **and** in the schema where SQL can express them
+- [ ] Documented deviations where SQL cannot (cross-row rules) have a covering test
+
+## 3. Authorization
+
+- [ ] Endpoint declares a permission from [`PERMISSION_MATRIX.md`](../01-product-discovery/PERMISSION_MATRIX.md)
+- [ ] **Object-level scope checked**, not just endpoint permission
+- [ ] Cross-scope returns `403`; cross-tenant returns `404`
+- [ ] Guardian access limited to own children (BR-IAM-005)
+- [ ] Deny-by-default holds — no new path bypasses the check
+
+## 4. Tenant Isolation 🔴
+
+- [ ] New tables carry `tenant_id` and **forced** RLS in the same migration
+- [ ] Policy declares both `USING` and `WITH CHECK`
+- [ ] Indexes lead with `tenant_id`
+- [ ] Tenant context set with `SET LOCAL`, never `SET`
+- [ ] Cross-tenant isolation test present for new repositories
+
+## 5. Error Handling
+
+- [ ] Typed domain exceptions carrying error codes — no strings, no booleans
+- [ ] Every code exists in [`ERROR_CATALOG.md`](../04-api/ERROR_CATALOG.md) with a localisation key
+- [ ] No internal detail leaked to clients
+- [ ] Nothing swallowed; nothing logged-and-rethrown at multiple layers
+
+## 6. Logging
+
+- [ ] Structured, with correlation ID and tenant ID
+- [ ] **No child names, credentials, tokens, or contact details** — students appear as IDs
+- [ ] Logged at the decision boundary, not every layer
+
+## 7. Audit Trail 🔴
+
+- [ ] Safety-relevant changes write an audit record
+- [ ] **Audit write shares the transaction** (BR-AUD-002)
+- [ ] Overrides carry a required, non-empty reason (BR-AUD-004)
+- [ ] Child-data reads by non-guardians produce data-access records (BR-IAM-012)
+- [ ] Exports record actor, scope, and record count (BR-RPT-002)
+
+## 8. Performance
+
+- [ ] Every query bounded — time range, limit, or both
+- [ ] Supporting index exists; plan verified for hot paths
+- [ ] No N+1 queries
+- [ ] **No outbound call inside a transaction**
+- [ ] Position-history queries prune by partition
+- [ ] Budgets in [`REALTIME_TRACKING_DESIGN.md`](../02-system-design/REALTIME_TRACKING_DESIGN.md) hold for affected paths
+
+## 9. Security
+
+- [ ] No secrets in source; configuration from environment
+- [ ] Parameterised queries only
+- [ ] Uploads type- and size-checked; served through authorising endpoints
+- [ ] Rate limits considered for new public endpoints
+- [ ] Dependency scan clean above threshold
+- [ ] `/security-review` run for changes touching auth, tenancy, or child data
+
+## 10. Scalability
+
+- [ ] Behaviour understood at reference scale ([`SCALABILITY.md`](../02-system-design/SCALABILITY.md))
+- [ ] No per-tenant work that grows unbounded with tenant count
+- [ ] Batch and scheduled work is chunked, idempotent, and safe to run concurrently
+- [ ] One tenant cannot degrade another
+
+## 11. Testing
+
+- [ ] Unit tests for domain rules, no Spring context
+- [ ] Integration tests for repositories, via Testcontainers
+- [ ] **Every business rule ID has ≥1 test referencing it** (`@BusinessRule`)
+- [ ] Error and edge cases covered, not only the happy path
+- [ ] Architecture tests pass
+- [ ] ~~Flutter: unit, widget, and golden tests; empty/loading/error states tested~~ — **paused — see [INSTRUCTIONS.md](../INSTRUCTIONS.md#current-exception--flutter-tests)**. Existing Flutter tests must still pass and `flutter analyze` must be clean; `guardian_core` remains tested.
+- [ ] Offline path tested for driver-app changes (ADR-0008) — *still required once the driver app consumes real endpoints; the pause does not cover safety-critical screens*
+- [ ] Critical journeys in [`SAFETY_CRITICAL_TEST_MATRIX.md`](../07-testing/SAFETY_CRITICAL_TEST_MATRIX.md) still pass
+
+## 12. Accessibility (UI changes)
+
+- [ ] Contrast, target size, and text scaling meet [`ACCESSIBILITY.md`](../05-ui/ACCESSIBILITY.md)
+- [ ] Semantics on custom components
+- [ ] Keyboard operable (admin web)
+- [ ] Works at 200% text scale and in RTL
+- [ ] Colour is never the only signal
+
+## 13. Localisation
+
+- [ ] **No user-facing string literal anywhere** (BR-CFG-005)
+- [ ] Keys added for every supported locale
+- [ ] Layout tolerates ±40% string length
+- [ ] Times render in the school's timezone (BR-CFG-006)
+- [ ] Region-specific behaviour is configuration, not a code branch (ADR-0007)
+
+## 14. Documentation
+
+- [ ] Updated **in the same PR**
+- [ ] Feature ID in [`FEATURE_INVENTORY.md`](../01-product-discovery/FEATURE_INVENTORY.md)
+- [ ] API document updated; new errors catalogued
+- [ ] Table specifications updated for schema changes
+- [ ] Screen inventory updated for UI changes
+- [ ] ADR written for architectural decisions
+- [ ] No documentation link points at a missing path
+
+## 15. Code Quality
+
+- [ ] Spotless and static analysis clean
+- [ ] No commented-out code
+- [ ] No `TODO` without a linked issue
+- [ ] **No placeholder or pseudo-production code** ([`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md) §15)
+- [ ] Comments explain *why*
+- [ ] Constructor injection; no field injection; no static mutable state
+
+---
+
+## Safety-Critical Changes 🔴
+
+Additionally required for anything touching a 🔴 rule:
+
+- [ ] **Two approvals**, one from someone who did not pair on the change
+- [ ] Explicit statement of the safety property preserved
+- [ ] Tests referencing every affected rule ID
+- [ ] ADR if the control itself changes
+- [ ] Safety-critical test matrix re-run in full
+- [ ] Failure behaviour considered: what happens offline, on provider failure, on database loss
+
+---
+
+## Not Done
+
+State it plainly rather than merging something incomplete:
+
+> "Handover override notification is implemented; the SMS fallback path is not — tracked as #412. The override itself is blocked from completing if no channel succeeds, so no child is released without a notification attempt."
+
+**Documented incompleteness is acceptable. Silent incompleteness is not.** In a safety system, the gap someone knows about is manageable; the gap nobody knows about is how incidents happen.
+
+===FILE_END===
+===FILE_START:documentation/06-development/GIT_WORKFLOW.md===
+# GIT WORKFLOW
+
+**Document tier:** 6 — Development
+**Status:** Active
+
+---
+
+## Repositories
+
+Seven repositories, listed in [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md). Everything below applies identically to each — same branch names, same commit format, same review bar. The differences are only these:
+
+**A change lands in as few repositories as it can.** Most work touches one. If a change needs three, that is a signal worth reading: either the boundaries are wrong, or the change is really three changes.
+
+**Cross-repository changes merge back-to-front — dependency first.** `guardian-core` before the apps that consume it; `documentation` before the backend code that a new business rule governs. Each PR cites the others by URL in its `Refs:` line, and the dependency PR states that dependents are waiting so nobody merges it and walks away.
+
+**The tree is only green when the repositories agree.** `backend`'s architecture tests parse `documentation`, so a merged rule with no test turns the backend red — in a different repository, on someone else's branch. That is the cost of the split, paid deliberately: the alternative is documentation that drifts silently.
+
+---
+
+## Branches
+
+| Branch | Purpose |
+|---|---|
+| `main` | Always deployable. Protected. |
+| `feature/<id>-<slug>` | Feature work — `feature/BRD-014-left-behind-alert` |
+| `fix/<id>-<slug>` | Defect fix |
+| `chore/<slug>` | Tooling, dependencies, docs |
+| `hotfix/<slug>` | Production fix, branched from `main` |
+
+**Branch names carry the feature ID** from [`FEATURE_INVENTORY.md`](../01-product-discovery/FEATURE_INVENTORY.md). Work without an ID is untracked work.
+
+Trunk-based: branches are short-lived, ideally under two days. Long branches diverge, and merge pain leads to skipped review.
+
+---
+
+## Commits
+
+Conventional Commits:
+
+```
+<type>(<scope>): <subject>
+
+<body — why, not what>
+
+Refs: BRD-014, BR-SAFE-001
+```
+
+Types: `feat` · `fix` · `docs` · `refactor` · `test` · `chore` · `perf` · `build`
+
+```
+feat(boarding): raise critical alert for unaccounted students at trip close
+
+Reconciliation now blocks CLOSED while any item is unresolved, and
+dispatches NTF-SAFE-01 to driver, attendant, manager, and guardians.
+Bypasses preferences and quiet hours per BR-NTF-006.
+
+Refs: BRD-014, BR-SAFE-001, BR-TRIP-009
+```
+
+**The body explains why.** The diff already shows what.
+
+**`Refs:` cites feature and business rule IDs** — this is what lets someone find the intent behind a change three years later.
+
+---
+
+## Pull Requests
+
+Every change goes through a PR. No direct pushes to `main`.
+
+### Template
+
+```markdown
+## Requirement Summary
+## Documents Referenced
+## Business Rules Applied
+## Impact Analysis
+Business · Database · API · UI · Security · Testing
+## Test Cases
+## Documentation Updated
+## Future Considerations
+```
+
+This mirrors the response format in [`INSTRUCTIONS.md`](../INSTRUCTIONS.md). A PR that cannot fill these sections has not established what it is doing or why.
+
+### Requirements to merge
+
+- [ ] CI green — build, all tests, architecture tests, Spotless, security scan
+- [ ] At least one approving review; **two for safety-critical (🔴) changes**
+- [ ] Business rule IDs cited in code and tests
+- [ ] Documentation updated — `documentation` PR open and linked, merged first
+- [ ] No new `TODO` without a linked issue
+- [ ] [`DEFINITION_OF_DONE.md`](DEFINITION_OF_DONE.md) satisfied
+
+### Size
+
+Under 400 changed lines where possible. Beyond that, review quality drops sharply and approval becomes a formality — which is how defects reach `main` in a safety system.
+
+Split refactoring from behaviour change into separate PRs. A behaviour change hidden inside a large rename is effectively unreviewed.
+
+---
+
+## Review
+
+Reviewers check, in order:
+
+1. **Correctness against the business rules cited** — do the rules say what the code assumes?
+2. **Safety implications** — could this weaken a 🔴 control?
+3. **Tenant isolation** — new tables have RLS; new queries are scoped
+4. **Authorisation** — endpoints declare a permission; object-level scope is checked
+5. **Audit** — safety-relevant changes write audit records in the same transaction
+6. **Architecture** — layering, module boundaries, no logic in UI
+7. **Tests** — business rule IDs referenced; error and edge cases covered
+8. **Documentation** — updated alongside the code
+
+Reviews are on the code, not the author. Blocking comments state what must change and why; suggestions are marked as such.
+
+### Safety-critical changes 🔴
+
+Any change touching a 🔴 rule requires:
+
+- **Two approvals**, one from someone who did not pair on it
+- An explicit statement of what safety property is preserved
+- Tests referencing the rule IDs
+- An ADR if the control itself is being changed ([`BUSINESS_RULES.md`](../01-product-discovery/BUSINESS_RULES.md) change control)
+
+---
+
+## Merging
+
+**Squash merge** to `main`. The squash message follows the commit format and carries the `Refs:` line.
+
+One PR, one logical change, one commit on `main` — so `main`'s history is a readable list of changes, and reverting is a single operation.
+
+Branches are deleted after merge.
+
+---
+
+## Documentation Changes
+
+**Documentation is the source of truth** ([`INSTRUCTIONS.md`](../INSTRUCTIONS.md)). Code that disagrees with a document is a defect in one of the two.
+
+| Change | Also update |
+|---|---|
+| New feature | `FEATURE_INVENTORY.md`, API doc, UI doc, test cases |
+| New business rule | `BUSINESS_RULES.md` + a test citing its ID |
+| New table | `documentation/03-database/tables/`, migration **with RLS** |
+| New endpoint | API doc, `PERMISSION_MATRIX.md` if a new permission |
+| New error | `ERROR_CATALOG.md` + localisation keys |
+| New notification | `NOTIFICATION_CATALOG.md` + templates |
+| Architectural decision | An ADR — never prose buried in another document |
+
+All of these live in `documentation`, so documentation can no longer land in the same PR as the code. It still lands in the same **change**: open the `documentation` PR first, link it from the code PR, and merge docs first. Neither merges alone.
+
+The one-PR rule existed because a follow-up PR for documentation is a documentation update that will not happen. Splitting the repositories does not retire that risk, it relocates it — which is why "docs PR open and linked" is a merge requirement above, not a convention.
+
+---
+
+## Hotfixes
+
+1. Branch from `main`.
+2. Minimal fix, plus a **regression test** — a hotfix without one invites the same incident.
+3. Two approvals regardless of size.
+4. Merge, deploy, verify.
+5. Follow up with the root-cause fix if the hotfix was a mitigation.
+
+Speed does not waive the regression test or the second approval. Those are what stop a hasty fix causing a second incident.
+
+---
+
+## What Is Never Committed
+
+Secrets, credentials, tokens, keys · real child or guardian data, including in fixtures · `.env` files · build output · IDE configuration · large binaries.
+
+Secret scanning runs in CI and on pre-commit hooks. **A committed secret is treated as compromised and rotated**, not deleted from history and forgotten.
+
+===FILE_END===
+===FILE_START:documentation/06-development/LOCAL_SETUP.md===
+# LOCAL SETUP
+
+**Document tier:** 6 — Development
+**Status:** Active
+
+---
+
+## Prerequisites
+
+| Tool | Version |
+|---|---|
+| JDK | 21 (Temurin recommended) |
+| Docker + Compose | current |
+| Flutter | 3.x stable |
+| Git | 2.40+ |
+
+Verify: `java -version` · `docker compose version` · `flutter doctor`
+
+---
+
+## 0. Clone
+
+Every command below runs from a parent directory holding **all seven repositories side by side**. The layout is load-bearing — see [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md#cross-repository-dependencies) for the three couplings that rely on it.
+
+```bash
+mkdir guardian && cd guardian
+for r in docs backend core parent-app driver-app admin-web infra; do
+  git clone https://github.com/pradeepslnp/guardian-$r.git
+done
+```
+
+---
+
+## 1. Infrastructure
+
+```bash
+docker compose -f infrastructure/docker-compose.yml up -d
+docker compose -f infrastructure/docker-compose.yml ps
+```
+
+Starts PostgreSQL 16 (`localhost:5432`) and Redis 7 (`localhost:6379`).
+
+### Database roles
+
+`infrastructure/db/init/01-roles.sql` runs on first start and creates the two roles that make RLS meaningful ([`RLS_POLICIES.md`](../03-database/RLS_POLICIES.md)):
+
+| Role | Purpose |
+|---|---|
+| `guardian_owner` | Owns schema objects; used by Flyway only |
+| `guardian_app` | Application runtime. **`NOBYPASSRLS`, not the owner.** |
+
+**Do not run the application as `guardian_owner`.** RLS is `FORCE`d, but running as owner defeats the point of having a separate runtime role and hides isolation bugs until production.
+
+---
+
+## 2. Backend
+
+```bash
+cd backend
+./gradlew build          # compile + unit + architecture tests
+./gradlew :guardian-api:bootRun
+```
+
+Flyway applies migrations on startup. The API listens on `http://localhost:8080`; OpenAPI at `/swagger-ui.html`.
+
+### Configuration
+
+`application-local.yml` is committed with local defaults. **Secrets never are.** Override via environment:
+
+```bash
+export GUARDIAN_DB_PASSWORD=…
+export GUARDIAN_JWT_PRIVATE_KEY_PATH=…
+```
+
+A local RSA keypair is generated on first run into `backend/.local/` (gitignored) — no shared development signing key.
+
+---
+
+## 3. Seed Data
+
+```bash
+./gradlew :guardian-api:seedDevelopmentData
+```
+
+Creates a realistic dataset: **two organizations under different region profiles**, several schools, ~200 students with guardians, vehicles with documents at varying expiry, staff with credentials, routes and stops, and trips across several days including exceptions.
+
+Two region profiles is deliberate — it exercises ADR-0007 continuously, so region-specific behaviour leaking into code surfaces during development rather than at the first international customer.
+
+Development logins are printed on completion. They exist only in the `local` profile and are refused in any other.
+
+---
+
+## 4. Flutter Clients
+
+```bash
+cd guardian-core       && dart pub get    && dart test
+cd ../flutter/parent_app && flutter pub get && flutter run
+cd ../flutter/driver_attender_app && flutter pub get && flutter run
+cd ../admin  && flutter pub get && flutter run -d chrome
+```
+
+Point clients at the local API:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://localhost:8080/api/v1
+```
+
+Android emulator uses `http://10.0.2.2:8080`; a physical device needs your machine's LAN address.
+
+---
+
+## 5. Tests
+
+```bash
+cd backend
+./gradlew test                    # unit + architecture
+./gradlew integrationTest         # Testcontainers — Docker must be running
+./gradlew check                   # everything, including Spotless
+```
+
+The architecture tests read `BUSINESS_RULES.md` and `PERMISSION_MATRIX.md` out of `documentation`, resolved at `../../documentation`. If that repository is checked out elsewhere, point at it explicitly rather than copying the files:
+
+```bash
+GUARDIAN_DOCS_PATH=/path/to/documentation ./gradlew test
+```
+
+They fail rather than skip when the documentation is missing — a traceability test that passes without reading the rules would certify nothing.
+
+Integration tests start their own PostgreSQL container. **They do not use your development database** — they create and drop schemas, and pointing them at a shared database would destroy your seed data.
+
+```bash
+cd flutter/parent_app && flutter test
+```
+
+---
+
+## Common Problems
+
+**Migrations fail on startup.** The container was likely created before `init/` scripts existed. Reset:
+```bash
+docker compose -f infrastructure/docker-compose.yml down -v
+docker compose -f infrastructure/docker-compose.yml up -d
+```
+`-v` deletes the volume. Local data only.
+
+**Queries return no rows even though data exists.** Almost always RLS with no tenant context set — the correct, safe failure ([`MULTI_TENANCY.md`](../02-system-design/MULTI_TENANCY.md)). Check that the request carries a valid token, or that a job sets context per tenant.
+
+Inspecting data directly:
+```sql
+-- as guardian_owner, in a psql session
+SET app.tenant_id = '<organization uuid>';
+SELECT * FROM students;
+```
+Use `SET LOCAL` in application code — never plain `SET`. Session-scoped setting leaks across pooled connections.
+
+**Live tracking is empty.** Positions only exist during an active trip (BR-TRACK-001). Start a trip from the seeded data, or run the position simulator:
+```bash
+./gradlew :guardian-api:simulatePositions --args="--tripId=<uuid>"
+```
+
+**Flutter cannot reach the API.** Check `API_BASE_URL`, and use `10.0.2.2` on the Android emulator rather than `localhost`.
+
+**Architecture tests fail after adding a class.** They are working. See [`ARCHITECTURE_ENFORCEMENT.md`](ARCHITECTURE_ENFORCEMENT.md) — the fix is usually to move the class, not to change the rule. Never disable the test.
+
+---
+
+## Useful Commands
+
+```bash
+docker compose -f infrastructure/docker-compose.yml logs -f postgres
+docker compose -f infrastructure/docker-compose.yml exec postgres psql -U guardian_owner -d guardian
+./gradlew :guardian-api:flywayInfo
+./gradlew spotlessApply
+./gradlew dependencyUpdates
+```
+
+---
+
+## Before Your First Commit
+
+Read, in order: [`INSTRUCTIONS.md`](../INSTRUCTIONS.md) · [`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md) · [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md) · [`DEFINITION_OF_DONE.md`](DEFINITION_OF_DONE.md).
+
+Then open [`guardian-tenancy`](../../backend/guardian-tenancy/) — it is the reference implementation, and every other module follows it.
+
+===FILE_END===
+===FILE_START:documentation/06-development/PROJECT_STRUCTURE.md===
+# PROJECT STRUCTURE
+
+**Document tier:** 6 — Development
+**Status:** Active
+**Implements:** [`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md) §1, §2
+
+---
+
+## Repository Layout
+
+Each project is its own git repository (each still carries its own `.git`), arranged inside one parent workspace directory in the nested layout below — that arrangement is not a convenience, it is what makes a checkout build: the Flutter apps and the admin web client resolve `guardian_theme` by relative path, and the backend's architecture tests read `documentation` at `../../documentation`.
+
+> **2026-08 restructure note:** this repository was reorganised from a flat set of `guardian-*` sibling folders into the nested layout below, to match the platform's monorepo folder convention (see root `CLAUDE.md` §16). Every path in this document reflects the new layout. If you find a reference anywhere in this repo still pointing at an old `guardian-*` path, treat it as a documentation defect and fix it or flag it — do not silently follow the stale path.
+
+```
+school/                            repository root
+├── documentation/                 tiers 0–8, plus INSTRUCTIONS.md,
+│                                  PROJECT_CHARTER.md, *_PRINCIPLES.md,
+│                                  AI_MASTER_PROMPT.md
+├── backend/
+│   ├── settings.gradle.kts
+│   ├── build.gradle.kts           shared conventions
+│   ├── guardian-common/           cross-cutting; NO business rules
+│   ├── guardian-tenancy/          ← reference implementation
+│   ├── guardian-identity/
+│   └── guardian-api/              bootstrap, security, migrations
+├── flutter/
+│   ├── parent_app/                Flutter
+│   ├── driver_attender_app/       Flutter, offline-first (ADR-0008)
+│   ├── teacher_app/               placeholder — not yet implemented (see FEATURE roadmap)
+│   └── shared_packages/
+│       └── guardian_theme/        shared pure Dart — design tokens, theme, shared widgets
+├── admin/                         Flutter Web
+├── infrastructure/                docker-compose, db bootstrap
+├── api/                           API contracts / OpenAPI specs (placeholder — not yet populated)
+├── deployment/                    deployment scripts & environment configs (placeholder)
+├── operations/                    runbooks, on-call material (placeholder)
+└── scripts/                       repo-wide dev/maintenance scripts (placeholder)
+```
+
+Modules are added per [`MODULE_MAP.md`](../01-product-discovery/MODULE_MAP.md). **`guardian-tenancy` is the pattern** — copy its structure, do not invent a new one.
+
+### Cross-repository dependencies
+
+Exactly three dependency relationships exist. Adding a fourth needs an ADR — the split is only worth its cost while the couplings stay countable.
+
+| From | To | Mechanism |
+|---|---|---|
+| `flutter/parent_app`, `flutter/driver_attender_app`, `admin` | `flutter/shared_packages/guardian_theme` | pub path dependency: `path: ../shared_packages/guardian_theme` from the two apps under `flutter/`, `path: ../flutter/shared_packages/guardian_theme` from `admin` (one level further away) |
+| `backend` (tests only) | `documentation` | `DocsPath` resolves `../../documentation`, overridable via `GUARDIAN_DOCS_PATH` |
+| `backend` (run time) | `infrastructure` | `docker compose -f ../infrastructure/docker-compose.yml up -d` |
+
+**Naming note:** earlier drafts of this document described a shared package named `guardian-core` covering domain, network, and design concerns. What is actually implemented today is the narrower `guardian_theme` package (design tokens and theme only) — `admin` already takes a path dependency on it, contrary to an earlier draft of this note that said it depended on nothing. If a broader shared domain/network package is introduced later, give it its own name and ADR rather than reviving the unbuilt `guardian-core` name, to avoid confusing the two in history and search.
+
+---
+
+## Backend Module Layout
+
+Every module is identical. **Package by feature, then by layer** — never `com.guardian.controllers`.
+
+```
+guardian-<module>/src/main/java/com/guardian/<module>/
+├── domain/                    NO framework imports
+│   ├── School.java                    entity
+│   ├── SchoolCode.java                value object
+│   ├── SchoolStatus.java              enum
+│   └── SchoolDomainService.java       rules spanning entities
+├── application/
+│   ├── usecase/
+│   │   ├── CreateSchoolUseCase.java   one class, one operation
+│   │   └── GetSchoolUseCase.java
+│   ├── port/
+│   │   └── SchoolRepository.java      interface — infrastructure implements
+│   └── command/
+│       └── CreateSchoolCommand.java
+├── infrastructure/
+│   └── persistence/
+│       ├── SchoolEntity.java          JPA — never leaves this package
+│       ├── SchoolJpaRepository.java
+│       ├── SchoolPersistenceMapper.java
+│       └── SchoolRepositoryAdapter.java   implements the port
+└── interfaces/
+    └── rest/
+        ├── SchoolController.java
+        ├── dto/CreateSchoolRequest.java
+        ├── dto/SchoolResponse.java
+        └── SchoolDtoMapper.java
+```
+
+### The dependency rule
+
+```
+interfaces ──► application ──► domain
+                    ▲
+infrastructure ─────┘   (implements ports)
+```
+
+**Domain depends on nothing.** No Spring, no JPA, no HTTP types. Enforced by ArchUnit — see [`ARCHITECTURE_ENFORCEMENT.md`](ARCHITECTURE_ENFORCEMENT.md).
+
+### Three models, deliberately
+
+| Model | Layer | Purpose |
+|---|---|---|
+| `CreateSchoolRequest` | interfaces | Wire format; validation annotations |
+| `School` | domain | Business rules; no framework |
+| `SchoolEntity` | infrastructure | JPA mapping |
+
+This is more code than a single annotated class. It is worth it here because safety records outlive ORM choices: retention, partitioning, and archival changes would otherwise ripple into domain rules ([`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md) §4).
+
+**A JPA entity never leaves `infrastructure`. A domain object is never serialised to a client.**
+
+---
+
+## `guardian-common`
+
+Cross-cutting only. **No business rules** — if a rule belongs here, it belongs in a module.
+
+```
+com.guardian.common/
+├── tenant/         TenantContext, TenantContextFilter, transaction binding
+├── audit/          AuditPort, AuditRecord — implemented in guardian-api
+├── error/          DomainException hierarchy, ErrorCode
+├── security/       permission annotations, scope resolution contracts
+└── model/          shared value objects (Coordinates, TimeRange)
+```
+
+Every module may depend on it; it depends on no module.
+
+---
+
+## Use Cases
+
+One class, one operation. If the name needs "And", split it.
+
+```java
+@Service
+public class CreateSchoolUseCase {
+
+    private final SchoolRepository schoolRepository;
+    private final OrganizationRepository organizationRepository;
+    private final AuditPort auditPort;
+
+    public CreateSchoolUseCase(SchoolRepository schoolRepository,
+                               OrganizationRepository organizationRepository,
+                               AuditPort auditPort) {
+        this.schoolRepository = schoolRepository;
+        this.organizationRepository = organizationRepository;
+        this.auditPort = auditPort;
+    }
+
+    @Transactional
+    public School execute(CreateSchoolCommand command) {
+        // 1. load, 2. enforce domain rules, 3. persist,
+        // 4. audit IN THE SAME TRANSACTION (BR-AUD-002)
+    }
+}
+```
+
+**Constructor injection only.** No field injection, no `@Autowired` on fields, no static mutable state.
+
+**The audit write shares the transaction** (BR-AUD-002 🔴) — if audit fails, the change rolls back.
+
+---
+
+## Ports and Adapters
+
+```java
+// application/port — speaks the domain's language, not the ORM's
+public interface SchoolRepository {
+    Optional<School> findById(SchoolId id);
+    List<School> findActiveByOrganization(OrganizationId organizationId);
+    School save(School school);
+}
+```
+
+```java
+// infrastructure/persistence
+@Component
+public class SchoolRepositoryAdapter implements SchoolRepository { … }
+```
+
+Method names describe intent (`findActiveByOrganization`), never mechanism (`findByOrgIdAndIsActiveTrue`).
+
+---
+
+## Flutter Layout
+
+Feature-first, using the BLoC layering. **Every feature folder has the same five parts**, so a developer opening an unfamiliar feature already knows where everything is:
+
+```
+guardian_parent/lib/
+├── main.dart
+├── app/                          theme, config, top-level routing
+└── features/
+    └── login/
+        ├── bloc/                 login_bloc.dart, login_event.dart, login_state.dart
+        ├── ui/                   the screen — one route, owns the feature's wiring
+        ├── widgets/              pieces used only by this feature
+        ├── repository/           login_repository.dart + models/
+        └── data_provider/        login_data_provider.dart — HTTP only
+```
+
+### What belongs in each layer
+
+| Folder | Responsibility | Must not |
+|---|---|---|
+| `data_provider/` | Names endpoints and shapes payloads. Calls `RestClient`. | Import `package:http`, or interpret what a failure *means* |
+| `repository/` | Turns transport into domain outcomes. Returns `Result<T>`, maps wire errors onto `ErrorCode`. | Import Flutter, or throw for an expected failure |
+| `bloc/` | Every decision: what is submittable, what a failure means, when a retry is allowed. | Touch the data provider directly, or build widgets |
+| `ui/` | The route. Composes data provider → repository → BLoC for the feature. | Contain business rules |
+| `widgets/` | Renders state, emits events. | Decide anything |
+
+The dependency direction is strictly one way:
+
+```
+ui / widgets  →  bloc  →  repository  →  data_provider
+```
+
+A widget that reaches past the BLoC to a repository, or a BLoC that reaches past its repository to a data provider, is a layering violation — the fake repository in `login_bloc_test.dart` throws from `dataProvider` specifically to catch that.
+
+**Reference implementation:** `features/login/` in `guardian_parent`. New features copy its shape.
+
+A feature without remote data (`home`, today) simply has no `data_provider/`, and gains one when it needs one. A feature with no decisions yet has no `bloc/`. Do not create empty folders to satisfy the pattern.
+
+Shared models used by several features live in `guardian_core`; models used by one feature live in that feature's `repository/models/`.
+
+### `core/network/` — the HTTP boundary
+
+Each app has one `RestClient` (`lib/core/network/rest_client.dart`) and one `ApiResponse`. **Every network call goes through it**, so timeouts, headers, retry policy, and response decoding are decided once instead of per feature. A data provider that imports `package:http` directly bypasses all of it.
+
+`RestClient` never throws for a network fault. Socket errors, timeouts, and unparseable replies all become `ApiResponse.transportFailure`, so a repository handles "no network" on the same path as "server said no" rather than wrapping every call in a try/catch.
+
+**Retry policy is tied to safety, not convenience.** `GET`, `PUT`, and `DELETE` retry; `PATCH` does not; `POST` retries **only** when given an `idempotencyKey`. A retried `POST` that already succeeded records the action twice — for a boarding or handover event that means a child appears to board twice and trip-close reconciliation is wrong.
+
+```
+packages/guardian_core/lib/
+├── api/          generated client, interceptors
+├── models/       shared domain models
+├── errors/       error types matching ERROR_CATALOG.md
+├── auth/         token storage, refresh
+└── design/       tokens, shared components
+```
+
+**`guardian_core`'s domain layers must not import `package:flutter/material.dart`** — a dependency test enforces this, keeping the domain portable if ADR-0003 is reversed.
+
+**No business logic in widgets** ([`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md) §8). Widgets render state and emit intents.
+
+---
+
+## Test Layout
+
+Tests mirror source packages.
+
+```
+src/test/java/com/guardian/tenancy/
+├── domain/SchoolTest.java                          unit, no Spring
+├── application/CreateSchoolUseCaseTest.java        unit, mocked ports
+├── infrastructure/SchoolRepositoryAdapterIT.java   Testcontainers
+├── interfaces/SchoolControllerTest.java            MockMvc
+└── SchoolTenantIsolationIT.java                    RLS verification
+```
+
+Every module has a tenant-isolation integration test. See [`TEST_STRATEGY.md`](../07-testing/TEST_STRATEGY.md).
+
+---
+
+## Adding a Module
+
+1. Add a row to [`MODULE_MAP.md`](../01-product-discovery/MODULE_MAP.md) and confirm no dependency cycle.
+2. Create `guardian-<module>` and register it in `settings.gradle.kts`.
+3. Create the four layer packages.
+4. Add tables to [`documentation/03-database/tables/`](../03-database/tables/) with a Flyway migration **including RLS in the same migration**.
+5. Add features to [`FEATURE_INVENTORY.md`](../01-product-discovery/FEATURE_INVENTORY.md).
+6. Add endpoints to an API document, each declaring a permission.
+7. Write tests referencing business rule IDs.
+
+Copy `guardian-tenancy`. Do not invent a different structure.
+
+---
+
+## Naming
+
+| Kind | Pattern |
+|---|---|
+| Use case | `<Verb><Noun>UseCase` |
+| Port | `<Noun>Repository`, `<Noun>Gateway` |
+| Adapter | `<Noun>RepositoryAdapter` |
+| Controller | `<Noun>Controller` |
+| Request / Response DTO | `<Verb><Noun>Request` / `<Noun>Response` |
+| JPA entity | `<Noun>Entity` |
+| Domain exception | `<Problem>Exception` |
+| Unit test | `<Class>Test` |
+| Integration test | `<Class>IT` |
+
+===FILE_END===
+===FILE_START:documentation/07-testing/SAFETY_CRITICAL_TEST_MATRIX.md===
+# SAFETY-CRITICAL TEST MATRIX 🔴
+
+**Document tier:** 7 — Testing
+**Status:** Active
+
+Every 🔴 rule from [`BUSINESS_RULES.md`](../01-product-discovery/BUSINESS_RULES.md), with the tests that prove it holds.
+
+**Each 🔴 rule is tested at two levels** — the decision (unit) and the enforcement (integration/E2E/schema). A rule enforced only in a use case can be bypassed by a future code path. A rule enforced in the schema cannot.
+
+This matrix runs in full on every PR touching a 🔴 rule, and nightly.
+
+---
+
+## Tenant Isolation
+
+| Rule | Level | Test |
+|---|---|---|
+| BR-TEN-004 | Integration | Data written under tenant A returns zero rows under tenant B — **every** tenant-scoped repository |
+| BR-TEN-004 | Schema | Every `tenant_id` table has RLS enabled **and forced** |
+| BR-TEN-004 | Schema | Every policy declares `USING` **and** `WITH CHECK` |
+| BR-TEN-004 | Schema | `guardian_app` lacks `BYPASSRLS`; owns no tables |
+| BR-TEN-004 | Integration | Two sequential transactions on one pooled connection do not leak context |
+| BR-TEN-004 | Integration | Unset context ⇒ zero rows, not an error |
+| BR-TEN-004 | Integration | Insert bearing a foreign `tenant_id` rejected by `WITH CHECK` |
+| BR-TEN-004 | Integration | Platform elevation without justification refused; audit written **before** first read |
+
+---
+
+## Access Control
+
+| Rule | Level | Test |
+|---|---|---|
+| BR-IAM-001 | Contract | Client-supplied role/scope claims ignored |
+| BR-IAM-002 | Architecture | Every endpoint declares a permission — build fails otherwise |
+| BR-IAM-002 | Contract | Every denied cell in the permission matrix returns `403` |
+| BR-IAM-005 | Integration | Guardian requesting another family's student receives `403` |
+| BR-IAM-012 | Integration | Every non-guardian child-data read writes a data-access record |
+
+---
+
+## Guardians & Handover
+
+| Rule | Level | Test |
+|---|---|---|
+| BR-GRD-002 | Unit | Removing the last handover-capable guardian is refused |
+| BR-GRD-002 | Integration | Route assignment refused when no guardian holds the right |
+| BR-GRD-006 | Integration | Guardian without the right cannot nominate a pickup person |
+| BR-GRD-008 | Unit | Custody restriction overrides an active guardian link |
+| BR-GRD-008 | E2E | Restricted guardian cannot read the student's location |
+| BR-HAND-001 | Unit | Release to an unauthorised adult refused |
+| BR-HAND-001 | Schema | Handover with zero or two receiver paths rejected by constraint |
+| BR-HAND-001 | Integration | Handover verification cannot be disabled by configuration |
+| BR-HAND-003 | Schema | Override without reason or receiver identity rejected by constraint |
+| BR-HAND-003 | E2E | Override notifies **all** guardians and the transport manager |
+| BR-HAND-006 | E2E | Restricted collection refused, `HANDOVER_REFUSED` incident raised, escalated, **no handover row created** |
+| BR-HAND-007 | E2E | No receiver ⇒ student stays on vehicle, incident raised, escalation starts |
+| BR-HAND-007 | UI | The no-receiver screen offers no path that discharges the child |
+
+`BR-HAND-007` is the rule most likely to be argued away for operational convenience. Both the API and the UI are tested for the absence of an escape hatch.
+
+---
+
+## Boarding
+
+| Rule | Level | Test |
+|---|---|---|
+| BR-BOARD-001 | Schema | `UPDATE`/`DELETE` on `boarding_events` raises an exception |
+| BR-BOARD-001 | Integration | Correction creates a new record; both remain readable |
+| BR-BOARD-004 | E2E | Wrong-stop alight requires override and notifies guardians |
+| BR-BOARD-009 | Schema | Duplicate `client_event_id` rejected |
+| BR-BOARD-009 | Integration | Replayed submission returns the original record, not a duplicate |
+
+---
+
+## Safety Controls
+
+| Rule | Level | Test |
+|---|---|---|
+| **BR-SAFE-001** | Unit | Boarded with no alight ⇒ `UNACCOUNTED` |
+| **BR-SAFE-001** | Integration | Trip cannot reach `CLOSED` with an unresolved item |
+| **BR-SAFE-001** | Schema | Resolution without outcome, actor, **and** time rejected |
+| **BR-SAFE-001** | E2E | Critical alert reaches driver, attendant, manager, guardians within the detection window |
+| **BR-SAFE-001** | E2E | Alert bypasses preferences and quiet hours |
+| BR-SAFE-002 | E2E | Departure with un-boarded student ⇒ no-show recorded, guardians notified |
+| BR-SAFE-003 | E2E | Student scanned onto the wrong trip ⇒ both crews and guardians alerted |
+| BR-SAFE-004 | Integration | SOS delivered with every preference disabled and quiet hours active |
+| BR-SAFE-005 | Integration | Offline event conflicting with server state is **flagged, not discarded** |
+| BR-SAFE-006 | Integration | Unacknowledged alert escalates a level, repeatedly, until acknowledged |
+| BR-SAFE-007 | Integration | Configuration below the platform floor rejected |
+
+**BR-SAFE-001 carries five tests.** It is the control the platform exists for — a child asleep on a parked vehicle.
+
+---
+
+## Trips & Manifest
+
+| Rule | Level | Test |
+|---|---|---|
+| BR-TRIP-003 | Integration | Route edits after start do not change the materialised manifest |
+| BR-TRIP-003 | Integration | Direct manifest edit refused; amendment required |
+| BR-TRIP-003 | Schema | Amendment without reason rejected |
+| BR-FLEET-002 | Integration | Expired mandatory document blocks trip start |
+| BR-FLEET-002 | E2E | Expiry mid-trip does **not** interrupt the in-progress trip |
+| BR-STAFF-001 | Integration | Expired or wrong-class licence blocks assignment |
+| BR-STAFF-002 | Integration | Lapsed verification blocks assignment |
+
+---
+
+## Notification
+
+| Rule | Level | Test |
+|---|---|---|
+| BR-NTF-006 | Integration | `CRITICAL` dispatches with preferences off and quiet hours active |
+| BR-NTF-006 | Integration | Primary-channel failure escalates to fallback; both attempts recorded |
+| BR-NTF-007 | Unit | Multi-recipient templates cannot interpolate a student name |
+| BR-NTF-007 | E2E | Trip-wide incident notification names no child |
+
+---
+
+## Audit
+
+| Rule | Level | Test |
+|---|---|---|
+| BR-AUD-001 | Schema | `UPDATE`/`DELETE` on `audit_records` raises an exception |
+| BR-AUD-001 | Schema | `guardian_app` holds no `UPDATE`/`DELETE` grant on audit tables |
+| BR-AUD-002 | Integration | **Failing audit write rolls back the business change** |
+| BR-AUD-004 | Schema | Override without a reason rejected by constraint |
+| BR-RPT-002 | Integration | Every export writes an audit record including record count |
+
+`BR-AUD-002` is tested by deliberately failing the audit write and asserting the boarding event does not exist afterwards. The platform refuses an operation rather than performing it unrecorded.
+
+---
+
+## Configuration Floors
+
+| Rule | Level | Test |
+|---|---|---|
+| BR-CFG-003 | Integration | Value outside min/max rejected on write |
+| BR-CFG-003 | Integration | Safety-critical change without `PERM-CONFIG-SAFETY-EDIT` refused |
+| BR-CFG-003 | Integration | Handover verification methods cannot be set to empty |
+| BR-ROUTE-003 | Schema | Geofence radius outside 20–500 m rejected |
+
+The empty-verification-methods test is the concrete expression of *Child Safety First outranks Configuration over Hardcoding* ([`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md)).
+
+---
+
+## Failure-Mode Tests
+
+Safety controls must survive the failures that make them most necessary.
+
+| Failure | Expected |
+|---|---|
+| Redis down | Live tracking degrades; **boarding and handover unaffected**; no data lost |
+| Notification provider down | Retry, then fallback for `CRITICAL`; failures recorded and visible |
+| All providers down | `CRITICAL` escalates to a human at the school; never silently dropped |
+| Network lost on vehicle | Full trip recorded locally; syncs exactly once on reconnect |
+| App killed mid-trip | Queue survives restart; no events lost |
+| Database unavailable | Platform unavailable; **driver app continues recording offline** |
+| Device clock wrong by hours | Skew measured and stored; record accepted and flagged |
+| Position ingestion down | Positions lost for the outage; **boarding unaffected** |
+
+The consistent property: **the failure that takes down everything else still does not stop a child's boarding from being recorded.**
+
+---
+
+## Execution
+
+| When | Scope |
+|---|---|
+| PR touching a 🔴 rule | Full matrix |
+| Nightly | Full matrix |
+| Before release | Full matrix + load + accessibility |
+
+**A failure here blocks release.** No exceptions, no waivers, no "fix forward" — these tests exist because their failure modes harm children.
+
+Adding a 🔴 rule requires adding rows here in the same PR. The traceability check fails otherwise.
+
+===FILE_END===

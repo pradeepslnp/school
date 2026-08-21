@@ -1,0 +1,377 @@
+===FILE_START:documentation/PRODUCT_PRINCIPLES.md===
+# PRODUCT PRINCIPLES
+
+**Document tier:** 0 — Governance
+**Status:** Active
+
+Principles exist to settle arguments. Each one below states what it means, what it costs, and how to apply it when it conflicts with another principle.
+
+---
+
+## 1. Child Safety First
+
+**Means:** When a design choice affects a child's physical safety, that consideration outranks cost, convenience, elegance, and performance.
+
+**In practice:**
+- A safety event is recorded even when the network is down; it syncs later.
+- Ambiguity resolves conservatively — an unverified handover is blocked, not permitted with a warning.
+- Safety-critical flows have no "skip" that is not audited and attributed.
+
+**Cost accepted:** More friction for staff. Slower flows. More storage.
+
+**Conflict resolution:** Wins against every other principle in this document.
+
+---
+
+## 2. Parent Peace of Mind
+
+**Means:** A parent should learn their child's status without having to ask, and should not be alarmed by information that does not warrant alarm.
+
+**In practice:**
+- Notifications are prompt, specific, and calm: *"Aarav boarded Bus 12 at Green Park at 7:42 AM."*
+- Absence of news is itself communicated — a delayed bus generates a message before a parent starts worrying.
+- Alerts are graded. A two-minute delay is not the same event as a route deviation.
+
+**Cost accepted:** Notification infrastructure complexity; per-guardian preference management.
+
+**Conflict resolution:** Yields to Child Safety First. A safety alert is sent even if it alarms.
+
+---
+
+## 3. School Operational Efficiency
+
+**Means:** Staff workflows minimise manual effort, repeated data entry, and cognitive load.
+
+**In practice:**
+- Data is entered once. Student records flow into routes, trips, and attendance without re-keying.
+- Bulk operations are first-class: importing students, reassigning a route, closing a term.
+- The driver interface is designed for a person near a moving vehicle: large targets, few decisions.
+
+**Cost accepted:** More engineering effort on import, bulk, and defaulting behaviour.
+
+**Conflict resolution:** Yields to Child Safety First. A verification step that protects a child is not removed because it is slow.
+
+---
+
+## 4. Trust Through Transparency
+
+**Means:** The platform's record of what happened is complete, attributable, and available to those entitled to see it.
+
+**In practice:**
+- Every safety event carries actor, timestamp, device, and location.
+- Overrides are permitted where operationally necessary, but always recorded with a reason.
+- Parents can see their own child's journey history; they cannot see other children.
+
+---
+
+## 5. Configuration over Hardcoding
+
+**Means:** Behaviour that varies by tenant, region, school, or policy is configuration — never a code branch.
+
+**In practice:**
+- Alert thresholds (overspeed, deviation radius, delay tolerance) are tenant configuration.
+- Notification channels, templates, and languages are configurable.
+- Regional concerns — phone formats, SMS regulation, required vehicle documents — are data, not code.
+
+**Test:** If a new customer in a new country would require a code change to onboard, the design has failed this principle.
+
+---
+
+## 6. Inclusive by Default
+
+**Means:** The platform serves parents across a wide range of literacy, language, device quality, and connectivity.
+
+**In practice:**
+- Critical information survives translation and is available over SMS, not only in-app.
+- The parent app is usable on low-end devices and intermittent networks.
+- Accessibility is a requirement, not an enhancement — see [`documentation/05-ui/ACCESSIBILITY.md`](05-ui/ACCESSIBILITY.md).
+
+---
+
+## 7. Data Minimisation
+
+**Means:** The platform collects the least child data necessary to deliver safety outcomes, and keeps it no longer than needed.
+
+**In practice:**
+- Location history for children is derived from vehicle position, not per-child tracking devices.
+- Retention periods are configured per tenant and enforced automatically.
+- Exports and reports are permission-gated and audited.
+
+**Conflict resolution:** Yields to Child Safety First and to legal retention obligations.
+
+---
+
+## Applying Principles to a Decision
+
+When two principles conflict, resolve in this order:
+
+```
+Child Safety First
+   ↓
+Data Minimisation / legal obligation
+   ↓
+Parent Peace of Mind
+   ↓
+Trust Through Transparency
+   ↓
+School Operational Efficiency
+   ↓
+Inclusive by Default
+   ↓
+Configuration over Hardcoding
+```
+
+Record the resolution in the relevant business rule or ADR so the same argument is not had twice.
+
+===FILE_END===
+===FILE_START:documentation/PROJECT_CHARTER.md===
+# PROJECT CHARTER
+
+**Document tier:** 0 — Governance
+**Priority:** 2 (subordinate only to [`INSTRUCTIONS.md`](INSTRUCTIONS.md))
+**Status:** Active
+
+---
+
+## 1. Mission
+
+Guardian Platform ensures that **every child's journey between home and school is observed, verified, and accounted for** — and that the adults responsible for that child know its status without having to ask.
+
+## 2. Problem Statement
+
+School transport is the least-instrumented part of a school day. A child leaves the sight of one responsible adult and arrives in the sight of another, and in between:
+
+- Parents have no visibility and call the school office for reassurance, consuming staff time.
+- Schools reconcile boarding manually on paper, so errors surface hours later — if at all.
+- A child boarding the wrong bus, alighting at the wrong stop, or being handed to an unauthorised adult is detected late, when detection matters most early.
+- A child left asleep on a parked vehicle is a rare event with catastrophic consequences and no systemic control.
+
+The platform closes that observation gap.
+
+## 3. Product Scope
+
+### In Scope
+
+| Area | Description |
+|---|---|
+| Fleet & devices | Vehicles, GPS devices, documents, assignment to routes |
+| Driver & attendant | Records, credentials, verification status, duty assignment |
+| Routes & stops | Route definition, stops, schedules, student-to-stop assignment |
+| Trip execution | Trip lifecycle from scheduled to closed, with live position |
+| Boarding & attendance | Board and alight events, per-student journey record |
+| Guardian handover | Verified release of a child to an authorised adult |
+| Live tracking | Real-time vehicle location and stop ETA for authorised viewers |
+| Geofencing & alerts | Stop arrival, school arrival, route deviation, overspeed, unscheduled stop |
+| Notifications | Multi-channel, templated, per-tenant configurable |
+| Incidents & SOS | Panic alerts, incident reports, escalation chains |
+| Absence | Parent declares child not travelling for a given trip |
+| Reporting | Operational, compliance, and safety reporting |
+| Audit | Immutable record of safety-relevant actions |
+| Administration | Multi-tenant onboarding, roles, permissions, configuration |
+
+### Explicitly Out of Scope (Non-Goals)
+
+Stating these protects the platform from scope drift. Each may be revisited by charter amendment, never by assumption.
+
+- **Not an academic ERP.** No gradebooks, timetables, curriculum, or examinations.
+- **Not a fees or accounting system.** Transport fee *billing* is out of scope; transport fee *eligibility flags* may be consumed from an external system.
+- **Not a fleet-maintenance ERP.** Vehicle documents and fitness expiry are tracked for compliance; workshop, parts, and fuel management are not.
+- **Not a general messaging product.** Notifications are event-driven and templated; free-form parent–teacher chat is out of scope.
+- **Not an HR system.** Driver records exist for safety and compliance, not payroll or leave management.
+- **Not a consumer product.** Every user belongs to a tenant. There is no public self-signup.
+
+## 4. Stakeholders
+
+| Stakeholder | Primary interest |
+|---|---|
+| Parent / Guardian | Knowing their child is safe, without effort |
+| Student | Being transported safely; minimal interaction burden |
+| Driver | Clear route guidance, low-distraction interface |
+| Attendant / Bus Matron | Accurate boarding records, ability to raise alarms |
+| Transport Manager | Fleet utilisation, route efficiency, incident response |
+| School Admin | Compliance, parent satisfaction, reduced call volume |
+| Principal / Management | Institutional risk reduction, reporting |
+| Platform Operator (Super Admin) | Tenant onboarding, platform health |
+| Regulator / Auditor | Evidence of compliance and duty of care |
+
+Detail: [`documentation/01-product-discovery/STAKEHOLDERS.md`](01-product-discovery/STAKEHOLDERS.md)
+
+## 5. Success Measures
+
+| Measure | Target |
+|---|---|
+| Boarding events recorded electronically | > 99% of journeys |
+| Parent notification latency (board/alight) | < 10 seconds p95 |
+| Live position freshness | < 30 seconds p95 |
+| Unaccounted-child incidents | Zero, with detection under 5 minutes of trip close |
+| Reduction in transport-related calls to school office | > 60% within two terms |
+| Cross-tenant data leakage incidents | Zero, structurally prevented |
+
+## 6. Architectural Commitments
+
+These are charter-level and may not be reversed by a lower-tier document:
+
+1. **Multi-tenancy is structural.** Tenant isolation is enforced at the database layer, not only in application code.
+2. **Safety events are immutable.** Boarding, handover, and incident records are append-only and auditable.
+3. **Configuration over hardcoding.** Tenant, regional, and policy variance lives in configuration.
+4. **No client is trusted.** Authorisation is decided server-side, always within tenant scope.
+5. **Degradation is designed.** Loss of connectivity on a vehicle must not lose safety data.
+
+## 7. Constraints & Risks
+
+| Risk | Mitigation |
+|---|---|
+| Connectivity gaps on routes | Offline-capable driver app with queued sync (see ADR-0008) |
+| GPS device heterogeneity | Device adapters behind a common ingestion port |
+| Child PII sensitivity | Data minimisation, encryption, retention policy, strict RBAC |
+| Notification fatigue | Per-tenant and per-guardian notification preferences |
+| Safety-critical false negatives | Trip-close reconciliation and left-behind detection |
+
+## 8. Governing Documents
+
+This charter is implemented through the tiers described in [`documentation/00-governance/DOCUMENT_HIERARCHY.md`](00-governance/DOCUMENT_HIERARCHY.md).
+
+## 9. Amendment
+
+Changes to Sections 3 (Scope) or 6 (Architectural Commitments) require an ADR recording the reason, alternatives considered, and affected documents.
+
+===FILE_END===
+===FILE_START:documentation/README.md===
+# Guardian Platform — Documentation
+
+A multi-tenant **student safety and transport platform** for schools — vehicle tracking, verified boarding and guardian handover, real-time parent notification, and an auditable record of every child's journey between home and school.
+
+This repository holds the documentation for the whole platform. The code lives in six sibling repositories.
+
+> **Documentation is the source of truth.** Read [`INSTRUCTIONS.md`](INSTRUCTIONS.md) before contributing anything, including AI-generated changes.
+
+---
+
+## Repositories
+
+Clone all of them into **one parent directory**. The Flutter apps depend on `guardian-core` by relative path, and the backend's architecture tests read this repository from `../../documentation`, so the layout below is what makes a checkout build.
+
+```
+guardian/
+├── documentation/          ← you are here — tiers 0–8
+├── backend/       Spring Boot, Gradle multi-module, Java 21
+├── guardian-core/          Shared pure-Dart domain layer
+├── flutter/parent_app/    Flutter — parent app
+├── flutter/driver_attender_app/    Flutter — driver & attendant app
+├── admin/     Flutter Web — school & platform administration
+└── infrastructure/         docker-compose, database bootstrap
+```
+
+| Repository | Contents | Depends on |
+|---|---|---|
+| `backend` | `guardian-common` (tenant context, errors, audit, arch tests), `guardian-tenancy` (reference vertical slice), `guardian-identity`, `guardian-api` (bootstrap, security, migrations) | `documentation` at test time, `infrastructure` at run time |
+| `guardian-core` | Networking, DI, errors, shared models. Pure Dart by design (ADR-0003) | — |
+| `flutter/parent_app` | Parent and guardian client | `guardian-core` |
+| `flutter/driver_attender_app` | Driver and attendant client, offline-first (ADR-0008) | `guardian-core` |
+| `admin` | Administration console | — |
+| `infrastructure` | PostgreSQL 16 + Redis 7 for local development | — |
+
+`guardian-tenancy` is the **reference implementation**. New backend modules copy its structure: `domain/` → `application/` → `infrastructure/` → `interfaces/`.
+
+---
+
+## Reading Order
+
+**Start here (governance)**
+
+| # | Document | What it settles |
+|---|---|---|
+| 1 | [`INSTRUCTIONS.md`](INSTRUCTIONS.md) | How to work across these repositories |
+| 2 | [`PROJECT_CHARTER.md`](PROJECT_CHARTER.md) | What the product is and is *not* |
+| 3 | [`PRODUCT_PRINCIPLES.md`](PRODUCT_PRINCIPLES.md) | How product trade-offs resolve |
+| 4 | [`ENGINEERING_PRINCIPLES.md`](ENGINEERING_PRINCIPLES.md) | How code is structured |
+| 5 | [`AI_MASTER_PROMPT.md`](AI_MASTER_PROMPT.md) | Contract for AI contributors |
+
+**Then, by tier**
+
+| Tier | Directory | Contents |
+|---|---|---|
+| 0 | [`00-governance/`](00-governance/) | Hierarchy, glossary, architecture decision records |
+| 1 | [`01-product-discovery/`](01-product-discovery/) | Stakeholders, modules, features, **business rules**, journeys, permissions, notifications |
+| 2 | [`02-system-design/`](02-system-design/) | Architecture, multi-tenancy, security, real-time tracking, notifications |
+| 3 | [`03-database/`](03-database/) | Data model, ERD, table specs, RLS, migrations |
+| 4 | [`04-api/`](04-api/) | API standards, error catalog, per-module endpoints |
+| 5 | [`05-ui/`](05-ui/) | Design system, screen inventory, per-client specs |
+| 6 | [`06-development/`](06-development/) | Coding standards, project structure, setup, definition of done |
+| 7 | [`07-testing/`](07-testing/) | Test strategy, test cases, safety-critical matrix |
+| 8 | [`08-deployment/`](08-deployment/) | Environments, CI/CD, observability, DR |
+
+---
+
+## Quick Start
+
+Prerequisites: JDK 21, Docker, Flutter 3.x. Run from the parent directory holding all seven repositories.
+
+```bash
+# 1. Start PostgreSQL and Redis
+docker compose -f infrastructure/docker-compose.yml up -d
+
+# 2. Build and test the backend (its tests read this repository)
+cd backend && ./gradlew build
+
+# 3. Run the API (applies Flyway migrations on startup)
+./gradlew :guardian-api:bootRun
+
+# 4. Analyse and test a Flutter client
+cd ../flutter/parent_app && flutter analyze && flutter test
+```
+
+Full setup, including seed data and troubleshooting: [`06-development/LOCAL_SETUP.md`](06-development/LOCAL_SETUP.md).
+
+---
+
+## Core Concepts
+
+| Term | Meaning |
+|---|---|
+| **Organization** | A school group — the billing and isolation boundary (the tenant) |
+| **School** | A school within an organization |
+| **Route** | An ordered sequence of stops served by a vehicle |
+| **Trip** | One execution of a route on a date, in a direction |
+| **Boarding Event** | An immutable record of a student boarding or alighting |
+| **Handover** | Verified release of a student to an authorised guardian |
+
+Full vocabulary: [`00-governance/GLOSSARY.md`](00-governance/GLOSSARY.md).
+
+---
+
+## Contributing
+
+Read [`06-development/DEFINITION_OF_DONE.md`](06-development/DEFINITION_OF_DONE.md) and [`06-development/GIT_WORKFLOW.md`](06-development/GIT_WORKFLOW.md).
+
+Every feature carries an ID from [`FEATURE_INVENTORY.md`](01-product-discovery/FEATURE_INVENTORY.md), and every business rule in [`BUSINESS_RULES.md`](01-product-discovery/BUSINESS_RULES.md) has a test that references it by ID. Changes that break that traceability fail review — `BusinessRuleTraceabilityTest` in `backend` enforces it by parsing this repository directly.
+
+---
+
+## Status
+
+Foundation stage — documentation complete across all tiers; backend scaffold with the tenancy module fully implemented as the pattern reference. See [`00-governance/adr/`](00-governance/adr/) for decisions still marked *Proposed*.
+
+===FILE_END===
+===FILE_START:flutter/teacher_app/README.md===
+# flutter/teacher_app/
+
+Placeholder. The teacher/attender-confirmation surface of the child journey (see root `CLAUDE.md` §2) is currently served through the existing apps and admin console; a dedicated teacher app is anticipated in the platform's roadmap but is **not yet implemented**.
+
+Do not scaffold a Flutter project here speculatively. When work on this app is scheduled, classify its features (MVP / Phase 2 / Phase 3 / Future) in `documentation/01-product-discovery/FEATURE_INVENTORY.md` first, add an ADR if it introduces a new cross-project dependency, then create the project following the same five-part feature structure as the other Flutter apps (root `CLAUDE.md` §10).
+
+===FILE_END===
+===FILE_START:operations/README.md===
+# operations/
+
+Placeholder. Reserved for operational runbooks and on-call material — the practical "what do I do when this alert fires" companion to the architecture and design documented in `documentation/02-system-design/` and `documentation/08-deployment/OBSERVABILITY.md`.
+
+Populate this as real operational procedures are established, not speculatively.
+
+===FILE_END===
+===FILE_START:scripts/README.md===
+# scripts/
+
+Placeholder. Reserved for repository-wide developer and maintenance scripts that don't belong to a single project (for example, a script that bootstraps all sibling repositories, or one that runs `flutter analyze` across every Flutter app). Project-local scripts belong inside their own project, not here.
+
+===FILE_END===

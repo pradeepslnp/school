@@ -1,0 +1,1427 @@
+===FILE_START:documentation/00-governance/adr/ADR-0011-flutter-monorepo-consolidation.md===
+# ADR-0011: Consolidate the Flutter/Dart clients into a single Melos-managed monorepo
+
+**Status:** Proposed
+**Date:** 2026-08-21
+**Affects:** `flutter/parent_app/`, `flutter/driver_attender_app/`, `flutter/teacher_app/`, `admin/`, `flutter/shared_packages/guardian_theme/`, [`PROJECT_STRUCTURE.md`](../../06-development/PROJECT_STRUCTURE.md), `.github/workflows/ci.yml`, `.vscode/launch.json`, `.vscode/tasks.json`, root `CLAUDE.md` §1, §15
+
+## Context
+
+Four of this workspace's seven git repositories are Flutter/Dart, and three of them consume the fourth: `flutter/parent_app`, `flutter/driver_attender_app`, and `admin` all take a `pubspec.yaml` local `path:` dependency on `flutter/shared_packages/guardian_theme`. `flutter/teacher_app` will join this group once it's built.
+
+This coupling currently exists as independent git repositories linked only by relative filesystem paths, with no package manager or monorepo tool enforcing the relationship. The 2026-08 folder restructure (moving these four repos into the nested `flutter/` layout) demonstrated the cost of that directly: the same dependency needed a different relative path in each of the three consumers (`../shared_packages/guardian_theme` from the two apps under `flutter/`, `../flutter/shared_packages/guardian_theme` from `admin`, one level further away), every app's own README carried a now-stale tree diagram and dependency description that had to be corrected by hand, and one README had been describing a `guardian-core` package that was never actually built — drift nobody had caught. None of this was a one-off mistake; it's the structural failure mode of coupling repos by relative path instead of by a tool designed for it.
+
+Beyond the restructure, the day-to-day cost of the current arrangement is: a change to `guardian_theme`'s public API can silently break up to three consumers with no single CI signal catching all three at once; there is no enforced version compatibility between the package and its consumers; and a fresh clone of the workspace has to get four separate repos checked out at exactly the right relative depths before `flutter pub get` succeeds in any of them.
+
+## Decision
+
+**Consolidate `flutter/parent_app`, `flutter/driver_attender_app`, `flutter/teacher_app`, `admin`, and `flutter/shared_packages/guardian_theme` into one git repository, managed with Melos and Dart/Flutter pub workspaces.**
+
+The backend (`backend/`) is explicitly out of scope for this decision and remains its own repository — different language, different build tool (Gradle vs. pub/Flutter), different release cadence, and combining it would require heavier polyglot tooling (Bazel, Nx) that is disproportionate to this team's current size. This ADR only consolidates the stack that is already one language and already shares code.
+
+Within the new repo, package boundaries stay exactly as they are today (each app keeps its own `pubspec.yaml`, its own five-part feature structure per `CLAUDE.md` §10, and `guardian_theme` stays a separate package with no reverse dependency on any app) — only the git-repository boundary changes, from four repos to one.
+
+## Alternatives Considered
+
+| Alternative | Why rejected |
+|---|---|
+| **Status quo** — keep four independent repos coupled by relative `path:` dependencies | Already shown to be fragile in practice (this restructure); no atomic cross-repo changes; no CI signal when a shared-package change breaks a consumer; onboarding requires cloning four repos at the correct relative depths. |
+| **Fold the backend in too** — one repository for the entire platform | Different language and build tool (Java/Gradle vs. Dart/Flutter) would need heavy polyglot build tooling (Bazel, Nx) to avoid every CI run rebuilding everything; backend and Flutter clients don't need a shared release cadence. The cost is disproportionate to the benefit at this team's size. |
+| **Publish `guardian_theme` to a private pub registry** instead of a path dependency or monorepo | Adds registry hosting and a publish step for a package with exactly three internal consumers; slows the iteration loop (publish, bump, `pub get` versus instant workspace resolution). Worth reconsidering only if the package needs consumers outside this workspace. |
+| **Git submodules** to formalize the existing path coupling without merging repos | Submodules are a well-known source of day-to-day friction (detached HEAD confusion, forgetting to update the pinned commit) and do not fix the underlying relative-path fragility inside the submodule itself — this trades one confusing mechanism for another rather than removing it. |
+
+## Consequences
+
+**Positive**
+
+- A change to `guardian_theme` and its effect on all three (soon four) consumers lands and is tested atomically, in one commit and one CI run, instead of being coordinated across four repos by hand.
+- Melos's affected-package detection means CI only rebuilds and re-tests what actually changed, rather than everything or nothing.
+- A single `git clone` produces a working workspace — no more coordinating four repos at specific relative depths before `flutter pub get` succeeds anywhere.
+- Removes the entire class of bug this ADR was written in response to: a relative path that's correct for one consumer and wrong for another.
+
+**Negative / accepted cost**
+
+- Real, one-time migration effort: a decision on preserving vs. squashing four separate git histories, retiring (or archiving) three GitHub repositories, and a third rewrite this month of `.github/workflows/ci.yml`, `.vscode/launch.json`, and `.vscode/tasks.json`.
+- Melos becomes a new tool in the toolchain that the team has to learn, alongside plain `flutter`/`dart` commands.
+- If any of these clients ever needs a genuinely independent release cadence or a separate owning team, it has to be deliberately split back out (see Reversal Cost) rather than already being separate.
+
+**Neutral**
+
+- `backend/`, `infrastructure/`, and `documentation/` are unaffected.
+- Current apps already share a release rhythm in practice — `.vscode/launch.json` already runs all three DEV or all three PROD together — so this decision does not remove independence that was actually being used.
+
+## Reversal Cost
+
+**Moderate.** The mitigation that keeps the exit open: `guardian_theme` must stay a clean, one-directional dependency (apps depend on it; it depends on nothing app-specific), so splitting a client back out later means extracting one directory with a stable public API, not untangling entangled code.
+
+**Reconsider when:** `flutter/teacher_app` or a future client needs a release cadence genuinely independent of the others, or is owned exclusively by a different team — at that point, extracting it back to its own repository is the trigger this ADR should be revisited against, not a reason to avoid consolidating now.
+
+## Verification
+
+1. `melos bootstrap` succeeds from a clean clone of the new repository with no manual path setup.
+2. CI runs `melos run analyze` / `melos run test` with affected-package scoping and passes on the current codebase post-migration.
+3. A deliberate breaking change to `guardian_theme`'s public API, introduced as a test of this ADR, causes a CI failure in every consuming app in the same run — proving the atomic-change benefit is real, not aspirational.
+
+===FILE_END===
+===FILE_START:documentation/00-governance/adr/README.md===
+# Architecture Decision Records
+
+An ADR records a decision that is expensive to reverse: why it was made, what was rejected, and what it costs.
+
+## Status values
+
+| Status | Meaning |
+|---|---|
+| `Proposed` | Written, not yet ratified. **Treat as an assumption, not fact.** |
+| `Accepted` | Ratified. Binding on all lower-tier documents. |
+| `Superseded by ADR-nnnn` | Historical. |
+| `Rejected` | Considered and declined; kept so it is not re-proposed. |
+
+## Index
+
+| ID | Title | Status |
+|---|---|---|
+| [ADR-0001](ADR-0001-multi-tenancy-strategy.md) | Multi-tenancy via shared schema with Row-Level Security | Proposed |
+| [ADR-0002](ADR-0002-tenant-hierarchy.md) | Organization → School → Branch hierarchy | Proposed |
+| [ADR-0003](ADR-0003-admin-web-client.md) | Flutter Web for the administration client | Proposed |
+| [ADR-0004](ADR-0004-realtime-tracking-pipeline.md) | Real-time tracking pipeline | Proposed |
+| [ADR-0005](ADR-0005-notification-provider-abstraction.md) | Provider-abstracted notification channels | Proposed |
+| [ADR-0006](ADR-0006-authentication-model.md) | JWT access/refresh with tenant-scoped RBAC | Proposed |
+| [ADR-0007](ADR-0007-regional-configuration.md) | Region-specific behaviour as configuration | Proposed |
+| [ADR-0008](ADR-0008-offline-first-driver-app.md) | Offline-first driver application | Proposed |
+| [ADR-0009](ADR-0009-flavor-configuration.md) | Flutter Flavor Configuration | Accepted |
+| [ADR-0010](ADR-0010-parent-read-composition.md) | Parent-facing read composition | Accepted |
+| [ADR-0011](ADR-0011-flutter-monorepo-consolidation.md) | Consolidate the Flutter/Dart clients into a single Melos-managed monorepo | Proposed |
+
+## Writing a new ADR
+
+Copy [`TEMPLATE.md`](TEMPLATE.md), take the next number, and add a row above. Never edit an `Accepted` ADR to change its decision — supersede it.
+
+===FILE_END===
+===FILE_START:documentation/00-governance/adr/TEMPLATE.md===
+# ADR-nnnn: <Title>
+
+**Status:** Proposed | Accepted | Superseded by ADR-nnnn | Rejected
+**Date:** YYYY-MM-DD
+**Affects:** <documents and modules this constrains>
+
+## Context
+
+What forces this decision? What constraints, requirements, or principles apply? State the problem without naming the solution.
+
+## Decision
+
+What we will do. Stated plainly, in the present tense.
+
+## Alternatives Considered
+
+| Alternative | Why rejected |
+|---|---|
+
+## Consequences
+
+**Positive**
+
+**Negative / accepted cost**
+
+**Neutral**
+
+## Reversal Cost
+
+How expensive is it to change this later, and what is the trigger that should prompt reconsideration?
+
+## Verification
+
+How do we confirm the decision is actually in force — a test, a lint rule, a review checklist item?
+
+===FILE_END===
+===FILE_START:documentation/01-product-discovery/BUSINESS_RULES.md===
+# BUSINESS RULES
+
+**Document tier:** 1 — Product Discovery
+**Priority:** 5 — outranks system design, database, API, and UI
+**Status:** Active
+
+Every rule is numbered, testable, and traceable. **Each rule ID must be referenced by at least one test** ([`DOCUMENT_HIERARCHY.md`](../00-governance/DOCUMENT_HIERARCHY.md) traceability invariant 2).
+
+Rules marked 🔴 are **safety-critical**: they may not be disabled by configuration, and changing one requires an ADR.
+
+---
+
+## BR-TEN — Tenancy
+
+| ID | Rule |
+|---|---|
+| BR-TEN-001 | Every tenant-scoped record belongs to exactly one organization. An organization is the isolation boundary. |
+| BR-TEN-002 | An organization contains at least one school. Deleting the last school of an active organization is rejected. |
+| BR-TEN-003 | A school belongs to exactly one organization and cannot be moved between organizations. |
+| BR-TEN-004 | 🔴 No request may read or write data belonging to an organization other than the one in its authenticated context, except through an explicitly permissioned platform-operations path, which is always audited. |
+| BR-TEN-005 | Branches are optional. A null branch on a school-scoped record means "school-wide" and is valid. |
+| BR-TEN-006 | Suspending an organization blocks all user access except platform operations, but destroys no data and stops no in-flight safety recording for trips already started. |
+| BR-TEN-007 | Organization and school codes are unique within their parent scope and immutable once operational data exists. |
+
+---
+
+## BR-IAM — Identity & Access
+
+| ID | Rule |
+|---|---|
+| BR-IAM-001 | 🔴 Authorisation is decided server-side on every request. A client-supplied role, scope, or permission claim is never trusted. |
+| BR-IAM-002 | 🔴 Access is deny-by-default. An endpoint with no declared permission is inaccessible. |
+| BR-IAM-003 | A user has one or more roles within a single organization. Cross-organization users are not permitted except platform operators. |
+| BR-IAM-004 | Permissions are resolved per request from current role assignments, not from the access token. A permission change takes effect on the next request. |
+| BR-IAM-005 | 🔴 A guardian may access data for students they are actively linked to, and no others. |
+| BR-IAM-006 | Staff access is scoped to their assigned school; transport staff are further scoped to their assigned routes or current trip. |
+| BR-IAM-007 | Revoking a session invalidates its refresh token immediately, and its access token within the denylist propagation window (≤15 minutes, per ADR-0006). |
+| BR-IAM-008 | Deactivating a staff member revokes all their sessions immediately and removes them from future duty assignments. |
+| BR-IAM-009 | Refresh tokens are single-use. Reuse of a consumed refresh token invalidates the entire session family and raises a security alert. |
+| BR-IAM-010 | A person may hold both guardian and staff roles. Their guardian rights over their own child are independent of their staff scope. |
+| BR-IAM-011 | Failed authentication attempts are rate-limited per identifier and per source. Lockout thresholds are tenant configuration with a platform-enforced floor. |
+| BR-IAM-012 | 🔴 Every access to child personal data by a non-guardian user is recorded as a data-access audit event. |
+
+---
+
+## BR-STU — Student Registry
+
+| ID | Rule |
+|---|---|
+| BR-STU-001 | A student belongs to exactly one school at a time. |
+| BR-STU-002 | A student must have at least one active guardian relationship before they can be assigned to a route. |
+| BR-STU-003 | A student's admission number is unique within their school. |
+| BR-STU-004 | Only students with an active enrolment status may be assigned to routes or appear on a manifest. |
+| BR-STU-005 | Student records are never hard-deleted while any safety record references them. Withdrawal sets enrolment status and removes future route assignments. |
+| BR-STU-006 | Changing a student's school clears all route assignments in the previous school. |
+
+---
+
+## BR-GRD — Guardian Management
+
+| ID | Rule |
+|---|---|
+| BR-GRD-001 | A guardian–student relationship carries an explicit rights set: view, receive notifications, authorise handover, declare absence. Rights are not implied by relationship type. |
+| BR-GRD-002 | 🔴 At least one guardian per student must hold the "authorise handover" right. |
+| BR-GRD-003 | A student may have multiple guardians; each has independent notification preferences. |
+| BR-GRD-004 | Deactivating a guardian relationship immediately removes that guardian's access to the student and stops their notifications. |
+| BR-GRD-005 | An authorised pickup person is valid only within their configured validity window and only for the students they are explicitly listed against. |
+| BR-GRD-006 | 🔴 An authorised pickup person may be nominated only by a guardian holding the "authorise handover" right, and the nomination is audited. |
+| BR-GRD-007 | Authorised pickup person nominations may be revoked at any time by any guardian holding the "authorise handover" right, taking effect immediately. |
+| BR-GRD-008 | Where a custody restriction is recorded against a guardian, that guardian is blocked from handover and from location visibility, regardless of relationship type. |
+
+---
+
+## BR-FLEET — Fleet
+
+| ID | Rule |
+|---|---|
+| BR-FLEET-001 | A vehicle belongs to one school and has a registration number unique within its organization. |
+| BR-FLEET-002 | 🔴 A vehicle with an expired mandatory document may not be assigned to a trip. Which documents are mandatory is region configuration (ADR-0007); that a mandatory expired document blocks assignment is not configurable. |
+| BR-FLEET-003 | Vehicle document expiry generates escalating advance warnings at configured intervals. |
+| BR-FLEET-004 | A vehicle has at most one active GPS device at a time. |
+| BR-FLEET-005 | A vehicle's seating capacity is recorded; assigning students beyond capacity to a single trip raises a warning and requires an audited override. |
+| BR-FLEET-006 | A device reporting positions for an unassigned or unknown vehicle is logged and ignored, never auto-registered. |
+
+---
+
+## BR-STAFF — Transport Staff
+
+| ID | Rule |
+|---|---|
+| BR-STAFF-001 | 🔴 A driver may not be assigned to a trip without a valid, unexpired licence of the required class. |
+| BR-STAFF-002 | 🔴 A driver or attendant may not be assigned to a trip if their verification status is not "verified" or has lapsed. Required verification types are region configuration. |
+| BR-STAFF-003 | Staff credential expiry generates escalating advance warnings and blocks future duty assignment on expiry. |
+| BR-STAFF-004 | A staff member may be assigned to at most one active trip at a time. |
+| BR-STAFF-005 | Whether an attendant is mandatory for a trip is tenant configuration; where mandatory, a trip cannot start without one. |
+| BR-STAFF-006 | A substitute driver may be assigned to an in-progress trip; the change is recorded with both staff members and the time of handover. |
+
+---
+
+## BR-ROUTE — Routes & Stops
+
+| ID | Rule |
+|---|---|
+| BR-ROUTE-001 | A route has at least two stops and belongs to one school. |
+| BR-ROUTE-002 | Stops are ordered; the order defines sequence and expected arrival times. |
+| BR-ROUTE-003 | Each stop has coordinates and a geofence radius. The radius has a configurable default and a platform-enforced minimum and maximum. |
+| BR-ROUTE-004 | A student is assigned to at most one pickup stop and one drop stop per route direction. Pickup and drop stops may differ. |
+| BR-ROUTE-005 | A student may hold assignments on different routes for pickup and drop. |
+| BR-ROUTE-006 | Changing a route or its stops does not alter trips already started; changes apply to trips generated after the change. |
+| BR-ROUTE-007 | Deactivating a route requires reassigning or explicitly releasing every student assigned to it. |
+| BR-ROUTE-008 | Scheduled stop times must be strictly increasing along the route sequence for a direction. |
+
+---
+
+## BR-TRIP — Trip Execution
+
+| ID | Rule |
+|---|---|
+| BR-TRIP-001 | A trip is one execution of one route, on one date, in one direction. |
+| BR-TRIP-002 | Trip status transitions are `SCHEDULED → STARTED → IN_PROGRESS → COMPLETED → CLOSED`, with `CANCELLED` reachable from `SCHEDULED` or `STARTED`. No other transition is valid. |
+| BR-TRIP-003 | 🔴 The manifest is materialised at trip start from route assignments minus declared absences, and is thereafter immutable. Late changes are recorded as manifest amendments with actor and reason, never as silent edits. |
+| BR-TRIP-004 | A trip may not start without an assigned vehicle and driver satisfying BR-FLEET-002, BR-STAFF-001, and BR-STAFF-002. |
+| BR-TRIP-005 | A trip may not start if another active trip exists for the same vehicle or the same driver. |
+| BR-TRIP-006 | Only the assigned driver, assigned attendant, or a transport manager may start or end a trip. |
+| BR-TRIP-007 | A cancelled trip notifies all affected guardians with the reason. |
+| BR-TRIP-008 | Trip start and end times are recorded from the server; device-reported times are stored alongside for reference (ADR-0008). |
+| BR-TRIP-009 | 🔴 A trip cannot move to `CLOSED` until reconciliation completes — see BR-SAFE-001. |
+| BR-TRIP-010 | A trip not started within a configurable window after its scheduled time raises a delay alert to the transport manager and to affected guardians. |
+| BR-TRIP-011 | Trips are generated in advance for scheduled operating days; school holidays and non-operating days suppress generation. |
+
+---
+
+## BR-BOARD — Boarding & Attendance
+
+| ID | Rule |
+|---|---|
+| BR-BOARD-001 | 🔴 Boarding records are append-only. A record is never updated or deleted; a correction is a new compensating record referencing the original, with actor and reason. |
+| BR-BOARD-002 | Every boarding event records: student, trip, type (`BOARD`/`ALIGHT`), actor, verification method, device position, `occurred_at`, and `recorded_at`. |
+| BR-BOARD-003 | A student may not be recorded as boarded on a trip where they are not on the manifest, without an audited override by an authorised actor. |
+| BR-BOARD-004 | 🔴 A student may not be marked as alighted at a stop other than their assigned stop for that direction without an audited override, and the override notifies their guardians immediately. |
+| BR-BOARD-005 | A student cannot board twice on the same trip without an intervening alight. |
+| BR-BOARD-006 | A student cannot alight on a trip they did not board. |
+| BR-BOARD-007 | A student marked absent for a trip who then boards generates an alert and removes the absence, recording both facts. |
+| BR-BOARD-008 | Boarding events created offline retain their `occurred_at` from the device with a recorded clock-skew estimate, and are ordered by `occurred_at` for reporting (ADR-0008). |
+| BR-BOARD-009 | Duplicate submissions of the same client event ID are idempotent and create exactly one record. |
+| BR-BOARD-010 | Every boarding and alighting event notifies the student's guardians who hold the notification right. |
+
+---
+
+## BR-HAND — Guardian Handover
+
+| ID | Rule |
+|---|---|
+| BR-HAND-001 | 🔴 On a `DROP` trip, a student is released only to a guardian holding the "authorise handover" right, or to a valid authorised pickup person, or by an audited override. Handover verification cannot be disabled by configuration. |
+| BR-HAND-002 | Acceptable verification methods (QR, OTP, PIN, attendant visual confirmation) are tenant configuration; at least one method must be enabled. |
+| BR-HAND-003 | 🔴 A handover override — releasing a student to an unverified adult — requires a reason, is permitted only to an authorised actor, is recorded with the receiver's recorded identity, and immediately notifies all guardians and the transport manager. |
+| BR-HAND-004 | A handover record references the boarding event's alight record; a handover cannot exist without one. |
+| BR-HAND-005 | Where a student is authorised for self-release (age or policy based, per tenant configuration), the handover records self-release as the method and notifies guardians. |
+| BR-HAND-006 | 🔴 A guardian recorded with a custody restriction (BR-GRD-008) is refused handover, and the attempt is recorded and escalated to the transport manager. |
+| BR-HAND-007 | If no authorised receiver is present at the stop, the student remains on the vehicle, an exception is raised, and the escalation chain in tenant configuration is followed. The student is never released to no one. |
+
+---
+
+## BR-SAFE — Safety Controls
+
+All rules in this section are safety-critical.
+
+| ID | Rule |
+|---|---|
+| BR-SAFE-001 | 🔴 **Left-behind detection.** At trip completion, every student with a `BOARD` event and no corresponding `ALIGHT` event is an unaccounted child. This raises a critical alert to the driver, attendant, transport manager, and the student's guardians within the configured detection window, and blocks trip closure until each case is resolved with an explicit outcome and actor. |
+| BR-SAFE-002 | 🔴 **No-show handling.** A student on the manifest with no `BOARD` event by the time the vehicle departs their stop is recorded as a no-show and their guardians are notified. |
+| BR-SAFE-003 | 🔴 **Wrong-vehicle detection.** A student scanned onto a trip whose manifest does not include them, where they are on another active trip's manifest for the same date and direction, raises an immediate alert to both trips' staff and to the student's guardians. |
+| BR-SAFE-004 | 🔴 An SOS alert is delivered to the escalation chain regardless of quiet hours, notification preferences, or channel opt-outs. |
+| BR-SAFE-005 | 🔴 Safety events recorded offline are never discarded. If they conflict with server state, they are accepted and flagged for review (ADR-0008). |
+| BR-SAFE-006 | 🔴 A safety alert that is not acknowledged within its configured window escalates to the next level of the chain, repeatedly, until acknowledged. |
+| BR-SAFE-007 | 🔴 Configuration may tighten a safety threshold but never loosen it beyond the platform-enforced floor. |
+
+---
+
+## BR-TRACK — Tracking
+
+| ID | Rule |
+|---|---|
+| BR-TRACK-001 | Vehicle position is recorded and visible only while a trip is active. Vehicles are not tracked outside trip windows. |
+| BR-TRACK-002 | Live position visible to a guardian is limited to trips carrying one of their students. |
+| BR-TRACK-003 | Positions older than the configured staleness threshold are shown as stale, never as current. |
+| BR-TRACK-004 | A position report with implausible coordinates, speed, or timestamp is rejected and logged, not stored as fact. |
+| BR-TRACK-005 | Loss of position reporting for longer than the configured threshold during an active trip raises an alert to the transport manager. |
+| BR-TRACK-006 | ETA is an estimate and is always presented as such, with its calculation time. |
+| BR-TRACK-007 | Position history retention is tenant configuration, bounded by a platform minimum sufficient for incident investigation. |
+
+---
+
+## BR-ALERT — Geofencing & Alerts
+
+| ID | Rule |
+|---|---|
+| BR-ALERT-001 | Stop arrival is detected by geofence entry and generates approach and arrival notifications per configuration. |
+| BR-ALERT-002 | Route deviation is raised when a vehicle exceeds the configured corridor distance from its route path for longer than the configured duration. |
+| BR-ALERT-003 | Overspeed is raised when speed exceeds the configured limit for longer than the configured duration. The limit is tenant configuration with a platform-enforced maximum. |
+| BR-ALERT-004 | An unscheduled stop — stationary beyond a threshold outside a defined stop — raises an alert to the transport manager. |
+| BR-ALERT-005 | Alerts are deduplicated: a continuing condition produces one open alert, not a stream. |
+| BR-ALERT-006 | Every alert has a severity, an owner, and a resolution state. Alerts are not silently dropped. |
+
+---
+
+## BR-NTF — Notification
+
+| ID | Rule |
+|---|---|
+| BR-NTF-001 | Notification recipients are resolved from explicit rights, never inferred from proximity or role alone. |
+| BR-NTF-002 | Each notification event has a defined template per channel and locale; a missing template falls back to the tenant default locale and logs a gap. |
+| BR-NTF-003 | Guardians set per-event, per-channel preferences. |
+| BR-NTF-004 | Quiet hours suppress non-urgent notifications, deferring rather than discarding them. |
+| BR-NTF-005 | Delivery is attempted with retry and backoff; every attempt and outcome is recorded. |
+| BR-NTF-006 | 🔴 Safety-critical notifications ignore preferences, quiet hours, and channel opt-outs, and escalate to a fallback channel on primary-channel failure. |
+| BR-NTF-007 | 🔴 A notification never contains another family's child's name or personal data. |
+| BR-NTF-008 | Notification content is rendered from templates only; no user-supplied content is sent unescaped. |
+
+---
+
+## BR-INC — Incident & Emergency
+
+| ID | Rule |
+|---|---|
+| BR-INC-001 | 🔴 An SOS is delivered within the configured target, and its escalation chain runs until acknowledged (BR-SAFE-006). |
+| BR-INC-002 | An SOS records the raising actor, trip, vehicle position, and time. It cannot be deleted; it is resolved with an outcome. |
+| BR-INC-003 | Incidents have a severity that determines the notification audience and escalation chain. |
+| BR-INC-004 | An incident affecting a specific student notifies that student's guardians; an incident affecting a trip notifies all guardians on that trip's manifest, without disclosing other students' identities (BR-NTF-007). |
+| BR-INC-005 | Every incident has a resolution recorded with actor, outcome, and time before it can be closed. |
+| BR-INC-006 | A false-alarm SOS is resolved as such, not deleted, so that patterns remain visible. |
+
+---
+
+## BR-ABS — Absence
+
+| ID | Rule |
+|---|---|
+| BR-ABS-001 | A guardian holding the "declare absence" right may declare a student absent for a trip, a date, or a date range. |
+| BR-ABS-002 | An absence declared before trip start removes the student from the materialised manifest (BR-TRIP-003). |
+| BR-ABS-003 | An absence declared after trip start does not alter the manifest; it is recorded as a manifest amendment and notified to the trip staff. |
+| BR-ABS-004 | An absence may be cancelled by a guardian until the trip starts. |
+| BR-ABS-005 | A declared absence suppresses no-show alerts (BR-SAFE-002) for that student and trip. |
+
+---
+
+## BR-AUD — Audit
+
+| ID | Rule |
+|---|---|
+| BR-AUD-001 | 🔴 Audit records are append-only. No path exists to update or delete one within the retention period. |
+| BR-AUD-002 | 🔴 The audit write participates in the same transaction as the change it records. If the audit write fails, the change is rolled back. |
+| BR-AUD-003 | Every audit record captures actor, action, subject, timestamp, source, tenant, and reason where the action requires one. |
+| BR-AUD-004 | Every override records a reason. An override without a reason is rejected. |
+| BR-AUD-005 | Platform-operator actions crossing organization boundaries are always audited (BR-TEN-004). |
+| BR-AUD-006 | Audit records contain no credentials, tokens, or unnecessary child personal data. |
+| BR-AUD-007 | Audit retention meets or exceeds the longest applicable legal requirement for the tenant's region. |
+
+---
+
+## BR-CFG — Configuration
+
+| ID | Rule |
+|---|---|
+| BR-CFG-001 | Every configuration key declares a type, default, permitted range, and the scope level at which it may be set. |
+| BR-CFG-002 | Configuration resolves in order: school → organization → region profile → platform default. |
+| BR-CFG-003 | 🔴 Safety-critical configuration values are bounded by platform-enforced floors and ceilings that a tenant cannot exceed (BR-SAFE-007). |
+| BR-CFG-004 | Every configuration change is audited with actor, old value, new value, and time. |
+| BR-CFG-005 | No user-facing text is hardcoded; all such text is a localised resource key (ADR-0007). |
+| BR-CFG-006 | Times are stored in UTC and displayed in the school's configured time zone. |
+
+---
+
+## BR-RPT — Reporting
+
+| ID | Rule |
+|---|---|
+| BR-RPT-001 | Reports respect the requesting user's scope. A report never reveals data the user could not read directly. |
+| BR-RPT-002 | 🔴 Every export of child personal data is permission-gated and audited, recording actor, scope, and record count. |
+| BR-RPT-003 | Reports state the time zone and generation time of the data they present. |
+| BR-RPT-004 | Reporting queries never block operational writes. |
+
+---
+
+## Change Control
+
+Adding a rule: append with the next ID in its area; never reuse or renumber an ID. Add a test referencing the ID.
+
+Changing or removing a 🔴 rule requires an ADR stating what replaces the control it provided.
+
+Superseded rules are marked `**Superseded by BR-xxx-nnn**` and retained — history matters in a safety system.
+
+===FILE_END===
+===FILE_START:documentation/01-product-discovery/FEATURE_INVENTORY.md===
+# FEATURE INVENTORY
+
+**Document tier:** 1 — Product Discovery
+**Priority:** 6
+**Status:** Active
+
+The canonical list of features. **Feature IDs are the traceability key** across API, UI, and test documents ([`DOCUMENT_HIERARCHY.md`](../00-governance/DOCUMENT_HIERARCHY.md)).
+
+**Release column:** `R1` = first production release · `R2` = second · `L` = later, documented so the design accommodates it.
+
+---
+
+## TEN — Tenancy (MOD-01)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| TEN-001 | Create and onboard an organization | BR-TEN-001, BR-TEN-002 | R1 |
+| TEN-002 | Manage schools within an organization | BR-TEN-003, BR-TEN-007 | R1 |
+| TEN-003 | Manage branches within a school | BR-TEN-005 | R2 |
+| TEN-004 | Suspend and reactivate an organization | BR-TEN-006 | R1 |
+| TEN-005 | School operating calendar and timings | BR-TRIP-011, BR-CFG-006 | R1 |
+
+## IAM — Identity & Access (MOD-02)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| IAM-001 | Staff login with password | BR-IAM-001, BR-IAM-011 | R1 |
+| IAM-002 | Guardian login (phone + OTP) | BR-IAM-001, BR-IAM-011 | R1 |
+| IAM-003 | Token refresh with rotation and reuse detection | BR-IAM-007, BR-IAM-009 | R1 |
+| IAM-004 | Session listing and revocation | BR-IAM-007 | R1 |
+| IAM-005 | Role management | BR-IAM-003, BR-IAM-004 | R1 |
+| IAM-006 | Permission assignment to roles | BR-IAM-002, BR-IAM-004 | R1 |
+| IAM-007 | Scope resolution (org / school / route / own-children) | BR-IAM-005, BR-IAM-006 | R1 |
+| IAM-008 | Staff deactivation with session revocation | BR-IAM-008 | R1 |
+| IAM-009 | Password reset | BR-IAM-011 | R1 |
+| IAM-010 | Data-access logging for child PII | BR-IAM-012 | R1 |
+| IAM-011 | School SSO for staff | — *needs ADR* | L |
+
+## STU — Student Registry (MOD-03)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| STU-001 | Create and edit a student record | BR-STU-001, BR-STU-003 | R1 |
+| STU-002 | Bulk import students | BR-STU-001, BR-STU-003 | R1 |
+| STU-003 | Class and section management | — | R1 |
+| STU-004 | Enrolment status lifecycle | BR-STU-004, BR-STU-005 | R1 |
+| STU-005 | Transfer a student between schools | BR-STU-006 | R2 |
+| STU-006 | Student photo for handover identification | BR-HAND-001 | R1 |
+| STU-007 | Student boarding credential (QR / card) | BR-BOARD-002 | R1 |
+
+## GRD — Guardian Management (MOD-04)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| GRD-001 | Create a guardian and link to a student with rights | BR-GRD-001, BR-GRD-002 | R1 |
+| GRD-002 | Manage multiple guardians per student | BR-GRD-003 | R1 |
+| GRD-003 | Deactivate a guardian relationship | BR-GRD-004 | R1 |
+| GRD-004 | Nominate an authorised pickup person | BR-GRD-005, BR-GRD-006 | R1 |
+| GRD-005 | Revoke an authorised pickup person | BR-GRD-007 | R1 |
+| GRD-006 | Record a custody restriction | BR-GRD-008, BR-HAND-006 | R2 |
+| GRD-007 | Guardian self-service profile and preferences | BR-NTF-003 | R1 |
+
+## FLT — Fleet (MOD-05)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| FLT-001 | Register and manage vehicles | BR-FLEET-001, BR-FLEET-005 | R1 |
+| FLT-002 | Vehicle document register with expiry | BR-FLEET-002, BR-FLEET-003 | R1 |
+| FLT-003 | Document expiry warnings and blocking | BR-FLEET-002, BR-FLEET-003 | R1 |
+| FLT-004 | Register and assign GPS devices | BR-FLEET-004, BR-FLEET-006 | R1 |
+| FLT-005 | Vehicle capacity enforcement | BR-FLEET-005 | R1 |
+
+## STF — Transport Staff (MOD-06)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| STF-001 | Create driver and attendant records | BR-STAFF-001 | R1 |
+| STF-002 | Credential register with expiry | BR-STAFF-001, BR-STAFF-003 | R1 |
+| STF-003 | Verification status tracking | BR-STAFF-002 | R1 |
+| STF-004 | Duty assignment to routes | BR-STAFF-004, BR-STAFF-005 | R1 |
+| STF-005 | Substitute staff assignment mid-trip | BR-STAFF-006 | R2 |
+| STF-006 | Vendor-scoped staff access | BR-IAM-006 | R2 |
+
+## RTE — Routes & Stops (MOD-07)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| RTE-001 | Define a route with ordered stops | BR-ROUTE-001, BR-ROUTE-002, BR-ROUTE-008 | R1 |
+| RTE-002 | Configure stop geofence radius | BR-ROUTE-003 | R1 |
+| RTE-003 | Assign students to stops per direction | BR-ROUTE-004, BR-ROUTE-005 | R1 |
+| RTE-004 | Bulk student-to-route assignment | BR-ROUTE-004 | R1 |
+| RTE-005 | Route map editing | BR-ROUTE-002 | R2 |
+| RTE-006 | Deactivate a route with reassignment | BR-ROUTE-007 | R1 |
+| RTE-007 | Route optimisation suggestions | — | L |
+
+## TRP — Trip Execution (MOD-08)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| TRP-001 | Generate scheduled trips for operating days | BR-TRIP-011 | R1 |
+| TRP-002 | Start a trip with eligibility checks | BR-TRIP-004, BR-TRIP-005, BR-TRIP-006 | R1 |
+| TRP-003 | Materialise the trip manifest | BR-TRIP-003, BR-ABS-002 | R1 |
+| TRP-004 | Trip lifecycle transitions | BR-TRIP-002 | R1 |
+| TRP-005 | Cancel a trip with guardian notification | BR-TRIP-007 | R1 |
+| TRP-006 | Manifest amendment with reason | BR-TRIP-003, BR-ABS-003 | R1 |
+| TRP-007 | Trip delay detection and alerting | BR-TRIP-010 | R1 |
+| TRP-008 | Trip close with reconciliation gate | BR-TRIP-009, BR-SAFE-001 | R1 |
+
+## BRD — Boarding & Attendance (MOD-09)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| BRD-001 | Record boarding by credential scan | BR-BOARD-002, BR-BOARD-009 | R1 |
+| BRD-002 | Record boarding manually from the manifest | BR-BOARD-002, BR-BOARD-003 | R1 |
+| BRD-003 | Record alighting | BR-BOARD-004, BR-BOARD-006 | R1 |
+| BRD-004 | Offline recording with deferred sync | BR-BOARD-008, BR-SAFE-005 | R1 |
+| BRD-005 | Compensating correction records | BR-BOARD-001 | R1 |
+| BRD-006 | Off-manifest boarding override | BR-BOARD-003 | R1 |
+| BRD-007 | Wrong-stop alight override with notification | BR-BOARD-004 | R1 |
+| BRD-008 | Guardian handover verification | BR-HAND-001, BR-HAND-002 | R1 |
+| BRD-009 | Handover to authorised pickup person | BR-GRD-005, BR-HAND-001 | R1 |
+| BRD-010 | Handover override with escalation | BR-HAND-003 | R1 |
+| BRD-011 | Student self-release | BR-HAND-005 | R2 |
+| BRD-012 | No-receiver exception handling | BR-HAND-007 | R1 |
+| BRD-013 | Trip-close reconciliation | BR-SAFE-001 | R1 |
+| BRD-014 | Left-behind critical alert | BR-SAFE-001 | R1 |
+| BRD-015 | No-show detection | BR-SAFE-002 | R1 |
+| BRD-016 | Wrong-vehicle detection | BR-SAFE-003 | R1 |
+
+## TRK — Tracking (MOD-10)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| TRK-001 | Ingest device position reports | BR-TRACK-004, BR-FLEET-006 | R1 |
+| TRK-002 | Live vehicle position for authorised viewers | BR-TRACK-001, BR-TRACK-002 | R1 |
+| TRK-003 | Live trip tracking in the parent app | BR-TRACK-002, BR-TRACK-003 | R1 |
+| TRK-004 | Fleet live map for managers | BR-TRACK-001 | R1 |
+| TRK-005 | Stop ETA calculation | BR-TRACK-006 | R1 |
+| TRK-006 | Position history and trip replay | BR-TRACK-007 | R1 |
+| TRK-007 | Signal-loss alerting | BR-TRACK-005 | R1 |
+| TRK-008 | Device adapter for a new vendor protocol | ADR-0004 | R1 |
+
+## ALT — Geofencing & Alerts (MOD-11)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| ALT-001 | Stop geofence arrival detection | BR-ALERT-001 | R1 |
+| ALT-002 | Approaching-stop notification | BR-ALERT-001 | R1 |
+| ALT-003 | School arrival and departure detection | BR-ALERT-001 | R1 |
+| ALT-004 | Route deviation detection | BR-ALERT-002 | R1 |
+| ALT-005 | Overspeed detection | BR-ALERT-003 | R1 |
+| ALT-006 | Unscheduled stop detection | BR-ALERT-004 | R2 |
+| ALT-007 | Alert deduplication and lifecycle | BR-ALERT-005, BR-ALERT-006 | R1 |
+
+## NTF — Notification (MOD-12)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| NTF-001 | Recipient resolution from rights | BR-NTF-001, BR-NTF-007 | R1 |
+| NTF-002 | Template management per tenant and locale | BR-NTF-002, BR-CFG-005 | R1 |
+| NTF-003 | Push delivery | BR-NTF-005 | R1 |
+| NTF-004 | SMS delivery via configurable provider | BR-NTF-005, ADR-0005 | R1 |
+| NTF-005 | Email delivery | BR-NTF-005 | R2 |
+| NTF-006 | In-app notification centre | BR-NTF-005 | R1 |
+| NTF-007 | Guardian notification preferences | BR-NTF-003, BR-NTF-004 | R1 |
+| NTF-008 | Safety-critical override of preferences | BR-NTF-006, BR-SAFE-004 | R1 |
+| NTF-009 | Delivery records and failure visibility | BR-NTF-005 | R1 |
+
+## INC — Incident & Emergency (MOD-13)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| INC-001 | Raise SOS from the driver app | BR-INC-001, BR-INC-002 | R1 |
+| INC-002 | SOS escalation chain until acknowledged | BR-SAFE-006, BR-INC-001 | R1 |
+| INC-003 | SOS acknowledgement and resolution | BR-INC-005, BR-INC-006 | R1 |
+| INC-004 | Report an incident with severity | BR-INC-003 | R1 |
+| INC-005 | Incident notification audience by severity | BR-INC-004, BR-NTF-007 | R1 |
+| INC-006 | Incident resolution and closure | BR-INC-005 | R1 |
+| INC-007 | Device-triggered panic button | BR-INC-001 | R2 |
+
+## ABS — Absence (MOD-14)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| ABS-001 | Declare absence for a trip or date | BR-ABS-001, BR-ABS-002 | R1 |
+| ABS-002 | Declare absence for a date range | BR-ABS-001 | R1 |
+| ABS-003 | Cancel a declared absence | BR-ABS-004 | R1 |
+| ABS-004 | Late absence as manifest amendment | BR-ABS-003 | R1 |
+| ABS-005 | Absence suppresses no-show alerts | BR-ABS-005 | R1 |
+
+## RPT — Reporting (MOD-15)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| RPT-001 | Daily trip operations report | BR-RPT-001, BR-RPT-003 | R1 |
+| RPT-002 | Student attendance report | BR-RPT-001 | R1 |
+| RPT-003 | Safety exception report | BR-SAFE-001, BR-RPT-001 | R1 |
+| RPT-004 | Vehicle and staff compliance report | BR-FLEET-002, BR-STAFF-003 | R1 |
+| RPT-005 | Incident summary report | BR-INC-003 | R2 |
+| RPT-006 | Audited data export | BR-RPT-002 | R1 |
+| RPT-007 | Management dashboard | BR-RPT-001 | R2 |
+
+## AUD — Audit (MOD-16)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| AUD-001 | Transactional audit record writing | BR-AUD-001, BR-AUD-002 | R1 |
+| AUD-002 | Audit trail search | BR-AUD-003 | R1 |
+| AUD-003 | Override register with reasons | BR-AUD-004 | R1 |
+| AUD-004 | Cross-tenant operation audit | BR-TEN-004, BR-AUD-005 | R1 |
+| AUD-005 | Retention enforcement | BR-AUD-007 | R2 |
+
+## CFG — Configuration (MOD-17)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| CFG-001 | Typed configuration registry | BR-CFG-001 | R1 |
+| CFG-002 | Scoped configuration resolution | BR-CFG-002 | R1 |
+| CFG-003 | Region profiles | ADR-0007 | R1 |
+| CFG-004 | Safety floors and ceilings | BR-CFG-003, BR-SAFE-007 | R1 |
+| CFG-005 | Configuration change audit | BR-CFG-004 | R1 |
+| CFG-006 | Localisation resources | BR-CFG-005 | R1 |
+| CFG-007 | School time zone handling | BR-CFG-006 | R1 |
+
+---
+
+## Adding a Feature
+
+1. Append with the next ID in its area. Never reuse an ID.
+2. List the business rules it implements — if none exist, write the rule first.
+3. Reference the ID in the API document, the UI document, and its test cases.
+
+A feature in code but not in this inventory is untracked work and fails review.
+
+===FILE_END===
+===FILE_START:documentation/01-product-discovery/MODULE_MAP.md===
+# MODULE MAP
+
+**Document tier:** 1 — Product Discovery
+**Status:** Active
+
+The platform's functional decomposition. Module boundaries are also **code boundaries** — each maps to a backend module ([`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md) §2) and owns its tables.
+
+---
+
+## Module Index
+
+| ID | Module | Package | Owns |
+|---|---|---|---|
+| MOD-01 | Tenancy | `com.guardian.tenancy` | Organizations, schools, branches |
+| MOD-02 | Identity & Access | `com.guardian.identity` | Users, roles, permissions, sessions |
+| MOD-03 | Student Registry | `com.guardian.student` | Students, classes, enrolment |
+| MOD-04 | Guardian Management | `com.guardian.guardian` | Guardians, relationships, authorised pickup persons |
+| MOD-05 | Fleet | `com.guardian.fleet` | Vehicles, devices, vehicle documents |
+| MOD-06 | Transport Staff | `com.guardian.staff` | Drivers, attendants, credentials, duty assignment |
+| MOD-07 | Routes & Stops | `com.guardian.route` | Routes, stops, schedules, student assignments |
+| MOD-08 | Trip Execution | `com.guardian.trip` | Trip lifecycle, manifests, trip staff |
+| MOD-09 | Boarding & Attendance | `com.guardian.boarding` | Boarding events, handovers, reconciliation |
+| MOD-10 | Tracking | `com.guardian.tracking` | Position ingestion, live position, history, ETA |
+| MOD-11 | Geofencing & Alerts | `com.guardian.alert` | Geofences, alert rules, alert instances |
+| MOD-12 | Notification | `com.guardian.notification` | Events, templates, preferences, dispatch |
+| MOD-13 | Incident & Emergency | `com.guardian.incident` | SOS, incidents, escalation |
+| MOD-14 | Absence | `com.guardian.absence` | Absence declarations |
+| MOD-15 | Reporting | `com.guardian.reporting` | Reports, exports, dashboards |
+| MOD-16 | Audit | `com.guardian.audit` | Audit records, access logs |
+| MOD-17 | Configuration | `com.guardian.config` | Tenant configuration, region profiles, reference data |
+| MOD-18 | Parent Experience | `com.guardian.parent` | **Owns nothing.** Read-only composition of the parent app's screens (ADR-0010) |
+
+---
+
+## Dependency Direction
+
+Modules depend downward only. A cycle is an architecture defect and fails the build.
+
+```
+                       ┌──────────────┐
+                       │ MOD-15  Reporting │
+                       └────────┬─────────┘
+     ┌──────────────┬───────────┼───────────┬──────────────┐
+     ▼              ▼           ▼           ▼              ▼
+┌─────────┐  ┌───────────┐ ┌─────────┐ ┌─────────┐  ┌───────────┐
+│ MOD-13  │  │  MOD-11   │ │ MOD-09  │ │ MOD-14  │  │  MOD-12   │
+│Incident │  │  Alerts   │ │Boarding │ │ Absence │  │Notification│
+└────┬────┘  └─────┬─────┘ └────┬────┘ └────┬────┘  └─────┬─────┘
+     └─────────────┴────────────┼───────────┘             │
+                                ▼                          │
+                        ┌───────────────┐                  │
+                        │ MOD-08  Trip  │◄─────────────────┘
+                        └───────┬───────┘
+          ┌─────────────┬───────┼───────┬─────────────┐
+          ▼             ▼       ▼       ▼             ▼
+    ┌─────────┐  ┌──────────┐ ┌──────┐ ┌────────┐ ┌─────────┐
+    │ MOD-07  │  │  MOD-05  │ │MOD-06│ │ MOD-03 │ │ MOD-10  │
+    │ Routes  │  │  Fleet   │ │Staff │ │Student │ │Tracking │
+    └────┬────┘  └────┬─────┘ └──┬───┘ └───┬────┘ └────┬────┘
+         └────────────┴──────────┴─────────┤           │
+                                            ▼           │
+                                     ┌────────────┐     │
+                                     │  MOD-04    │     │
+                                     │  Guardian  │     │
+                                     └─────┬──────┘     │
+                                           │            │
+         ┌─────────────────────────────────┴────────────┘
+         ▼
+   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+   │MOD-02 Identity│  │MOD-17 Config │   │ MOD-16 Audit │
+   └───────┬───────┘  └──────┬───────┘   └──────┬───────┘
+           └─────────────────┴──────────────────┘
+                             ▼
+                     ┌───────────────┐
+                     │MOD-01 Tenancy │
+                     └───────────────┘
+```
+
+**Foundation modules** (MOD-01, 02, 16, 17) may be depended upon by anything and depend on nothing above them.
+**MOD-16 Audit** is written to by every module through a port; it depends on none of them.
+**MOD-12 Notification** consumes domain events; it does not call other modules synchronously.
+
+---
+
+## Module Detail
+
+### MOD-01 Tenancy
+Organizations, schools, branches; onboarding and lifecycle. Establishes tenant context for every request. **This is the reference implementation module** — new modules copy its structure.
+
+### MOD-02 Identity & Access
+Users, credentials, sessions, roles, permissions, scope resolution. Implements ADR-0006. Guardian and staff identity converge here; a person may be both a guardian and a staff member.
+
+### MOD-03 Student Registry
+Student records, class/grade, enrolment status, transport eligibility. Source of truth for who exists; does not own transport assignment (MOD-07).
+
+### MOD-04 Guardian Management
+Guardian records, guardian–student relationships with rights, and authorised pickup persons with validity windows. Owns the answer to *"may this adult collect this child?"* — consumed by MOD-09.
+
+### MOD-05 Fleet
+Vehicles, GPS devices, and vehicle documents with expiry. Document *types* come from MOD-17 (ADR-0007). Raises compliance alerts through MOD-11.
+
+### MOD-06 Transport Staff
+Drivers and attendants, their credentials and expiry, and duty assignment. Enforces that unqualified or unverified staff cannot be assigned (`BR-STAFF-003`).
+
+### MOD-07 Routes & Stops
+Route definition, ordered stops with geofence radius and scheduled times, and student-to-stop assignment per direction. Produces the expected manifest a trip consumes.
+
+### MOD-08 Trip Execution
+The operational centre. Owns the trip lifecycle, materialises the manifest at trip start, and holds trip-level state. Every safety event is anchored to a trip.
+
+### MOD-09 Boarding & Attendance
+Boarding and alighting events, handover verification, and trip-close reconciliation. **The most safety-critical module.** Records are append-only; corrections are compensating records.
+
+### MOD-10 Tracking
+Position ingestion via device adapters, live position cache, durable history, ETA calculation. Implements ADR-0004.
+
+### MOD-11 Geofencing & Alerts
+Evaluates position and trip state against rules: stop arrival, school arrival, route deviation, overspeed, unscheduled stop, idle vehicle. Thresholds are tenant configuration.
+
+### MOD-12 Notification
+Turns domain events into delivered messages. Recipient resolution, preferences, templates, channels, dispatch records. Implements ADR-0005.
+
+### MOD-13 Incident & Emergency
+SOS from driver, attendant, or device; incident reports; severity, escalation chains, acknowledgement. Highest notification priority.
+
+### MOD-14 Absence
+Guardian declares a child not travelling for a trip or date range. Removes the child from the expected manifest so reconciliation does not raise a false alarm.
+
+### MOD-15 Reporting
+Operational, compliance, and safety reporting; exports. Read-only across modules; owns no operational data. All exports permission-gated and audited.
+
+### MOD-18 Parent Experience
+Composes the parent app's read surfaces — the dashboard (P-02) and child detail (P-03) — into one response each, so a parent's 10-second glance is a single round trip rather than a per-child fan-out.
+
+**Read-only, and owns no tables.** It sits above every module it reads, which is what lets `GET /guardians/me/students` carry live journey state without MOD-04 depending upward on MOD-08 — the cycle that made the documented endpoint unbuildable. Every parent-app *write* stays in the owning module: absences in MOD-14, pickup persons in MOD-04, notification reads in MOD-12.
+
+Its cross-module table access is a deliberate, bounded exception to cross-module rule 1, argued and constrained in [`ADR-0010`](../00-governance/adr/ADR-0010-parent-read-composition.md).
+
+### MOD-16 Audit
+Append-only audit records written in-transaction by every module via a port. Also records data-access events for child PII.
+
+### MOD-17 Configuration
+Typed tenant configuration, region profiles, reference data, localisation resources. Implements ADR-0007. Safety-critical floors are enforced here.
+
+---
+
+## Cross-Module Rules
+
+1. **A module owns its tables.** No module reads another module's tables directly — access goes through the owning module's application layer.
+2. **No cycles.** Enforced by an ArchUnit test.
+3. **Communication:** synchronous calls downward through application services; upward and lateral communication is by domain events.
+4. **Shared kernel:** only `guardian-common` (tenant context, error types, audit port, common value objects). It contains no business rules.
+5. **A new module requires** a row in this table, a package, an entry in [`FEATURE_INVENTORY.md`](FEATURE_INVENTORY.md), and its own tables documented in [`documentation/03-database/tables/`](../03-database/tables/).
+
+===FILE_END===
+===FILE_START:documentation/01-product-discovery/NOTIFICATION_CATALOG.md===
+# NOTIFICATION CATALOG
+
+**Document tier:** 1 — Product Discovery
+**Status:** Active
+
+Every notification the platform sends. Format: `NTF-<AREA>-<nn>`.
+
+Notification is the product's primary output to parents ([`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) §2). This catalog is therefore a product document, not a technical one — the technical delivery mechanism is in [`NOTIFICATION_ARCHITECTURE.md`](../02-system-design/NOTIFICATION_ARCHITECTURE.md).
+
+---
+
+## Priority Classes
+
+| Class | Respects preferences? | Respects quiet hours? | Channels |
+|---|---|---|---|
+| 🔴 `CRITICAL` | **No** (BR-NTF-006) | **No** | All available, with fallback escalation |
+| 🟠 `URGENT` | Channel choice only | No | Push + SMS |
+| 🟡 `STANDARD` | Yes | Yes — deferred, not discarded (BR-NTF-004) | Per preference |
+| ⚪ `INFO` | Yes | Yes | In-app, optional push |
+
+**The `CRITICAL` class is the exception that makes the rest safe.** A parent may mute everything else precisely because the events that matter will always arrive.
+
+---
+
+## Copy Principles
+
+Derived from [`PERSONAS.md`](PERSONAS.md) (Meera) and [`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) §2:
+
+1. **Complete in the first line.** Readable from a lock screen without opening the app.
+2. **Named child, named place, stated time.** *"Aarav boarded Bus 12 at Green Park, 7:42 AM."*
+3. **Calm for routine events, direct for urgent ones.** Graded language matching graded severity.
+4. **Never another family's child** (BR-NTF-007). No passenger lists, no other names, ever.
+5. **Localised resource keys only** (BR-CFG-005). No inline strings.
+6. **Times in the school's time zone** (BR-CFG-006).
+
+---
+
+## Boarding & Attendance
+
+| ID | Event | Class | Recipients | Sample copy |
+|---|---|---|---|---|
+| NTF-BOARD-01 | Student boarded | 🟡 | Guardians with notify right | "Aarav boarded Bus 12 at Green Park, 7:42 AM." |
+| NTF-BOARD-02 | Student alighted at school | 🟡 | Guardians | "Aarav arrived at school, 8:15 AM." |
+| NTF-BOARD-03 | Student alighted at stop | 🟡 | Guardians | "Aarav got off at Green Park, 3:20 PM." |
+| NTF-BOARD-04 | No-show at stop (BR-SAFE-002) | 🟠 | Guardians | "Aarav did not board Bus 12 at Green Park this morning." |
+| NTF-BOARD-05 | Boarded despite declared absence (BR-BOARD-007) | 🟠 | Guardians, transport manager | "Aarav was marked absent but boarded Bus 12 at 7:44 AM." |
+| NTF-BOARD-06 | Alighted at a different stop (BR-BOARD-004) | 🟠 | Guardians, transport manager | "Aarav got off at Ring Road, not his usual stop, at 3:31 PM." |
+| NTF-BOARD-07 | Wrong-vehicle detection (BR-SAFE-003) | 🔴 | Guardians, both trips' staff, transport manager | "Aarav boarded Bus 7. He is expected on Bus 12. Staff have been alerted." |
+
+## Handover
+
+| ID | Event | Class | Recipients | Sample copy |
+|---|---|---|---|---|
+| NTF-HAND-01 | Handover completed | 🟡 | Guardians | "Aarav was handed over to Meera Sharma at 3:20 PM." |
+| NTF-HAND-02 | Handover to authorised pickup person | 🟠 | All guardians | "Aarav was handed over to Sunil Kumar (authorised pickup) at 3:21 PM." |
+| NTF-HAND-03 | Handover override (BR-HAND-003) | 🔴 | **All** guardians, transport manager | "Aarav was released to an unverified adult at 3:22 PM. Reason recorded: [reason]. Please contact the school." |
+| NTF-HAND-04 | Handover refused — custody restriction (BR-HAND-006) | 🔴 | Guardians without restriction, transport manager, school admin | "An unauthorised collection attempt for Aarav was refused at 3:19 PM." |
+| NTF-HAND-05 | No receiver at stop (BR-HAND-007) | 🔴 | Guardians, transport manager | "No one was present to collect Aarav at Green Park. He is safe on the bus. We are contacting you." |
+| NTF-HAND-06 | Student self-released | 🟡 | Guardians | "Aarav left the bus at Green Park, 3:20 PM." |
+
+## Safety
+
+| ID | Event | Class | Recipients | Sample copy |
+|---|---|---|---|---|
+| NTF-SAFE-01 | **Unaccounted child at trip close** (BR-SAFE-001) | 🔴 | Driver, attendant, transport manager, guardians | "Aarav has not been recorded leaving Bus 12. Staff are checking the vehicle now." |
+| NTF-SAFE-02 | Unaccounted child resolved | 🟠 | Same recipients | "Aarav has been accounted for. [outcome]" |
+| NTF-SAFE-03 | Safety alert unacknowledged, escalating (BR-SAFE-006) | 🔴 | Next escalation level | "Unacknowledged critical alert on Bus 12, raised [time]." |
+
+**NTF-SAFE-01 is the platform's most important message.** It is delivered on every available channel, ignores every preference, and escalates until acknowledged.
+
+## Trip & Tracking
+
+| ID | Event | Class | Recipients | Sample copy |
+|---|---|---|---|---|
+| NTF-TRIP-01 | Trip started | ⚪ | Guardians | "Bus 12 has started its morning route." |
+| NTF-TRIP-02 | Bus approaching stop (BR-ALERT-001) | 🟡 | Guardians at that stop | "Bus 12 is about 4 minutes from Green Park." |
+| NTF-TRIP-03 | Trip delayed (BR-TRIP-010) | 🟠 | Guardians, transport manager | "Bus 12 is running about 15 minutes late this morning." |
+| NTF-TRIP-04 | Trip cancelled (BR-TRIP-007) | 🟠 | Guardians, transport manager | "Bus 12's afternoon route is cancelled today. Reason: [reason]." |
+| NTF-TRIP-05 | Signal lost during trip (BR-TRACK-005) | 🟡 | Transport manager | "Bus 12 has not reported its location for 12 minutes." |
+
+## Alerts
+
+| ID | Event | Class | Recipients |
+|---|---|---|---|
+| NTF-ALERT-01 | Route deviation (BR-ALERT-002) | 🟠 | Transport manager; guardians per severity policy |
+| NTF-ALERT-02 | Overspeed (BR-ALERT-003) | 🟠 | Transport manager |
+| NTF-ALERT-03 | Unscheduled stop (BR-ALERT-004) | 🟡 | Transport manager |
+
+## Incidents
+
+| ID | Event | Class | Recipients | Sample copy |
+|---|---|---|---|---|
+| NTF-INC-01 | SOS raised (BR-SAFE-004) | 🔴 | Escalation chain | "SOS from Bus 12, raised by [actor] at [time]. Location: [link]." |
+| NTF-INC-02 | SOS escalation | 🔴 | Next level | "SOS on Bus 12 remains unacknowledged." |
+| NTF-INC-03 | Incident affecting a student | 🟠 | That student's guardians | "There was an incident involving Aarav on Bus 12. [summary]" |
+| NTF-INC-04 | Incident affecting a trip | 🟠 | All guardians on manifest | "Bus 12 was involved in an incident. All children are safe. [summary]" |
+| NTF-INC-05 | Incident resolved | 🟡 | Original recipients | |
+
+NTF-INC-04 goes to many families at once and must therefore never name any child (BR-NTF-007).
+
+## Compliance & Administrative
+
+| ID | Event | Class | Recipients |
+|---|---|---|---|
+| NTF-CMP-01 | Vehicle document expiring (BR-FLEET-003) | 🟡 | Transport manager |
+| NTF-CMP-02 | Vehicle document expired — blocked (BR-FLEET-002) | 🟠 | Transport manager, school admin |
+| NTF-CMP-03 | Staff credential expiring (BR-STAFF-003) | 🟡 | Transport manager |
+| NTF-CMP-04 | Staff credential expired — blocked | 🟠 | Transport manager, school admin |
+| NTF-ADM-01 | Guardian invitation | ⚪ | Guardian |
+| NTF-ADM-02 | Absence confirmed (BR-ABS-001) | ⚪ | Declaring guardian |
+| NTF-ADM-03 | Route or stop assignment changed | 🟡 | Guardians |
+| NTF-ADM-04 | Authorised pickup person added (BR-GRD-006) | 🟠 | All guardians with handover right |
+| NTF-ADM-05 | Authorised pickup person revoked | 🟡 | All guardians with handover right |
+| NTF-SEC-01 | New device sign-in | 🟡 | The user |
+| NTF-SEC-02 | Refresh-token reuse detected (BR-IAM-009) | 🟠 | The user, school admin |
+
+---
+
+## Rules for Adding a Notification
+
+1. Assign the next ID in the area and a priority class.
+2. Name recipients by **right**, never by role alone (BR-NTF-001).
+3. Write sample copy that satisfies the copy principles above.
+4. Add template keys for every supported locale and channel (BR-NTF-002).
+5. `CRITICAL` class requires justification in review — the class is only protective while it stays small.
+
+## Verification
+
+- A test asserts every `CRITICAL` notification dispatches with preferences disabled and quiet hours active (BR-NTF-006).
+- A test asserts no multi-recipient notification body can interpolate a student name (BR-NTF-007).
+- A test asserts every catalog ID has a template in the default locale for each of its channels.
+
+===FILE_END===
+===FILE_START:documentation/01-product-discovery/PERMISSION_MATRIX.md===
+# PERMISSION MATRIX
+
+**Document tier:** 1 — Product Discovery
+**Status:** Active
+
+The authoritative list of permissions and their assignment to roles. **Every API endpoint declares a permission ID from this document** — an endpoint referencing an unlisted permission fails the build ([`DOCUMENT_HIERARCHY.md`](../00-governance/DOCUMENT_HIERARCHY.md) invariant 3).
+
+Format: `PERM-<AREA>-<ACTION>`.
+
+---
+
+## Scope Levels
+
+Permission alone is insufficient — every check resolves permission **and** scope (BR-IAM-006).
+
+| Scope | Meaning |
+|---|---|
+| `PLATFORM` | Across organizations. Platform operators only; always audited (BR-TEN-004). |
+| `ORG` | Within the user's organization, all schools. |
+| `SCHOOL` | Within assigned school(s). |
+| `ROUTE` | Within assigned routes. |
+| `TRIP` | Within the currently active trip only. |
+| `OWN_CHILDREN` | Students the user is an active guardian of (BR-IAM-005). |
+| `SELF` | The user's own record. |
+
+---
+
+## Roles
+
+| Role | Default scope | Notes |
+|---|---|---|
+| `SUPER_ADMIN` | `PLATFORM` | Platform operator. Every cross-org action audited. |
+| `ORG_ADMIN` | `ORG` | Group-level administration. |
+| `SCHOOL_ADMIN` | `SCHOOL` | Day-to-day school administration. |
+| `PRINCIPAL` | `SCHOOL` | Read and reporting; minimal write. |
+| `TRANSPORT_MANAGER` | `SCHOOL` | Fleet, routes, trips, incidents. |
+| `VENDOR_STAFF` | `ROUTE` | Outsourced operator; manifest access only. |
+| `DRIVER` | `TRIP` | Current trip only. |
+| `ATTENDANT` | `TRIP` | Current trip; owns boarding operations. |
+| `GUARDIAN` | `OWN_CHILDREN` | Parent or guardian. |
+
+Roles are templates. Tenants may define custom roles from the same permission set; they cannot invent permissions.
+
+---
+
+## Matrix
+
+`✔` granted · `✔*` granted within a narrower scope · blank = denied
+
+### Tenancy & Configuration
+
+| Permission | SUPER | ORG | SCH | PRIN | TM | VEND | DRV | ATT | GRD |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `PERM-ORG-CREATE` | ✔ | | | | | | | | |
+| `PERM-ORG-VIEW` | ✔ | ✔ | | | | | | | |
+| `PERM-ORG-EDIT` | ✔ | ✔ | | | | | | | |
+| `PERM-ORG-SUSPEND` | ✔ | | | | | | | | |
+| `PERM-SCHOOL-CREATE` | ✔ | ✔ | | | | | | | |
+| `PERM-SCHOOL-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | | | | |
+| `PERM-SCHOOL-EDIT` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-CONFIG-VIEW` | ✔ | ✔ | ✔ | ✔ | | | | | |
+| `PERM-CONFIG-EDIT` | ✔ | ✔ | ✔* | | | | | | |
+| `PERM-CONFIG-SAFETY-EDIT` | ✔ | ✔ | | | | | | | |
+
+`PERM-CONFIG-SAFETY-EDIT` governs safety-relevant thresholds and remains bounded by platform floors (BR-CFG-003).
+
+### Identity & Access
+
+| Permission | SUPER | ORG | SCH | PRIN | TM | VEND | DRV | ATT | GRD |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `PERM-USER-CREATE` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-USER-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔* | | | | |
+| `PERM-USER-EDIT` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-USER-DEACTIVATE` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-ROLE-MANAGE` | ✔ | ✔ | | | | | | | |
+| `PERM-SESSION-REVOKE` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-PROFILE-SELF-EDIT` | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ |
+
+### Students & Guardians
+
+| Permission | SUPER | ORG | SCH | PRIN | TM | VEND | DRV | ATT | GRD |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `PERM-STUDENT-CREATE` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-STUDENT-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | ✔* | ✔* | ✔* | ✔* |
+| `PERM-STUDENT-EDIT` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-STUDENT-IMPORT` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-GUARDIAN-MANAGE` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-GUARDIAN-LINK` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-PICKUP-PERSON-MANAGE` | | | ✔ | | | | | | ✔* |
+| `PERM-CUSTODY-RESTRICTION-MANAGE` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-HANDOVER-CODE-REQUEST` | | | | | | | | | ✔* |
+
+`PERM-STUDENT-VIEW` scope narrows sharply: `VEND`/`DRV`/`ATT` see only the current trip manifest; `GRD` only their own children (BR-IAM-005). Non-guardian access is logged (BR-IAM-012).
+
+`PERM-PICKUP-PERSON-MANAGE` for a guardian requires the "authorise handover" right on the relationship (BR-GRD-006).
+
+`PERM-HANDOVER-CODE-REQUEST` (P-12) lets a guardian generate the short-lived verification code shown to the bus attendant at drop. Like `PERM-PICKUP-PERSON-MANAGE`, it requires `can_authorise_handover` on the specific relationship (BR-GRD-006) — the endpoint permission is necessary and not sufficient. Issuing a code is not itself a handover: verifying and redeeming it at the vehicle is the attendant-side flow BR-HAND-001 through BR-HAND-007 govern, which ships with the driver/attendant app.
+
+### Fleet & Staff
+
+| Permission | SUPER | ORG | SCH | PRIN | TM | VEND | DRV | ATT | GRD |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `PERM-VEHICLE-MANAGE` | ✔ | ✔ | ✔ | | ✔ | | | | |
+| `PERM-VEHICLE-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | ✔* | | | |
+| `PERM-VEHICLE-DOCUMENT-MANAGE` | ✔ | ✔ | ✔ | | ✔ | | | | |
+| `PERM-DEVICE-MANAGE` | ✔ | ✔ | | | ✔ | | | | |
+| `PERM-STAFF-MANAGE` | ✔ | ✔ | ✔ | | ✔ | | | | |
+| `PERM-STAFF-VERIFY` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-DUTY-ASSIGN` | ✔ | ✔ | | | ✔ | | | | |
+
+### Routes & Trips
+
+| Permission | SUPER | ORG | SCH | PRIN | TM | VEND | DRV | ATT | GRD |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `PERM-ROUTE-MANAGE` | ✔ | ✔ | ✔ | | ✔ | | | | |
+| `PERM-ROUTE-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | ✔* | ✔* | ✔* | |
+| `PERM-ROUTE-ASSIGN-STUDENT` | ✔ | ✔ | ✔ | | ✔ | | | | |
+| `PERM-TRIP-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | ✔* | ✔* | ✔* | ✔* |
+| `PERM-TRIP-START` | | | | | ✔ | | ✔ | ✔ | |
+| `PERM-TRIP-END` | | | | | ✔ | | ✔ | ✔ | |
+| `PERM-TRIP-CANCEL` | ✔ | ✔ | ✔ | | ✔ | | | | |
+| `PERM-TRIP-CLOSE` | | | ✔ | | ✔ | | | | |
+| `PERM-MANIFEST-AMEND` | | | ✔ | | ✔ | | | ✔ | |
+
+`PERM-TRIP-VIEW` for a guardian is limited to trips carrying one of their children (BR-TRACK-002).
+
+### Boarding & Handover
+
+| Permission | SUPER | ORG | SCH | PRIN | TM | VEND | DRV | ATT | GRD |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `PERM-BOARDING-RECORD` | | | | | ✔ | | ✔ | ✔ | |
+| `PERM-BOARDING-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | | ✔* | ✔* | ✔* |
+| `PERM-BOARDING-CORRECT` | | | ✔ | | ✔ | | | ✔ | |
+| `PERM-BOARDING-OVERRIDE` | | | ✔ | | ✔ | | | ✔ | |
+| `PERM-HANDOVER-RECORD` | | | | | ✔ | | ✔ | ✔ | |
+| `PERM-HANDOVER-OVERRIDE` | | | ✔ | | ✔ | | | ✔ | |
+| `PERM-RECONCILIATION-RESOLVE` | | | ✔ | | ✔ | | | ✔ | |
+
+Every permission in this block is override-capable and therefore **always audited with a reason** (BR-AUD-004). `PERM-HANDOVER-OVERRIDE` additionally notifies all guardians and the transport manager (BR-HAND-003).
+
+### Tracking, Alerts, Incidents
+
+| Permission | SUPER | ORG | SCH | PRIN | TM | VEND | DRV | ATT | GRD |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `PERM-TRACKING-LIVE-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | ✔* | | | ✔* |
+| `PERM-TRACKING-HISTORY-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | | | | |
+| `PERM-ALERT-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | ✔* | | | |
+| `PERM-ALERT-RESOLVE` | ✔ | ✔ | ✔ | | ✔ | | | | |
+| `PERM-SOS-RAISE` | | | | | ✔ | | ✔ | ✔ | |
+| `PERM-SOS-ACKNOWLEDGE` | ✔ | ✔ | ✔ | ✔ | ✔ | | | | |
+| `PERM-INCIDENT-CREATE` | | | ✔ | | ✔ | ✔ | ✔ | ✔ | |
+| `PERM-INCIDENT-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | ✔* | | | ✔* |
+| `PERM-INCIDENT-RESOLVE` | ✔ | ✔ | ✔ | | ✔ | | | | |
+
+Guardian `PERM-INCIDENT-VIEW` is limited to incidents affecting their own child (BR-INC-004, BR-NTF-007).
+
+### Absence, Notification, Reporting, Audit
+
+| Permission | SUPER | ORG | SCH | PRIN | TM | VEND | DRV | ATT | GRD |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `PERM-ABSENCE-DECLARE` | | | ✔ | | ✔ | | | | ✔* |
+| `PERM-ABSENCE-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | | ✔* | ✔* | ✔* |
+| `PERM-NOTIFICATION-TEMPLATE-MANAGE` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-NOTIFICATION-SELF-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ |
+| `PERM-NOTIFICATION-PREFERENCE-SELF` | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ |
+| `PERM-NOTIFICATION-DELIVERY-VIEW` | ✔ | ✔ | ✔ | | ✔ | | | | |
+| `PERM-REPORT-OPERATIONAL` | ✔ | ✔ | ✔ | ✔ | ✔ | | | | |
+| `PERM-REPORT-SAFETY` | ✔ | ✔ | ✔ | ✔ | ✔ | | | | |
+| `PERM-REPORT-COMPLIANCE` | ✔ | ✔ | ✔ | ✔ | ✔ | | | | |
+| `PERM-DATA-EXPORT` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-AUDIT-VIEW` | ✔ | ✔ | ✔ | ✔ | | | | | |
+| `PERM-AUDIT-EXPORT` | ✔ | ✔ | | | | | | | |
+
+`PERM-ABSENCE-DECLARE` for a guardian requires the "declare absence" right (BR-ABS-001).
+`PERM-DATA-EXPORT` is always audited with actor, scope, and record count (BR-RPT-002).
+
+`PERM-NOTIFICATION-SELF-VIEW` covers the notification centre (P-08) and marking an entry read. Held by everyone, and scoped to the caller's **own** notifications — it grants no visibility into anyone else's, so it is never a route to another family's child (BR-NTF-007 🔴). It exists as a row here rather than being left as "authenticated" because an endpoint with no declared permission fails the build (BR-IAM-002), and "everyone may read their own" is a scope statement worth writing down rather than an absence of one.
+
+### Platform Operations
+
+| Permission | SUPER | Others |
+|---|:-:|:-:|
+| `PERM-PLATFORM-TENANT-ACCESS` | ✔ | |
+| `PERM-PLATFORM-HEALTH-VIEW` | ✔ | |
+| `PERM-PLATFORM-REGION-MANAGE` | ✔ | |
+
+`PERM-PLATFORM-TENANT-ACCESS` is the **only** path across the tenant boundary (BR-TEN-004). Every use writes an audit record naming the target organization and the justification (AUD-004).
+
+---
+
+## Enforcement
+
+1. **Deny by default** (BR-IAM-002). An endpoint without a declared permission is unreachable.
+2. **Server-side only** (BR-IAM-001). Client-supplied roles are ignored.
+3. **Permission and scope are checked together.** Holding `PERM-STUDENT-VIEW` never implies seeing every student.
+4. **Resolved per request** (BR-IAM-004), never read from the token.
+5. **Verified in CI.** A test asserts every endpoint declares a permission that exists here, and a test per role asserts denied permissions actually return `403`.
+
+===FILE_END===
+===FILE_START:documentation/01-product-discovery/PERSONAS.md===
+# PERSONAS
+
+**Document tier:** 1 — Product Discovery
+**Status:** Active
+
+Personas exist to make design arguments concrete. Where [`STAKEHOLDERS.md`](STAKEHOLDERS.md) lists roles and access, this document describes the conditions under which each person actually uses the product.
+
+---
+
+## Meera — Working Parent
+
+**Context.** Two children, different schools, different routes. Commutes herself. Checks her phone between meetings.
+
+**Conditions of use:** 10–20 second glances, one-handed, often on mobile data, sometimes on a crowded train.
+
+**What she needs:** the answer to "is my child fine?" in the first screen, without navigation. A notification she can read from the lock screen without opening the app.
+
+**What breaks her trust:** learning something went wrong from her child rather than from the app. Notifications so frequent she mutes them — after which the one that matters is also muted.
+
+**Design consequences**
+- Home screen answers the question without a tap; live map is a second-level detail, not the entry point.
+- Notification copy is complete in the first line: *"Aarav boarded Bus 12 at Green Park, 7:42 AM."*
+- Per-event notification preferences (NTF-007) exist so she can keep the important ones and drop the rest — and safety-critical events ignore that choice (BR-NTF-006).
+
+---
+
+## Ramesh — Driver
+
+**Context.** Drives two routes each morning and afternoon. Twenty years' experience, moderate literacy in the platform's default language, uses a phone mounted on the dashboard.
+
+**Conditions of use:** vehicle moving or briefly stopped, sunlight on the screen, engine noise, children boarding. **He should be interacting with the app as little as possible.**
+
+**What he needs:** next stop, students expected there, and a way to raise an alarm without looking.
+
+**What breaks his experience:** anything requiring typing. A screen that demands attention while the vehicle moves. Being blamed for something the record does not show.
+
+**Design consequences**
+- Large targets, high contrast, minimal text (see [`DRIVER_ATTENDANT_APP.md`](../05-ui/DRIVER_ATTENDANT_APP.md)).
+- SOS reachable in one action from any screen (INC-001).
+- Boarding operations belong to the attendant where one is assigned (BR-STAFF-005).
+- Tracking is trip-scoped (BR-TRACK-001) — the platform is a safety tool, not surveillance of his day.
+
+---
+
+## Sunita — Attendant
+
+**Context.** Responsible for 40 children on a vehicle. Boards a dozen at a stop in under two minutes while managing children who do not queue.
+
+**Conditions of use:** standing in a moving-then-stopping vehicle, one hand on a rail, phone in the other. **Coverage drops on part of her route every single day.**
+
+**What she needs:** to mark many children quickly, to know immediately who is missing, and to be certain about who may collect a child.
+
+**What breaks her work:** an app that refuses to record because the network is down. A verification step that takes longer than the child takes to leave.
+
+**Design consequences**
+- **ADR-0008 (offline-first) exists primarily for Sunita.** Records are written locally and acknowledged instantly.
+- Pending-sync count is always visible — silent queuing would hide failure from the person who most needs to know.
+- Scan-first boarding with a manual fallback (BRD-001, BRD-002).
+- Overrides exist because real situations demand them, and are always attributed and audited (BR-AUD-004).
+
+---
+
+## Anil — Transport Manager
+
+**Context.** 30 vehicles, 45 routes, 2,000 students across two campuses. His day is exceptions.
+
+**Conditions of use:** desktop with several tabs open; phone during a live incident.
+
+**What he needs:** a single view of what is going wrong right now, ranked by severity. Fast reassignment when a vehicle or driver becomes unavailable. Evidence when a parent complains.
+
+**What breaks his work:** an alert stream so noisy that real problems are buried. Data entry that duplicates what the school office already entered.
+
+**Design consequences**
+- Alert deduplication (BR-ALERT-005) and severity ranking are requirements, not polish.
+- Bulk operations throughout (STU-002, RTE-004).
+- Compliance blocking is enforced by the system (BR-FLEET-002, BR-STAFF-001) rather than left to his memory.
+- Every override and exception is attributable, so complaints are answerable with a record.
+
+---
+
+## Fatima — School Admin
+
+**Context.** Onboards several hundred students each term, mostly from spreadsheets of varying quality. Fields parent phone calls.
+
+**What she needs:** import that reports errors clearly and lets her fix and retry, rather than failing wholesale.
+
+**Design consequences**
+- Bulk import with per-row validation and a downloadable error report (STU-002).
+- Guardian rights are explicit at import (BR-GRD-001), because implied rights are how the wrong adult ends up authorised.
+- Reduced call volume is a charter success measure — the parent app must answer the questions that generate those calls.
+
+---
+
+## Deepak — Platform Operator
+
+**Context.** Runs the platform across all tenants. Onboards new organizations; occasionally investigates a support issue that requires looking at tenant data.
+
+**What he needs:** the ability to help without unbounded access, and a record proving what he did.
+
+**Design consequences**
+- Cross-tenant access is a distinct, explicitly permissioned, always-audited path (BR-TEN-004, AUD-004). This is the single deliberate exception to tenant isolation and therefore the most instrumented one.
+- Onboarding a tenant in a new region is configuration, not a deployment (ADR-0007).
+
+---
+
+## Non-Persona: The Student
+
+Students are the subject of most data in this platform and, in most deployments, are not users of it.
+
+**This is a design constraint, not an omission.** No safety control may depend on a child operating software correctly. Where students carry a credential (STU-007), it is a passive card or code that an attendant scans — the verification burden sits with the adult, always.
+
+===FILE_END===
+===FILE_START:documentation/01-product-discovery/STAKEHOLDERS.md===
+# STAKEHOLDERS
+
+**Document tier:** 1 — Product Discovery
+**Status:** Active
+
+Who the platform serves, what each party needs, and what each party can do harm with if access is wrong.
+
+---
+
+## Primary Stakeholders
+
+### Parent / Guardian
+
+**Needs:** to know their child is safe without having to ask.
+
+| Wants | Fears |
+|---|---|
+| Know the bus is coming, and when | Not being told something went wrong |
+| Know their child boarded and alighted | Being told too much, too often, until they stop reading |
+| Reach someone when something is wrong | Their child's location being visible to strangers |
+
+**Sees:** own children only. Never another family's child, never a full passenger list.
+**Acts:** declares absence, nominates authorised pickup persons, sets notification preferences, receives handover verification.
+**Risk if over-permissioned:** exposure of other families' children — the platform's most serious data risk.
+
+---
+
+### Student
+
+**Needs:** to be transported safely with minimal burden.
+
+Students are the subject of nearly all data in the platform and, in most deployments, are not users of it. Older students may hold a card or QR credential for boarding.
+
+**Design consequence:** the student never has to operate software correctly for the safety controls to work. Verification is performed by the attendant, not by the child.
+
+---
+
+### Driver
+
+**Needs:** to know the route and to not be distracted.
+
+| Wants | Fears |
+|---|---|
+| Clear next-stop guidance | Being blamed for something the record does not show |
+| A way to signal trouble instantly | An interface that demands attention while driving |
+| Low interaction while moving | Being tracked as surveillance rather than safety |
+
+**Sees:** the current trip's manifest and route only. No historical data on other trips, no student contact detail beyond what a handover requires.
+**Acts:** starts and ends trips, raises SOS, reports incidents.
+**Design consequence:** the driver interface is glanceable and one-handed. Boarding operations belong to the attendant where one is assigned.
+
+---
+
+### Attendant (Bus Matron)
+
+**Needs:** to account for every child on the vehicle.
+
+The attendant is **the primary operator of the safety controls**. Boarding, alighting, and handover verification are their work.
+
+| Wants | Fears |
+|---|---|
+| Fast marking of many children at once | Losing a record because the network dropped |
+| Certainty about who may collect a child | Releasing a child to the wrong adult |
+| A way to flag a problem without stopping the trip | Being unable to record a real event because the system says no |
+
+**Design consequence:** ADR-0008 (offline-first) exists mainly for this person. Overrides must exist for genuine situations, but must always be attributed and audited.
+
+---
+
+### Transport Manager
+
+**Needs:** to run the fleet and respond when something goes wrong.
+
+**Sees:** all vehicles, routes, trips, and students within their school(s).
+**Acts:** defines routes and stops, assigns students and staff, manages vehicles and documents, responds to incidents and SOS, authorises overrides.
+**Risk if over-permissioned:** broad access to child data; access is scoped to their school and audited.
+
+---
+
+### School Admin
+
+**Needs:** compliance, parent satisfaction, and fewer phone calls.
+
+**Sees:** their school. Manages students, guardians, staff accounts, and school configuration.
+**Acts:** onboards students and guardians, configures notification policy and school timings, runs reports.
+
+---
+
+### Principal / School Management
+
+**Needs:** assurance that institutional duty of care is discharged and evidenced.
+
+**Sees:** dashboards and reports, not day-to-day operational detail.
+**Design consequence:** reporting must answer "can we prove what happened" as well as "how are we performing".
+
+---
+
+### Platform Operator (Super Admin)
+
+**Needs:** to onboard tenants and keep the platform healthy.
+
+**Sees:** across organizations — the only role that does.
+**Design consequence:** every cross-tenant action is explicitly permissioned and audited without exception (ADR-0001). This role is the one deliberate hole in tenant isolation, so it is the one most tightly instrumented.
+
+---
+
+## Secondary Stakeholders
+
+### Regulator / Auditor
+
+Not a system user, but a consumer of its output. Needs evidence: who was responsible, what happened, when, and whether policy was followed.
+
+**Design consequence:** audit records are append-only and retained per policy (see [`AUDIT_AND_LOGGING.md`](../02-system-design/AUDIT_AND_LOGGING.md)). Overrides carry reasons because a reason-less override is not evidence of anything.
+
+### Emergency Services
+
+Consumers of information during an incident. Need vehicle location, passenger count, and a contact — quickly, from someone who has it.
+
+### Transport Vendor
+
+Where fleets are outsourced, the vendor employs drivers and owns vehicles. Their staff need operational access without school-wide student data access.
+
+**Design consequence:** vendor-scoped roles are a real requirement, not a variant of transport manager.
+
+---
+
+## Access Summary
+
+| Stakeholder | Scope | Reads child data |
+|---|---|---|
+| Guardian | Own children | Own children only |
+| Student | Self | Minimal |
+| Driver | Current trip | Manifest during trip |
+| Attendant | Current trip | Manifest + handover detail during trip |
+| Transport Manager | School | Yes, operational |
+| School Admin | School | Yes, administrative |
+| Principal | School | Aggregated |
+| Vendor Staff | Assigned routes | Manifest only |
+| Super Admin | Platform | Yes — fully audited |
+
+Authoritative mapping: [`PERMISSION_MATRIX.md`](PERMISSION_MATRIX.md).
+
+---
+
+## Conflicts Between Stakeholders
+
+Real tensions, resolved by [`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md):
+
+| Tension | Resolution |
+|---|---|
+| Parents want live tracking always; drivers experience it as surveillance | Tracking is trip-scoped. Vehicles are not tracked outside trip windows. |
+| Attendants want fast boarding; safety wants verification | Verification is fast by design (scan), not optional. Overrides exist and are audited. |
+| Schools want fewer notifications; parents want more | Per-guardian preferences, with safety-critical events exempt (`BR-NTF-006`). |
+| Managers want full history; data minimisation wants less | Retention is configured per tenant within legal bounds; access is audited. |
+
+===FILE_END===

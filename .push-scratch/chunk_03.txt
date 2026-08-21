@@ -1,0 +1,687 @@
+===FILE_START:documentation/00-governance/adr/ADR-0001-multi-tenancy-strategy.md===
+# ADR-0001: Multi-tenancy via shared schema with Row-Level Security
+
+**Status:** Proposed
+**Date:** 2026-08-03
+**Affects:** all database tables, all repositories, [`MULTI_TENANCY.md`](../../02-system-design/MULTI_TENANCY.md), [`RLS_POLICIES.md`](../../03-database/RLS_POLICIES.md)
+
+## Context
+
+The charter commits to tenant isolation being *structural, not conventional* ([`PROJECT_CHARTER.md`](../../PROJECT_CHARTER.md) §6.1) and to a zero-tolerance target for cross-tenant leakage.
+
+Forces:
+
+- Tenants are school groups; expected scale is hundreds of organizations, each with thousands of students, plus high-volume position data.
+- The data is child PII. A cross-tenant leak is a safety and regulatory incident, not merely a bug.
+- A small operations team must run migrations, backups, and schema changes.
+- Some tenants will be single schools; some will be chains of hundreds.
+
+The risk this decision must address: **isolation that depends on every developer remembering a `WHERE tenant_id = ?` clause will eventually fail.** One forgotten predicate in one query is a breach.
+
+## Decision
+
+**Shared database, shared schema, `tenant_id` discriminator column on every tenant-scoped table, with PostgreSQL Row-Level Security as the enforcement boundary.**
+
+- Every tenant-scoped table has `tenant_id UUID NOT NULL` and an RLS policy filtering on a session variable (`app.tenant_id`).
+- The application sets that session variable once per request from the authenticated principal, in a transaction-scoped manner.
+- The application's runtime database role is **not** the table owner and does **not** hold `BYPASSRLS`.
+- Application-level filtering may exist for query efficiency, but it is never the control. RLS is the control.
+- Cross-tenant access (platform operations, support) uses a separate, explicitly named, permission-gated, audited path.
+
+## Alternatives Considered
+
+| Alternative | Why rejected |
+|---|---|
+| Database per tenant | Strongest isolation, but migration and connection-pool cost scale linearly with tenant count. Unworkable for hundreds of tenants with a small ops team; cross-tenant platform reporting becomes a data-warehouse problem on day one. |
+| Schema per tenant | Better isolation than shared schema, but migrations must run per schema and connection pooling degrades. Still fails to protect against application bugs within a schema. Reconsider if a tenant contractually requires physical separation. |
+| Shared schema, application-level filtering only | The common industry approach and the cheapest to build. Rejected because it makes isolation depend on developer discipline in every query forever. Directly contradicts the charter's "structural, not conventional" commitment. |
+| Shared schema + RLS + separate schema for the largest tenants | Hybrid complexity without a present requirement. Revisit only when a tenant demands it contractually. |
+
+## Consequences
+
+**Positive**
+- A forgotten `WHERE` clause returns zero rows instead of another tenant's children.
+- One migration path, one backup strategy, one connection pool.
+- Cross-tenant platform analytics remain straightforward.
+
+**Negative / accepted cost**
+- Every query pays a small RLS predicate cost; indexes must lead with `tenant_id`.
+- Connection pooling requires care: the session variable must be set per transaction and cleared, or a pooled connection could carry the wrong tenant. This is the primary implementation risk and is covered by a dedicated integration test.
+- Developers must understand RLS to debug "missing" rows.
+- A schema-level mistake (a table created without RLS enabled) is a silent hole — mitigated by an automated check.
+
+**Neutral**
+- `tenant_id` is the organization ID, not the school ID. School-level scoping is authorisation, layered above tenant isolation.
+
+## Reversal Cost
+
+**High.** Moving to schema- or database-per-tenant later requires a data migration per tenant and changes to connection management. Reconsider if: a tenant contractually requires physical isolation; or a single tenant's position-data volume degrades shared-table performance beyond what partitioning solves.
+
+## Verification
+
+1. An integration test asserts that a query executed under tenant A's session variable returns zero rows written under tenant B — for every tenant-scoped repository.
+2. A migration test asserts that every table carrying a `tenant_id` column has RLS **enabled and forced**, failing the build if a new table is added without a policy.
+3. A test asserts the application role lacks `BYPASSRLS`.
+4. A connection-pool test asserts the tenant session variable does not leak between sequential transactions on the same physical connection.
+
+===FILE_END===
+===FILE_START:documentation/00-governance/adr/ADR-0002-tenant-hierarchy.md===
+# ADR-0002: Organization → School → Branch hierarchy
+
+**Status:** Proposed
+**Date:** 2026-08-03
+**Affects:** tenancy module, all scoped entities, [`PERMISSION_MATRIX.md`](../../01-product-discovery/PERMISSION_MATRIX.md)
+
+## Context
+
+Customers range from a single independent school to a group operating hundreds of campuses. The isolation boundary, the operational boundary, and the reporting boundary are not necessarily the same:
+
+- Billing and data isolation belong at the group level.
+- Timings, staff, routes, and students belong at the school level.
+- Some schools run multiple campuses or shifts that share a name but not a bus fleet.
+
+Getting this wrong is expensive: retrofitting a level into an established hierarchy touches every scoped table and every authorisation check.
+
+## Decision
+
+**A three-level hierarchy: `Organization → School → Branch`.**
+
+- **Organization** is the tenant. `tenant_id` on every scoped table refers to the organization. It is the isolation and billing boundary.
+- **School** owns the operational data: students, staff, vehicles, routes, trips.
+- **Branch** is an **optional** subdivision of a school. It exists in the model from day one but a tenant may ignore it entirely.
+
+A single independent school is modelled as an organization containing exactly one school. There is no special case in code.
+
+Entities are scoped at the level they operate at — students and routes at school level, not branch level, unless the tenant activates branches.
+
+## Alternatives Considered
+
+| Alternative | Why rejected |
+|---|---|
+| Two levels (Organization → School) | Simpler, and sufficient for most customers. Rejected because campuses and shifts are common in the target market, and adding a level later requires migrating every scoped table plus every permission check — precisely the retrofit this decision is meant to avoid. |
+| Arbitrary-depth tree (adjacency list / `ltree`) | Maximum flexibility. Rejected under KISS: unbounded depth complicates every authorisation query and reporting rollup, to serve a requirement nobody has stated. Three levels covers the known market. |
+| School as the tenant | Would isolate schools within a group from each other, breaking group-level reporting and administration, which is a core value proposition for chains. |
+
+## Consequences
+
+**Positive**
+- One code path serves both single schools and large chains.
+- Group-level administration and reporting work without cross-tenant queries.
+- Branch exists when needed, costs nothing when unused.
+
+**Negative / accepted cost**
+- An optional level invites inconsistent use. Mitigated by making `branch_id` nullable with a documented meaning: null means "school-wide".
+- Authorisation must resolve scope at three levels, which is more complex than two.
+
+**Neutral**
+- Depth is fixed at three. A customer needing more must be handled by an ADR amendment, not by improvisation.
+
+## Reversal Cost
+
+**High** for adding or removing a level; **low** for leaving `branch` unused. This is precisely why the level is included now rather than later.
+
+## Verification
+
+1. Integration tests cover both shapes: single-school organization, and multi-school organization with branches active.
+2. An authorisation test asserts that a school-scoped user cannot read another school's data within the same organization.
+
+===FILE_END===
+===FILE_START:documentation/00-governance/adr/ADR-0003-admin-web-client.md===
+# ADR-0003: Flutter Web for the administration client
+
+**Status:** Proposed — *weakest of the current assumptions; see Reversal Cost*
+**Date:** 2026-08-03
+**Affects:** `admin/`, [`ADMIN_WEB.md`](../../05-ui/ADMIN_WEB.md), [`DESIGN_SYSTEM.md`](../../05-ui/DESIGN_SYSTEM.md)
+
+## Context
+
+The platform needs three clients: a parent mobile app, a driver/attendant mobile app, and a web administration console for transport managers and school admins.
+
+Flutter is the confirmed choice for the two mobile apps. The admin console's technology was not specified.
+
+The admin console is data-dense: tables with thousands of rows, bulk import, filtering, route editing on a map, and reporting. This is the workload where Flutter Web is least comfortable and a DOM-based stack is most comfortable.
+
+## Decision
+
+**Flutter Web, using the CanvasKit renderer, sharing the `guardian_core` package with the mobile apps.**
+
+Rationale: one language and one domain layer across all three clients. The API client, models, error handling, validation, and permission logic in `guardian_core` are written once and reused, rather than reimplemented in TypeScript and then drifting from the Dart implementations.
+
+For a small team, eliminating a second language and a second implementation of the domain model is worth more than the rendering advantages of a DOM stack.
+
+## Alternatives Considered
+
+| Alternative | Why rejected — *for now* |
+|---|---|
+| React + TypeScript | Better for data-dense admin UIs: mature table/grid ecosystem, superior text rendering, smaller initial payload, better SEO and accessibility defaults. Rejected only because it duplicates the domain layer in a second language. **This is the strongest alternative and the most likely successor.** |
+| Server-rendered (Thymeleaf) | Simplest deployment and excellent accessibility, but a poor fit for live map tracking and interactive route editing. |
+| Two clients: Flutter Web plus a React reporting console | Worst of both — two stacks *and* a split admin experience. |
+
+## Consequences
+
+**Positive**
+- One language across backend-adjacent client code; one shared domain package.
+- Consistent design system across all three clients.
+- Developers move between clients without context switching.
+
+**Negative / accepted cost**
+- **Initial load is large.** CanvasKit adds several megabytes; unacceptable for a consumer product, tolerable for an authenticated internal console on desk-grade connections.
+- **Accessibility is weaker than DOM.** Flutter Web's semantics layer is real but less capable than native HTML. Given [`ACCESSIBILITY.md`](../../05-ui/ACCESSIBILITY.md) is a stated requirement, this is the most serious cost of this decision.
+- **Text selection, browser find, and deep-linking** need deliberate work rather than coming free.
+- Large data grids need virtualisation implemented rather than adopted from a mature library.
+
+**Neutral**
+- The parent and driver apps are unaffected either way.
+
+## Reversal Cost
+
+**Moderate, and deliberately kept so.** Mitigations that preserve the exit:
+
+1. All domain logic, API access, and models live in `guardian_core` — but `guardian_core` must not depend on Flutter widgets. A replacement React client would reimplement the view layer only, and could consume the same documented API contracts.
+2. No admin business logic in widgets ([`ENGINEERING_PRINCIPLES.md`](../../ENGINEERING_PRINCIPLES.md) §8).
+
+**Reconsider when any of these occur:** an accessibility audit fails on the console; admin users report load times as a material complaint; or the first large data grid requires more effort to virtualise than a React rewrite of that screen would cost.
+
+## Verification
+
+1. An accessibility audit of the admin console against [`ACCESSIBILITY.md`](../../05-ui/ACCESSIBILITY.md) before the console is declared production-ready. **A failure here triggers reconsideration of this ADR, not a waiver of the requirement.**
+2. A dependency test asserts `guardian_core` does not import `package:flutter/material.dart`, keeping the domain layer portable.
+3. Initial-load budget tracked in CI: fail if the console's first meaningful paint on a simulated 4G connection exceeds the budget in [`ADMIN_WEB.md`](../../05-ui/ADMIN_WEB.md).
+
+===FILE_END===
+===FILE_START:documentation/00-governance/adr/ADR-0004-realtime-tracking-pipeline.md===
+# ADR-0004: Real-time tracking pipeline
+
+**Status:** Proposed
+**Date:** 2026-08-03
+**Affects:** tracking module, [`REALTIME_TRACKING_DESIGN.md`](../../02-system-design/REALTIME_TRACKING_DESIGN.md), [`INDEXING_AND_PARTITIONING.md`](../../03-database/INDEXING_AND_PARTITIONING.md)
+
+## Context
+
+Vehicles report position every 10–30 seconds while on a trip. For 1,000 active vehicles at 10-second intervals that is ~100 writes/second sustained, concentrated in two sharp peaks per school day (morning pickup, afternoon drop) — a load profile that is bursty rather than uniform.
+
+Two very different read patterns sit on the same data:
+
+- **Hot:** "where is bus 12 right now" — read constantly by parents during a trip, needs the latest point only, needs to be fast.
+- **Cold:** "reconstruct yesterday's route for an incident investigation" — rare, needs the full series, latency-tolerant.
+
+Storing both in one table and serving both from it makes the hot path pay for the cold path's volume.
+
+## Decision
+
+**Split the hot and cold paths behind a single ingestion endpoint.**
+
+```
+GPS device
+   │  (device-specific protocol)
+   ▼
+Device Adapter ──► Ingestion Service ──┬──► Redis  (live position, per vehicle, TTL)
+   (port/adapter)      │               │
+                       │               └──► position_history (partitioned by day)
+                       ▼
+              Event Processor
+        (geofence, deviation, speed, ETA)
+                       │
+                       ▼
+            Domain events ──► Notification Engine
+                           └► WebSocket/STOMP ──► parent & admin clients
+```
+
+- **Device adapters** implement a common `PositionSource` port. Adding a device vendor is a new adapter, never a change to ingestion.
+- **Redis** holds the latest position per vehicle. Reads for live tracking never touch PostgreSQL.
+- **`position_history`** is a PostgreSQL table partitioned by day, written in batches, retained per tenant policy.
+- **Event processing** is asynchronous. A slow geofence evaluation must never delay ingestion acknowledgement.
+- **Clients** receive live updates over WebSocket/STOMP, subscribed per trip and authorisation-checked at subscribe time.
+
+## Alternatives Considered
+
+| Alternative | Why rejected |
+|---|---|
+| PostgreSQL only, no cache | Simplest. Rejected because live-position reads scale with the number of watching parents, not vehicles — a popular morning route means thousands of reads/second against the largest table in the system. |
+| Kafka as the ingestion backbone | The right answer at an order of magnitude more traffic. Rejected today under KISS: it adds a cluster to operate for a load a well-tuned service handles. The `PositionSource` port keeps this migration open. |
+| TimescaleDB | A genuinely good fit for this workload, and the closest call here. Rejected only to keep the deployment to stock PostgreSQL, which matters for managed-database portability. Native declarative partitioning covers the current requirement. **Revisit if history query performance becomes the constraint.** |
+| Client polling instead of WebSocket | Simpler, but polling at the freshness target (<30s p95) across many parents produces more load than persistent connections, and drains phone batteries. |
+
+## Consequences
+
+**Positive**
+- Hot reads are O(1) against Redis and independent of history volume.
+- History growth is managed by dropping partitions rather than deleting rows.
+- New device vendors are additive.
+
+**Negative / accepted cost**
+- Redis becomes a runtime dependency for live tracking. **Its loss degrades live tracking but must not lose data** — positions are still durably written, so the system recovers on the next report.
+- Two storage systems mean two operational concerns.
+- Asynchronous processing means geofence alerts trail ingestion slightly; the budget is defined in [`REALTIME_TRACKING_DESIGN.md`](../../02-system-design/REALTIME_TRACKING_DESIGN.md).
+- Partition management requires automation; a missing future partition breaks ingestion. Covered by a scheduled job and an alert.
+
+## Reversal Cost
+
+**Low to moderate.** The `PositionSource` port and the separation of live cache from durable history mean Kafka or TimescaleDB can be introduced behind existing interfaces without touching the domain.
+
+## Verification
+
+1. Load test: sustained ingestion at 3× projected peak with p95 acknowledgement under budget.
+2. A test asserts live tracking degrades gracefully — with Redis unavailable, positions are still persisted and no ingestion request fails.
+3. A scheduled-job test asserts partitions exist ahead of time; alerting fires if the next partition is missing.
+4. An authorisation test asserts a WebSocket subscriber cannot subscribe to a trip they lack permission to view.
+
+===FILE_END===
+===FILE_START:documentation/00-governance/adr/ADR-0005-notification-provider-abstraction.md===
+# ADR-0005: Provider-abstracted notification channels
+
+**Status:** Proposed
+**Date:** 2026-08-03
+**Affects:** notification module, [`NOTIFICATION_ARCHITECTURE.md`](../../02-system-design/NOTIFICATION_ARCHITECTURE.md), [`NOTIFICATION_CATALOG.md`](../../01-product-discovery/NOTIFICATION_CATALOG.md)
+
+## Context
+
+Notification is the product's main output to parents — [`PRODUCT_PRINCIPLES.md`](../../PRODUCT_PRINCIPLES.md) §2 makes it a first-class concern, not plumbing.
+
+Constraints:
+
+- SMS providers are regional and change; a customer in a new country may require a different provider, and some markets impose registration requirements on templates and sender IDs.
+- Parents span device quality and connectivity. Push alone is insufficient; SMS is the reliable floor.
+- Some events are safety-critical and must ignore user preferences and quiet hours (`BR-NTF-006`).
+- Notification volume is bursty and concentrated at the same peaks as tracking.
+
+Hardcoding a provider would violate [`PRODUCT_PRINCIPLES.md`](../../PRODUCT_PRINCIPLES.md) §5 directly: onboarding a customer in a new country would require a code change.
+
+## Decision
+
+**A single `NotificationChannel` port with per-provider adapters, selected by tenant configuration at runtime.**
+
+```
+Domain event
+   ▼
+Notification Engine
+   ├─ resolve recipients      (guardians, staff — by event type and scope)
+   ├─ apply preferences       (skipped for safety-critical events)
+   ├─ render template         (tenant + locale + channel)
+   └─ dispatch ──► NotificationChannel port
+                     ├── PushChannel      (FCM adapter)
+                     ├── SmsChannel       (provider adapters, per tenant)
+                     ├── EmailChannel     (SMTP / provider adapters)
+                     └── InAppChannel     (persisted, read-tracked)
+```
+
+- Channel selection, provider credentials, sender IDs, and template registrations are **tenant configuration**.
+- Templates are versioned data with locale variants, not code.
+- Every dispatch attempt is recorded with status, provider reference, and failure reason — delivery is auditable.
+- Retry with backoff per channel; failure on one channel escalates to a fallback channel for safety-critical events.
+- Outbound dispatch is asynchronous and queued; a slow provider must never block a domain transaction.
+
+## Alternatives Considered
+
+| Alternative | Why rejected |
+|---|---|
+| Direct provider SDK calls in services | Fastest to build; violates §5, couples domain to vendor, untestable without network. |
+| A third-party notification aggregator | Attractive — one integration, many channels. Rejected as the sole mechanism because it adds a dependency in the safety-critical path and constrains regional SMS compliance. Not excluded: an aggregator can be *one adapter* behind the port. |
+| Push only | Cheapest, but excludes parents on low-end devices and poor connectivity, violating [`PRODUCT_PRINCIPLES.md`](../../PRODUCT_PRINCIPLES.md) §6. |
+
+## Consequences
+
+**Positive**
+- A new country or provider is a configuration change plus, at most, one new adapter.
+- Channels are testable with in-memory fakes; no network in unit tests.
+- Delivery outcomes are auditable, which matters when a parent asks why they were not told.
+
+**Negative / accepted cost**
+- More indirection than calling an SDK. Justified: the second and third implementations are known to exist, not hypothetical.
+- Per-tenant provider credentials require secure storage and rotation.
+- Template management needs an admin surface — real product scope, not incidental.
+
+**Neutral**
+- Delivery *receipts* vary in fidelity by provider; the model records what the provider reports and does not pretend to more certainty than it has.
+
+## Reversal Cost
+
+**Low.** The port is the abstraction; adapters are replaceable individually.
+
+## Verification
+
+1. A test asserts no domain or application class imports a provider SDK.
+2. A test asserts safety-critical events dispatch even when the recipient has disabled that event and quiet hours are active (`BR-NTF-006`).
+3. A test asserts a failing primary channel escalates to fallback for safety-critical events and records both attempts.
+4. Contract tests per adapter against a recorded provider fixture.
+
+===FILE_END===
+===FILE_START:documentation/00-governance/adr/ADR-0006-authentication-model.md===
+# ADR-0006: JWT access/refresh tokens with tenant-scoped RBAC
+
+**Status:** Proposed
+**Date:** 2026-08-03
+**Affects:** identity module, all APIs, [`SECURITY_ARCHITECTURE.md`](../../02-system-design/SECURITY_ARCHITECTURE.md), [`PERMISSION_MATRIX.md`](../../01-product-discovery/PERMISSION_MATRIX.md)
+
+## Context
+
+Four client types authenticate: parent app, driver app, admin web, and GPS devices. Their needs differ:
+
+- Parents: long-lived sessions on personal phones; losing a session mid-emergency is unacceptable.
+- Drivers: shared or semi-shared devices; sessions must be revocable immediately when a driver leaves employment.
+- Admin web: browser session, higher privilege, shorter tolerance for stale credentials.
+- Devices: machine credentials, no human, rotated rarely.
+
+Authorisation must resolve **within tenant scope** and at the correct level of [ADR-0002](ADR-0002-tenant-hierarchy.md)'s hierarchy. A guardian's rights are further narrowed to their own children.
+
+The hard requirement: **revocation must be prompt.** A dismissed driver retaining access to student data until a token expires is a safety problem, and this is the standard weakness of stateless JWT.
+
+## Decision
+
+**Short-lived JWT access tokens plus opaque, server-stored refresh tokens.**
+
+- **Access token:** JWT, 15-minute lifetime, signed asymmetrically (RS256). Carries `sub`, `tenant_id` (organization), `scope` level, and a `session_id`. It does **not** carry the full permission set — permissions are resolved server-side per request from the session, so a permission change takes effect on the next request rather than the next token.
+- **Refresh token:** opaque, random, stored server-side, rotated on every use with reuse detection. Revoking a session deletes the stored refresh token.
+- **Revocation:** immediate for refresh; bounded by 15 minutes for access. A `session_id` denylist, checked against a cache, closes even that window for high-severity revocation (dismissal, compromise).
+- **Devices:** separate credential type, mutual-TLS or signed device tokens, never the human auth path.
+- **Tenant binding:** `tenant_id` in the token seeds the RLS session variable ([ADR-0001](ADR-0001-multi-tenancy-strategy.md)). A token can only ever address its own tenant.
+- **Guardian scope:** guardians are restricted to their own children by a scope predicate applied in the application layer above RLS.
+- Deny by default — an endpoint without an explicit permission declaration fails closed.
+
+## Alternatives Considered
+
+| Alternative | Why rejected |
+|---|---|
+| Server-side sessions only | Simplest revocation story and genuinely a strong option. Rejected because mobile clients and horizontal scaling favour bearer tokens, and the hybrid above recovers most of the revocation benefit. |
+| Long-lived JWT with permissions embedded | Fewer lookups per request. Rejected outright: permission and revocation changes would not take effect until expiry — unacceptable for a system holding child data. |
+| Third-party IdP (Auth0/Cognito/Keycloak) | Real operational savings and worth revisiting. Rejected for now because per-tenant guardian identity (often phone-number based, high volume, low value per identity) fits awkwardly into per-MAU IdP pricing, and school SSO requirements are not yet known. |
+| API keys for mobile clients | Not an authentication mechanism for humans; no session semantics, no revocation granularity. |
+
+## Consequences
+
+**Positive**
+- Revocation is prompt: immediate for refresh, ≤15 minutes for access, immediate with denylist.
+- Permission changes take effect on the next request.
+- Tenant isolation is carried in the credential and cannot be overridden by a client.
+
+**Negative / accepted cost**
+- Per-request permission resolution costs a lookup. Mitigated by a short-TTL cache keyed on session, invalidated on role change.
+- Refresh-token storage and rotation is state to operate.
+- Key rotation for RS256 requires a JWKS endpoint and overlap handling.
+
+**Neutral**
+- School SSO (SAML/OIDC) for staff is not addressed here; it would be an additional authentication method producing the same session, and needs its own ADR when required.
+
+## Reversal Cost
+
+**Moderate.** Clients depend on the token exchange shape. Adopting an external IdP later is feasible because permission resolution is already server-side and not embedded in tokens.
+
+## Verification
+
+1. A test asserts a revoked session's access token is rejected within the denylist window.
+2. A test asserts a permission removed from a role takes effect on the next request without re-issuing a token.
+3. A test asserts refresh-token reuse triggers detection and invalidates the whole session family.
+4. A test asserts a token bearing tenant A cannot read tenant B data even with a valid, correctly-signed token.
+5. A test asserts a guardian cannot read a student they are not linked to, within their own tenant.
+6. An architecture test asserts every endpoint declares a permission from [`PERMISSION_MATRIX.md`](../../01-product-discovery/PERMISSION_MATRIX.md).
+
+===FILE_END===
+===FILE_START:documentation/00-governance/adr/ADR-0007-regional-configuration.md===
+# ADR-0007: Region-specific behaviour as configuration
+
+**Status:** Proposed
+**Date:** 2026-08-03
+**Affects:** configuration module, fleet module, notification module, identity module
+
+## Context
+
+[`PRODUCT_PRINCIPLES.md`](../../PRODUCT_PRINCIPLES.md) §5 sets an explicit test: *if a new customer in a new country requires a code change to onboard, the design has failed.*
+
+Things that genuinely vary by country and would otherwise leak into code:
+
+| Concern | Variation |
+|---|---|
+| Phone number format | Length, country code, validation rules |
+| SMS regulation | Sender ID registration, template pre-approval, opt-out handling |
+| Vehicle documents | Which documents exist and are mandatory, and their renewal cadence |
+| Driver credentials | Licence classes, background-check types, medical certification |
+| Address format | Field order, postal code presence and shape |
+| Date, time, number formats | Display and parsing |
+| Time zone | Per school, not per platform |
+| Language | Per user, with multiple languages inside one tenant |
+| Emergency contacts | Which authority is called, and when |
+| Data retention | Legally mandated minimum and maximum periods |
+
+The temptation is a `if (country == "IN")` branch. That branch multiplies.
+
+## Decision
+
+**No country, currency, document type, or credential type is hardcoded. All are reference data or tenant configuration.**
+
+Structure:
+
+1. **Platform reference data** — countries, locales, time zones, phone rules. Seeded, versioned, extensible by migration without code change.
+2. **Region profiles** — a named bundle of defaults (required vehicle document types, driver credential types, address format, retention defaults). Onboarding a country means adding a region profile row, not a branch.
+3. **Tenant configuration** — a typed, validated, per-organization key/value store with defaults inherited from the region profile and overridable per school where meaningful. Includes alert thresholds, notification channels, handover verification methods, and quiet hours.
+4. **Localisation** — all user-facing strings are resource keys. No string destined for a user is written inline in code. Templates carry locale variants.
+5. **Time** — stored in UTC; displayed in the school's time zone. A school's time zone is data.
+
+Configuration is **typed and schema-validated**, not free-form strings: each key declares a type, permitted range, default, and the scope level at which it may be set.
+
+## Alternatives Considered
+
+| Alternative | Why rejected |
+|---|---|
+| Hardcode the first market, generalise later | Fastest initial delivery, and the most common failure mode. Rejected: retrofitting configurability across fleet, identity, and notification modules after they are built costs far more than building it once. Directly violates §5. |
+| Per-country code modules loaded by strategy | Genuinely appropriate for complex *behavioural* variation, but most of the list above is data, not behaviour. Reserve strategies for the rare true behaviour differences. |
+| Untyped JSON configuration blob | Flexible and cheap. Rejected: no validation means misconfiguration surfaces at runtime in a safety system. Typed keys with declared ranges catch it at write time. |
+
+## Consequences
+
+**Positive**
+- A new country is onboarded by adding a region profile and templates.
+- Tenant-specific policy differences need no deployment.
+- Configuration changes are auditable like any other data change.
+
+**Negative / accepted cost**
+- More upfront work than hardcoding; the configuration module is real scope with an admin surface.
+- Defaults must be chosen carefully — a bad default silently becomes many tenants' behaviour.
+- Every configurable value is a value that can be misconfigured. Mitigated by typing, ranges, and a review of safety-relevant configuration changes.
+
+**Neutral**
+- Safety-critical behaviour is deliberately **not** fully configurable. A tenant may configure *which* handover verification methods are acceptable, but may not configure handover verification away entirely — see `BR-HAND-001`. Child Safety First outranks Configuration over Hardcoding.
+
+## Reversal Cost
+
+**Not applicable in the reversing direction** — this decision only ever removes hardcoding. The risk is failing to apply it consistently.
+
+## Verification
+
+1. A test asserts no user-facing string literal is returned from a controller or domain class (resource keys only).
+2. A test asserts every configuration key has a declared type, default, and scope level.
+3. An onboarding test creates a tenant under a second, different region profile and asserts phone validation, required vehicle documents, and date formatting all follow that profile without a code path selecting on country.
+4. A test asserts safety-critical minimums cannot be configured below their floor.
+
+===FILE_END===
+===FILE_START:documentation/00-governance/adr/ADR-0008-offline-first-driver-app.md===
+# ADR-0008: Offline-first driver application
+
+**Status:** Proposed
+**Date:** 2026-08-03
+**Affects:** `flutter/driver_attender_app/`, boarding module, [`DRIVER_ATTENDANT_APP.md`](../../05-ui/DRIVER_ATTENDANT_APP.md)
+
+## Context
+
+[`PROJECT_CHARTER.md`](../../PROJECT_CHARTER.md) §6.5 commits that *loss of connectivity on a vehicle must not lose safety data.*
+
+School routes pass through areas with no coverage. The driver app records the platform's most important data — boarding events and handovers — and it records them precisely where connectivity is least reliable. An app that requires a network to record a boarding event will fail during the exact minutes it matters.
+
+Additionally: a boarding record created offline still needs a trustworthy timestamp, and the device clock is under the user's control.
+
+## Decision
+
+**The driver/attendant app is offline-first. The local database is the primary write target; synchronisation is a background concern.**
+
+- **Local-first writes.** Boarding, alighting, handover, and incident records are written to an encrypted local store and acknowledged in the UI immediately. The user is never blocked on a network call for a safety action.
+- **Trip data is pre-loaded.** On trip start, the full manifest — students, stops, guardians, authorised pickup persons, verification material — is cached so the trip runs entirely offline if needed.
+- **Durable outbound queue.** Pending records survive app restart and device reboot, syncing opportunistically.
+- **Idempotency.** Every record carries a client-generated UUID; the server deduplicates on it. Retries are safe.
+- **Two timestamps, always.** `occurred_at` (device clock, with a recorded clock-skew estimate) and `recorded_at` (server receipt). Reports use `occurred_at`; investigations can see both. **The device clock is never trusted as authoritative** — skew is measured against server time on each sync and stored with the record.
+- **Conflict policy.** Safety events are append-only and never conflict. Where server state contradicts a client action (a student marked absent after the manifest was cached), the record is accepted and **flagged for review** rather than rejected — losing a real safety record is worse than storing a questionable one.
+- **Visible sync state.** The attendant always sees how many records are pending and whether the device is offline. Silent queuing hides failure.
+- **Bounded staleness.** If the manifest exceeds a configured age, the app warns; it does not lock out.
+
+## Alternatives Considered
+
+| Alternative | Why rejected |
+|---|---|
+| Online-only with a spinner | Simplest by a wide margin. Rejected outright: it loses safety data in exactly the conditions the charter names. |
+| Online-first with a small retry buffer in memory | Handles brief blips. Rejected: an app restart or a battery pull loses the buffer, and coverage gaps on rural routes last minutes, not seconds. |
+| Full bidirectional sync framework (CRDT-based) | Powerful, but the write model here is append-only events from a single device per trip. CRDTs solve a concurrency problem this domain does not have. Violates KISS. |
+| Trust the device clock as authoritative | Rejected: device clocks drift and can be changed by the user. In a system whose records may be examined after an incident, timestamp provenance must be explicit. |
+
+## Consequences
+
+**Positive**
+- Safety data survives coverage gaps, app crashes, and reboots.
+- The UI is fast — no network latency in the boarding flow, which matters when children are queueing to board.
+- Retries are safe by construction.
+
+**Negative / accepted cost**
+- Significant complexity: local schema, migrations, queue, and sync are real engineering scope with their own tests.
+- **Data at rest on the device is child PII.** Requires encryption, and wipe on logout or session revocation.
+- Cached manifests can be stale; the flag-for-review path exists precisely because of this and produces work for staff.
+- Two timestamps complicate reporting; documentation must be clear about which is used where.
+
+**Neutral**
+- The parent app is **not** offline-first. It is a read surface; stale data there is a display problem, not a data-loss problem.
+
+## Reversal Cost
+
+**High.** Offline-first is an architectural property of the app, not a feature. It is far cheaper to build this way from the start than to retrofit — which is why this ADR exists before the driver app is written.
+
+## Verification
+
+1. A test records a full trip's boarding events with the network disabled, restarts the app, restores connectivity, and asserts every event reaches the server exactly once.
+2. A test asserts replaying the same client UUID does not create a duplicate server record.
+3. A test asserts a device clock skewed by hours still produces a record whose skew is measured and stored, and that server-side reconciliation flags it.
+4. A test asserts local storage is encrypted and cleared on logout and on remote session revocation.
+5. A test asserts an action contradicting server state is accepted and flagged, not discarded.
+
+===FILE_END===
+===FILE_START:documentation/00-governance/adr/ADR-0009-flavor-configuration.md===
+# ADR-0009: Flutter Flavor Configuration
+
+Status: Accepted
+
+## Context
+
+The repository contains multiple Flutter applications (`flutter/driver_attender_app`, `flutter/parent_app`, `admin`). Developers need a consistent way to run development and production-like builds locally and in CI.
+
+## Decision
+
+Adopt a two-flavor strategy for Flutter apps: `dev` and `prod`.
+
+- Use the `--flavor` argument for platform builds and `--dart-define` to pass build-time configuration.
+- The following `dart-define` keys will be used:
+  - `ENVIRONMENT` — canonical environment name (`dev` or `production`).
+  - `API_BASE_URL` — runtime API base URL.
+
+Android: add `flavorDimensions "env"` and `productFlavors { dev, prod }` to `android/app/build.gradle(.kts)` and provide `app_name` resources under `app/src/dev` and `app/src/prod`.
+
+iOS: create build configurations and schemes for `dev` and `prod` and ensure Info.plist or bundle identifiers are configured per flavor.
+
+VS Code: provide workspace `launch.json` entries to run each app with the appropriate `--flavor` and `--dart-define` values.
+
+## Consequences
+
+- Developers can run `flutter run --flavor dev --dart-define=ENVIRONMENT=dev` locally.
+- CI and release pipelines must set `ENVIRONMENT` and `API_BASE_URL` explicitly for non-dev builds.
+- The repo now includes `android/app/src/{dev,prod}/res/values/strings.xml` for Android apps and updated `launch.json`.
+
+## Implementation Notes
+
+- `ENVIRONMENT` is read by `AppConfig.fromEnvironment()` to determine `isProduction`.
+- Default `API_BASE_URL` for dev is `http://localhost:8080/api/v1`.
+- Production `API_BASE_URL` placeholder: `https://api.guardian.example/api/v1` — replace with real endpoints during release preparation.
+
+===FILE_END===
+===FILE_START:documentation/00-governance/adr/ADR-0010-parent-read-composition.md===
+# ADR-0010: Parent-facing read composition
+
+**Status:** Accepted
+**Date:** 2026-08-10
+**Affects:** [`MODULE_MAP.md`](../../01-product-discovery/MODULE_MAP.md), [`STUDENTS_GUARDIANS_API.md`](../../04-api/STUDENTS_GUARDIANS_API.md), [`PARENT_APP.md`](../../05-ui/PARENT_APP.md), `com.guardian.parent`
+
+## Context
+
+`GET /guardians/me/students` is the parent app's primary read. P-02 must answer *"is my child fine?"* with **zero taps** ([`PARENT_APP.md`](../../05-ui/PARENT_APP.md)), which means one response carrying, per child: identity and class (MOD-03), the guardian's right to see them (MOD-04), their stop (MOD-07), the trip they are on and its vehicle (MOD-05, MOD-08), whether they boarded (MOD-09), and whether they were declared absent (MOD-14).
+
+[`STUDENTS_GUARDIANS_API.md`](../../04-api/STUDENTS_GUARDIANS_API.md) documents this endpoint under **MOD-04 Guardian**, and marks it *"proposed — not yet implemented server-side… it needs review before the backend commits to it."* This ADR is that review, because building it as documented is not possible.
+
+**The endpoint as specified cannot live in MOD-04.** [`MODULE_MAP.md`](../../01-product-discovery/MODULE_MAP.md) places MOD-04 near the bottom of the dependency graph: MOD-03, MOD-05, MOD-06 and MOD-07 all depend *downward onto* it, and MOD-08 sits above all of those. For MOD-04 to read trip and boarding state it would have to depend upward on MOD-08 and MOD-09 — a cycle, which `LayerDependencyTest.modules_are_free_of_cycles` fails the build for, correctly.
+
+Three constraints therefore hold simultaneously:
+
+1. The response must be composed server-side. Per-child fan-out to `/trips/{id}/position` and `/trips/{id}/eta` is an N+1 over mobile data at the exact moment the answer matters most — the API document rejects it explicitly.
+2. The composing code cannot sit in MOD-04, or in any module below MOD-08.
+3. Cross-module *table* access is forbidden by cross-module rule 1: *"A module owns its tables. No module reads another module's tables directly."*
+
+## Decision
+
+**Introduce MOD-18 `com.guardian.parent`, a read-only composition module that owns no tables**, and move the parent app's composed reads into it.
+
+```
+                 ┌────────────────────────┐
+                 │  MOD-18  Parent (read) │   owns no tables, no writes
+                 └───────────┬────────────┘
+   ┌──────────┬──────────┬───┴───┬──────────┬──────────┐
+   ▼          ▼          ▼       ▼          ▼          ▼
+MOD-03     MOD-04     MOD-07  MOD-08     MOD-09     MOD-14
+Student   Guardian    Routes   Trip      Boarding   Absence
+```
+
+- It sits **above** every module it reads, so the dependency direction stays downward and the cycle disappears.
+- It is **read-only**. It has no use case that writes, and its database role grants are `SELECT` only. Every parent-app *write* — declaring an absence, nominating a pickup person, marking a notification read — stays in the module that owns the table.
+- It holds **no schema of its own**. Nothing here is a source of truth; it is a projection over other modules' state.
+- Composition is one SQL projection, not a per-child loop, so the dashboard is a single round trip and a single query plan.
+
+MOD-15 Reporting is the existing precedent for this shape — [`MODULE_MAP.md`](../../01-product-discovery/MODULE_MAP.md) already describes it as *"Read-only across modules; owns no operational data."* MOD-18 is that same pattern applied to a parent-facing rather than staff-facing read. It is separate from MOD-15 because reporting is permission-gated exports for staff, whereas this is scoped to `OWN_CHILDREN` and is on the hot path of the product's primary screen; merging them would put a parent's 10-second glance behind the export module's concerns.
+
+### The accepted exception
+
+Cross-module rule 1 says a module does not read another module's tables. **MOD-18 does exactly that, and that is the cost this ADR accepts.** It is bounded deliberately:
+
+- **Read-only, enforced at the database.** The module's queries run under `guardian_app`, which holds no write grant it needs; a write from this module would fail at the database, not merely in review.
+- **One projection, one file.** The cross-module SQL lives in a single adapter, so the coupling is greppable rather than spread across a module.
+- **RLS still applies.** The projection runs under the same tenant policy as everything else; this is a relaxation of *module* boundaries, never of *tenant* boundaries.
+- **Scope is enforced in the query, not after it.** Every projection joins through `guardian_student_links` on the calling guardian, so a child the caller is not linked to cannot be returned at all (BR-IAM-005). There is no post-filter to forget.
+
+The alternative that preserves rule 1 — MOD-08/09 publishing a denormalised `student_journey_states` projection table that MOD-04 reads — is the better end state at scale and is deliberately left open: MOD-18's port would then be re-implemented against that table with no change above it.
+
+## Alternatives Considered
+
+| Alternative | Why rejected |
+|---|---|
+| Endpoint in MOD-04, calling up into MOD-08/09 | A module dependency cycle. Fails `modules_are_free_of_cycles`, and the test is right — this is the ball of mud it exists to prevent. |
+| Client composes from per-resource endpoints | Rejected by [`STUDENTS_GUARDIANS_API.md`](../../04-api/STUDENTS_GUARDIANS_API.md): N+1 over mobile data, on the screen that must answer in one glance. Also moves the `OWN_CHILDREN` scope decision onto the client. |
+| Put it in MOD-15 Reporting | Architecturally identical, semantically wrong. Reporting is staff exports and audit-heavy; the parent dashboard would inherit concerns it does not have, and MOD-15's permissions are the wrong gate for `OWN_CHILDREN`. |
+| Event-sourced `student_journey_states` projection maintained by MOD-08/09 | The right answer at scale and preserves rule 1 fully. Rejected **for now** under KISS: it adds a projection to keep consistent and backfill before there is load that needs it. MOD-18's port makes the switch invisible above it. |
+| Materialised view over the same joins | Same coupling, plus a refresh cadence to tune. A stale dashboard is precisely the failure BR-TRACK-003 exists to prevent, so buying speed with staleness is the wrong trade here. |
+
+## Consequences
+
+**Positive**
+- The documented endpoint becomes buildable without weakening the cycle rule.
+- One query per dashboard load; freshness is whatever the database holds, with no cache to go stale.
+- Parent-facing composition has one home, so the next composed screen has an obvious place to go.
+- Writes stay with their owning modules, so ownership of safety-relevant state is unchanged.
+
+**Negative / accepted cost**
+- A second place knows the shape of other modules' tables. A column rename in MOD-08 can break MOD-18 — mitigated by the projection being one file, and by integration tests over the real schema.
+- MOD-18 must be kept honest: the moment it grows a write, this ADR has been violated. The `SELECT`-only grant is the guard.
+- Two modules now serve `/guardians/…` paths (MOD-04 writes, MOD-18 reads), which is a seam a reader has to learn.
+
+## Reversal Cost
+
+**Low.** MOD-18 owns no tables and no writes, so removing it deletes code and nothing else. Replacing the projection with a MOD-08-maintained `student_journey_states` table is a new adapter behind the existing `ParentReadModel` port.
+
+## Verification
+
+1. `modules_are_free_of_cycles` passes with MOD-18 present — the module depends downward only.
+2. An integration test asserts a guardian requesting the dashboard receives only children they hold an active link to, and that a second tenant's guardian receives none of them (BR-IAM-005, BR-TEN-004).
+3. A schema test asserts `com.guardian.parent` holds no `@Entity` and no migration creates a table owned by it.
+4. A test asserts the dashboard is served by a single query, not a per-child loop.
+5. Every timestamp in the response is UTC, and `meta.school` carries the school's zone (BR-CFG-006).
+
+===FILE_END===

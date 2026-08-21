@@ -2,12 +2,12 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Open guardian-admin-web Terminal",
+      "label": "Open admin Terminal",
       "type": "shell",
       "command": "${env:SHELL}",
       "args": ["-i"],
       "options": {
-        "cwd": "${workspaceFolder}/guardian-admin-web"
+        "cwd": "${workspaceFolder}/admin"
       },
       "presentation": {
         "reveal": "always",
@@ -17,12 +17,12 @@
       "problemMatcher": []
     },
     {
-      "label": "Open guardian-backend Terminal",
+      "label": "Open backend Terminal",
       "type": "shell",
       "command": "${env:SHELL}",
       "args": ["-i"],
       "options": {
-        "cwd": "${workspaceFolder}/guardian-backend"
+        "cwd": "${workspaceFolder}/backend"
       },
       "presentation": {
         "reveal": "always",
@@ -32,12 +32,12 @@
       "problemMatcher": []
     },
     {
-      "label": "Open guardian-docs Terminal",
+      "label": "Open documentation Terminal",
       "type": "shell",
       "command": "${env:SHELL}",
       "args": ["-i"],
       "options": {
-        "cwd": "${workspaceFolder}/guardian-docs"
+        "cwd": "${workspaceFolder}/documentation"
       },
       "presentation": {
         "reveal": "always",
@@ -47,12 +47,12 @@
       "problemMatcher": []
     },
     {
-      "label": "Open guardian-driver-app Terminal",
+      "label": "Open flutter/driver_attender_app Terminal",
       "type": "shell",
       "command": "${env:SHELL}",
       "args": ["-i"],
       "options": {
-        "cwd": "${workspaceFolder}/guardian-driver-app"
+        "cwd": "${workspaceFolder}/flutter/driver_attender_app"
       },
       "presentation": {
         "reveal": "always",
@@ -62,12 +62,12 @@
       "problemMatcher": []
     },
     {
-      "label": "Open guardian-infra Terminal",
+      "label": "Open infrastructure Terminal",
       "type": "shell",
       "command": "${env:SHELL}",
       "args": ["-i"],
       "options": {
-        "cwd": "${workspaceFolder}/guardian-infra"
+        "cwd": "${workspaceFolder}/infrastructure"
       },
       "presentation": {
         "reveal": "always",
@@ -77,12 +77,12 @@
       "problemMatcher": []
     },
     {
-      "label": "Open guardian-parent-app Terminal",
+      "label": "Open flutter/parent_app Terminal",
       "type": "shell",
       "command": "${env:SHELL}",
       "args": ["-i"],
       "options": {
-        "cwd": "${workspaceFolder}/guardian-parent-app"
+        "cwd": "${workspaceFolder}/flutter/parent_app"
       },
       "presentation": {
         "reveal": "always",
@@ -95,38 +95,38 @@
       "label": "Open All Project Terminals",
       "dependsOrder": "parallel",
       "dependsOn": [
-        "Open guardian-admin-web Terminal",
-        "Open guardian-backend Terminal",
-        "Open guardian-docs Terminal",
-        "Open guardian-driver-app Terminal",
-        "Open guardian-infra Terminal",
-        "Open guardian-parent-app Terminal"
+        "Open admin Terminal",
+        "Open backend Terminal",
+        "Open documentation Terminal",
+        "Open flutter/driver_attender_app Terminal",
+        "Open infrastructure Terminal",
+        "Open flutter/parent_app Terminal"
       ]
     },
     {
-      "label": "Analyze guardian-driver-app",
+      "label": "Analyze flutter/driver_attender_app",
       "type": "shell",
       "command": "flutter",
       "args": ["analyze"],
-      "options": { "cwd": "${workspaceFolder}/guardian-driver-app" },
+      "options": { "cwd": "${workspaceFolder}/flutter/driver_attender_app" },
       "presentation": { "reveal": "silent", "panel": "shared" },
       "problemMatcher": []
     },
     {
-      "label": "Analyze guardian-parent-app",
+      "label": "Analyze flutter/parent_app",
       "type": "shell",
       "command": "flutter",
       "args": ["analyze"],
-      "options": { "cwd": "${workspaceFolder}/guardian-parent-app" },
+      "options": { "cwd": "${workspaceFolder}/flutter/parent_app" },
       "presentation": { "reveal": "silent", "panel": "shared" },
       "problemMatcher": []
     },
     {
-      "label": "Analyze guardian-admin-web",
+      "label": "Analyze admin",
       "type": "shell",
       "command": "flutter",
       "args": ["analyze"],
-      "options": { "cwd": "${workspaceFolder}/guardian-admin-web" },
+      "options": { "cwd": "${workspaceFolder}/admin" },
       "presentation": { "reveal": "silent", "panel": "shared" },
       "problemMatcher": []
     }

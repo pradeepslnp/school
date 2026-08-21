@@ -1,0 +1,1684 @@
+===FILE_START:documentation/01-product-discovery/USER_JOURNEYS.md===
+# USER JOURNEYS
+
+**Document tier:** 1 — Product Discovery
+**Status:** Active
+
+End-to-end flows across modules. Each step names the business rules it enforces. These journeys are the source for the end-to-end tests in [`TEST_STRATEGY.md`](../07-testing/TEST_STRATEGY.md).
+
+---
+
+## J1 — Morning Pickup (Happy Path)
+
+**Actors:** Attendant, Driver, Guardian, System
+
+```mermaid
+sequenceDiagram
+    participant S as System
+    participant D as Driver App
+    participant A as Attendant App
+    participant G as Guardian App
+
+    S->>S: Generate trip for operating day (TRP-001, BR-TRIP-011)
+    D->>S: Start trip
+    S->>S: Verify vehicle & staff eligibility (BR-TRIP-004)
+    S->>S: Materialise manifest minus absences (BR-TRIP-003)
+    S-->>D: Manifest + route cached for offline (ADR-0008)
+    loop Each stop
+        S->>S: Geofence approach detected (BR-ALERT-001)
+        S->>G: "Bus approaching Green Park, ~4 min" (NTF-003)
+        A->>A: Scan student credential (BRD-001)
+        A->>S: Boarding event, idempotent (BR-BOARD-009)
+        S->>G: "Aarav boarded at 7:42 AM" (BR-BOARD-010)
+        S->>S: Departure with un-boarded student → no-show (BR-SAFE-002)
+        S->>G: "Aarav did not board" (if no-show)
+    end
+    S->>S: School geofence arrival (ALT-003)
+    A->>S: Alight all at school (BRD-003)
+    S->>G: "Aarav arrived at school, 8:15 AM"
+    D->>S: End trip
+    S->>S: Reconcile: every BOARD has an ALIGHT (BR-SAFE-001)
+    S->>S: Trip CLOSED (BR-TRIP-009)
+```
+
+**Failure branches**
+
+| Condition | Behaviour |
+|---|---|
+| Vehicle document expired | Trip start refused (BR-FLEET-002) |
+| Driver licence expired | Trip start refused (BR-STAFF-001) |
+| Trip not started within window | Delay alert to manager and guardians (BR-TRIP-010) |
+| Network lost mid-route | Events queue locally, sync later (BR-SAFE-005) |
+| Student not on manifest scanned | Blocked pending override (BR-BOARD-003); wrong-vehicle check (BR-SAFE-003) |
+
+---
+
+## J2 — Afternoon Drop with Guardian Handover
+
+**The most safety-critical journey in the platform.**
+
+```mermaid
+flowchart TD
+    A[Trip starts at school] --> B[Board all students<br/>BRD-001]
+    B --> C[Arrive at stop<br/>BR-ALERT-001]
+    C --> D[Notify guardian: arriving<br/>NTF-003]
+    D --> E{Receiver present?}
+    E -->|No| F[No-receiver exception<br/>BR-HAND-007]
+    F --> G[Student stays on vehicle]
+    G --> H[Escalation chain<br/>BR-SAFE-006]
+    E -->|Yes| I{Verify receiver<br/>BR-HAND-001}
+    I -->|Guardian verified| J[Record handover<br/>BRD-008]
+    I -->|Authorised pickup person| K{Within validity window?<br/>BR-GRD-005}
+    K -->|Yes| J
+    K -->|No| L[Refuse; override path only]
+    I -->|Custody restriction| M[Refuse + escalate<br/>BR-HAND-006]
+    I -->|Unverified adult| N[Override required<br/>BR-HAND-003]
+    N --> O[Reason + actor recorded]
+    O --> P[Notify ALL guardians<br/>+ transport manager]
+    P --> J
+    J --> Q[Alight record<br/>BR-HAND-004]
+    Q --> R[Notify guardians: handed over]
+    R --> S[Trip ends → reconcile<br/>BR-SAFE-001]
+```
+
+**Why the no-receiver branch matters.** `BR-HAND-007` states the student is never released to no one. The vehicle retains the child and escalates. This is the rule most likely to be argued away for operational convenience — it is marked 🔴 for that reason.
+
+---
+
+## J3 — Left-Behind Detection
+
+**The control that justifies the platform's existence.**
+
+```
+Trip reaches COMPLETED
+        ▼
+Reconciliation runs (BRD-013)
+        ▼
+For each manifest student:
+   BOARD present, ALIGHT absent?  ──► UNACCOUNTED CHILD
+        ▼
+CRITICAL alert (BR-SAFE-001), within the configured detection window:
+   → Driver + Attendant   (check the vehicle NOW)
+   → Transport Manager
+   → Student's guardians
+        ▼
+Trip CANNOT reach CLOSED (BR-TRIP-009)
+        ▼
+Each case resolved with explicit outcome + actor:
+   • Found on vehicle          → alight recorded, incident raised
+   • Alighted, record missed   → compensating record (BR-BOARD-001)
+   • Never boarded             → correction + no-show
+        ▼
+Trip CLOSED
+```
+
+Alerts ignore quiet hours and notification preferences (BR-NTF-006) and escalate until acknowledged (BR-SAFE-006).
+
+---
+
+## J4 — SOS Escalation
+
+```
+Driver/Attendant presses SOS (INC-001)
+        ▼
+Recorded: actor, trip, live position, time (BR-INC-002) — cannot be deleted
+        ▼
+Immediate dispatch, bypassing ALL preferences and quiet hours (BR-SAFE-004)
+        ▼
+Level 1: Transport Manager        ──unacknowledged after window──┐
+Level 2: School Admin + Principal ──unacknowledged after window──┤ (BR-SAFE-006)
+Level 3: Configured emergency contacts ◄─────────────────────────┘
+        ▼
+Acknowledged → resolution required before closure (BR-INC-005)
+False alarm → resolved as false alarm, NOT deleted (BR-INC-006)
+```
+
+Guardians on the affected trip are notified according to severity (BR-INC-004) — **without disclosing other students' identities** (BR-NTF-007).
+
+---
+
+## J5 — Absence Declaration
+
+```
+Guardian declares absence (ABS-001, BR-ABS-001)
+        ▼
+   Before trip start?
+        ├─ Yes → Student excluded from materialised manifest (BR-ABS-002)
+        │        No-show alerts suppressed (BR-ABS-005)
+        │        Guardian may cancel until trip start (BR-ABS-004)
+        │
+        └─ No  → Manifest is immutable (BR-TRIP-003)
+                 Recorded as manifest amendment (BR-ABS-003)
+                 Trip staff notified
+        ▼
+If an "absent" student boards anyway:
+   Alert raised, absence removed, BOTH facts recorded (BR-BOARD-007)
+```
+
+---
+
+## J6 — Route Deviation
+
+```
+Position ingested (TRK-001) → validated (BR-TRACK-004)
+        ▼
+Corridor distance from route path exceeded, sustained beyond
+configured duration (BR-ALERT-002)
+        ▼
+Single open alert — continuing condition does not stream (BR-ALERT-005)
+        ▼
+Transport Manager notified; guardian notification by severity policy
+        ▼
+Manager acknowledges with an outcome (BR-ALERT-006):
+   diversion / traffic / breakdown → incident (INC-004) / false positive
+```
+
+Thresholds are tenant configuration (ADR-0007), bounded by platform floors (BR-CFG-003).
+
+---
+
+## J7 — Student Onboarding
+
+**Actor:** School Admin
+
+```
+Import students from spreadsheet (STU-002)
+        ▼
+Per-row validation; errors reported per row, not wholesale — the file
+is not rejected as a unit (see Fatima, PERSONAS.md)
+        ▼
+Guardian records created/linked with EXPLICIT rights (BR-GRD-001)
+        ▼
+At least one guardian holds "authorise handover" (BR-GRD-002)  ── else blocked
+        ▼
+Student assigned to pickup + drop stops per direction (BR-ROUTE-004)
+        ▼
+Assignment requires ≥1 active guardian (BR-STU-002) and active enrolment (BR-STU-004)
+        ▼
+Boarding credential issued (STU-007)
+        ▼
+Guardian invited; sets notification preferences (GRD-007, NTF-007)
+```
+
+---
+
+## J8 — Vehicle Compliance Blocking
+
+```
+Vehicle document approaching expiry
+        ▼
+Escalating advance warnings at configured intervals (BR-FLEET-003)
+        ▼
+Expiry reached
+        ▼
+Vehicle blocked from NEW trip assignment (BR-FLEET-002)
+        ▼
+Trip already in progress continues — safety recording is never
+interrupted mid-journey (cf. BR-TEN-006)
+        ▼
+Manager reassigns vehicle or renews document
+```
+
+The same pattern governs staff credentials (BR-STAFF-003).
+
+===FILE_END===
+===FILE_START:documentation/02-system-design/ARCHITECTURE_OVERVIEW.md===
+# ARCHITECTURE OVERVIEW
+
+**Document tier:** 2 — System Design
+**Status:** Active
+**Implements:** [`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md), ADR-0001, ADR-0003, ADR-0004, ADR-0006
+
+---
+
+## C4 Level 1 — System Context
+
+```mermaid
+graph TB
+    Guardian["Guardian<br/><i>parent</i>"]
+    Staff["Transport Staff<br/><i>driver, attendant</i>"]
+    Admin["School Staff<br/><i>manager, admin, principal</i>"]
+    Operator["Platform Operator"]
+
+    GP["<b>Guardian Platform</b><br/>Student safety &amp; transport"]
+
+    Device["GPS Devices<br/><i>on vehicles</i>"]
+    Push["Push Provider<br/><i>FCM</i>"]
+    SMS["SMS Provider<br/><i>region-specific</i>"]
+    Email["Email Provider"]
+    Maps["Map &amp; Routing Provider"]
+
+    Guardian -->|"track, absence,<br/>notifications"| GP
+    Staff -->|"trips, boarding,<br/>handover, SOS"| GP
+    Admin -->|"administer, monitor,<br/>report"| GP
+    Operator -->|"onboard tenants"| GP
+
+    Device -->|"position reports"| GP
+    GP -->|"push"| Push
+    GP -->|"SMS"| SMS
+    GP -->|"email"| Email
+    GP -->|"tiles, geocoding,<br/>routing"| Maps
+```
+
+All external providers sit behind ports (ADR-0005, ADR-0004). None is named in domain or application code.
+
+---
+
+## C4 Level 2 — Containers
+
+```mermaid
+graph TB
+    subgraph Clients
+        PA["Parent App<br/><i>Flutter</i>"]
+        DA["Driver App<br/><i>Flutter, offline-first</i>"]
+        AW["Admin Web<br/><i>Flutter Web</i>"]
+    end
+
+    subgraph "Guardian Platform"
+        API["<b>API Application</b><br/><i>Spring Boot</i><br/>REST + WebSocket"]
+        ING["<b>Ingestion</b><br/><i>Spring Boot</i><br/>position intake"]
+        WRK["<b>Worker</b><br/><i>Spring Boot</i><br/>alerts, notifications,<br/>scheduled jobs"]
+
+        PG[("PostgreSQL<br/><i>RLS-enforced</i>")]
+        RD[("Redis<br/><i>live positions,<br/>cache, queues</i>")]
+    end
+
+    DEV["GPS Devices"]
+    PROV["Notification<br/>Providers"]
+
+    PA -->|"REST + WSS"| API
+    DA -->|"REST, batched sync"| API
+    AW -->|"REST + WSS"| API
+
+    DEV -->|"position reports"| ING
+    ING --> RD
+    ING --> PG
+    ING -->|"domain events"| WRK
+
+    API --> PG
+    API --> RD
+    API -.->|"live updates"| PA
+
+    WRK --> PG
+    WRK --> RD
+    WRK -->|"dispatch"| PROV
+```
+
+### Why three deployables and not one
+
+| Container | Reason for separation |
+|---|---|
+| **API** | Latency-sensitive, user-facing, scales with concurrent users. |
+| **Ingestion** | Bursty machine traffic at fixed peaks. Isolating it means a device storm cannot degrade the parent app, and it scales on a different signal. |
+| **Worker** | Long-running and retry-heavy. A slow notification provider must never occupy a request thread. |
+
+All three build from the same Gradle modules and share the domain. This is **modular monolith deployed as three roles**, not microservices — the modules share a database and a transaction boundary, which is what keeps `BR-AUD-002` (audit in the same transaction) achievable.
+
+---
+
+## C4 Level 3 — Inside the API Application
+
+```mermaid
+graph TB
+    subgraph "Interface Layer"
+        C["Controllers<br/>DTOs · Mappers · Validation"]
+        WS["WebSocket / STOMP<br/>subscription authorisation"]
+    end
+    subgraph "Application Layer"
+        UC["Use Cases"]
+        PORT["Ports<br/><i>interfaces</i>"]
+    end
+    subgraph "Domain Layer"
+        E["Entities · Value Objects"]
+        DS["Domain Services"]
+        DE["Domain Events"]
+    end
+    subgraph "Infrastructure Layer"
+        REPO["JPA Repositories<br/>+ persistence models"]
+        ADPT["Provider Adapters"]
+        AUD["Audit Writer"]
+    end
+
+    C --> UC
+    WS --> UC
+    UC --> E
+    UC --> DS
+    UC --> PORT
+    REPO -.->|implements| PORT
+    ADPT -.->|implements| PORT
+    AUD -.->|implements| PORT
+    DS --> DE
+```
+
+**Dependencies point inward.** Infrastructure implements ports defined by the application; the domain knows about neither. Enforced by ArchUnit — see [`ARCHITECTURE_ENFORCEMENT.md`](../06-development/ARCHITECTURE_ENFORCEMENT.md).
+
+---
+
+## Request Lifecycle
+
+```
+HTTP request
+   ▼
+1  Authentication filter      validate JWT, load session          ADR-0006
+   ▼
+2  Tenant context filter      set app.tenant_id for the txn       ADR-0001
+   ▼
+3  Authorization              permission + scope, resolved live   BR-IAM-004
+   ▼
+4  Controller                 validate DTO, map to command
+   ▼
+5  Use case                   orchestrate, open transaction
+   ▼
+6  Domain                     enforce business rules
+   ▼
+7  Repository                 persist — RLS applies
+   ▼
+8  Audit                      same transaction                    BR-AUD-002
+   ▼
+9  Domain events              published after commit
+   ▼
+   Response DTO
+```
+
+Steps 1–3 are infrastructure and run for every request. **A developer cannot forget them** — that is the point of putting tenant scoping in a filter rather than in each query.
+
+---
+
+## Domain Events
+
+Modules communicate upward and laterally by events, never by synchronous calls ([`MODULE_MAP.md`](../01-product-discovery/MODULE_MAP.md) cross-module rule 3).
+
+```
+StudentBoarded ──┬──► Notification (NTF-BOARD-01)
+                 ├──► Wrong-vehicle check (BR-SAFE-003)
+                 └──► Audit
+
+TripCompleted ───┬──► Reconciliation (BR-SAFE-001)
+                 └──► Audit
+
+PositionReceived ┬──► Geofence evaluation (BR-ALERT-001)
+                 ├──► Deviation / overspeed (BR-ALERT-002/003)
+                 └──► ETA recalculation
+```
+
+Events are published **after commit** so a consumer never observes state the transaction later rolls back. Delivery to the worker is via a durable queue; handlers are idempotent.
+
+---
+
+## Data Stores
+
+| Store | Holds | Loss impact |
+|---|---|---|
+| PostgreSQL | All durable state, including position history | Total — this is the system of record |
+| Redis: live position | Latest position per vehicle | Live tracking degrades; **no data lost** (ADR-0004) |
+| Redis: permission cache | Short-TTL resolved permissions | Latency only |
+| Redis: queues | Pending notification and event work | Delayed delivery; queues are persisted |
+| Device local store | Offline safety events | **Unacceptable** — encrypted, durable, survives reboot (ADR-0008) |
+
+---
+
+## Scaling Profile
+
+Load is **bimodal**, not steady: two sharp peaks per school day, near-zero between.
+
+| Component | Scales on | Bottleneck |
+|---|---|---|
+| API | Concurrent users (peaks at drop-off) | Database connections |
+| Ingestion | Active vehicles × report rate | Write throughput; batched |
+| Worker | Notification volume | Provider rate limits |
+| PostgreSQL | Total data; position history dominates | Mitigated by daily partitioning |
+| Redis | Active vehicles | Memory; live positions carry a TTL |
+
+Detail in [`SCALABILITY.md`](SCALABILITY.md).
+
+---
+
+## Failure Behaviour
+
+Ranked by the charter's commitments — safety recording degrades last.
+
+| Failure | Behaviour |
+|---|---|
+| Redis unavailable | Live tracking stale; ingestion and persistence unaffected; **boarding unaffected** |
+| Notification provider down | Retry with backoff; fallback channel for `CRITICAL` (BR-NTF-006) |
+| Ingestion down | Positions lost for the outage; **boarding and handover unaffected** |
+| Worker down | Alerts and notifications delayed, queued not lost |
+| Network lost on vehicle | Driver app records locally and syncs later (ADR-0008) |
+| PostgreSQL down | Platform unavailable; driver app **continues recording offline** |
+
+The last row is the important one: the failure that takes down everything else still does not stop a child's boarding from being recorded.
+
+===FILE_END===
+===FILE_START:documentation/02-system-design/AUDIT_AND_LOGGING.md===
+# AUDIT AND LOGGING
+
+**Document tier:** 2 — System Design
+**Status:** Active
+**Enforces:** BR-AUD-*, BR-IAM-012, BR-RPT-002
+
+Audit and logging are different things with different purposes, retention, and guarantees. Conflating them is the usual mistake.
+
+| | Audit | Logging |
+|---|---|---|
+| **Purpose** | Evidence of what was done and by whom | Diagnosing system behaviour |
+| **Consumer** | Investigators, auditors, school management | Engineers |
+| **Store** | PostgreSQL, append-only | Log aggregation |
+| **Retention** | Per legal obligation (BR-AUD-007) | Weeks |
+| **Guarantee** | Transactional; loss is unacceptable | Best-effort |
+| **Contains PII** | Yes, minimally and deliberately | **Never** |
+
+---
+
+## Audit
+
+### The transactional guarantee
+
+**The audit write participates in the same transaction as the change it records** (BR-AUD-002). If the audit write fails, the change rolls back.
+
+This is a deliberate trade: the platform will refuse an operation rather than perform it unrecorded. In a system whose records may be examined after a child is harmed, an unrecorded action is worse than a failed one.
+
+It is also why the platform is a modular monolith with a shared database ([`ARCHITECTURE_OVERVIEW.md`](ARCHITECTURE_OVERVIEW.md)) — across service boundaries this guarantee would require a distributed transaction or be quietly abandoned.
+
+### Record shape
+
+| Field | Notes |
+|---|---|
+| `id`, `tenant_id`, `occurred_at` | |
+| `actor_id`, `actor_type`, `actor_role` | Role **as held at the time** — roles change |
+| `action` | Canonical verb, e.g. `HANDOVER_OVERRIDE` |
+| `subject_type`, `subject_id` | What was acted upon |
+| `reason` | **Required** for overrides (BR-AUD-004) |
+| `source` | API, device, job, platform operation |
+| `correlation_id` | Links to logs and to other records in the same operation |
+| `before`, `after` | Changed fields only, sensitive values redacted |
+
+### What is audited
+
+**Always:**
+- Every safety event: boarding, alighting, handover, reconciliation outcome
+- **Every override, with its reason** — an override without a reason is rejected (BR-AUD-004)
+- Trip lifecycle transitions
+- Guardian relationship and pickup-person changes (BR-GRD-006)
+- Custody restriction changes
+- Role, permission, and session changes
+- Configuration changes, with old and new values (BR-CFG-004)
+- Every cross-tenant platform operation (BR-TEN-004, AUD-004)
+- Every export of child data, with record count (BR-RPT-002)
+- Every read of child personal data by a non-guardian (BR-IAM-012)
+
+**Not audited:** ordinary reads by a guardian of their own child; system-generated position ingestion (volume without evidentiary value).
+
+### Append-only
+
+No update or delete path exists within the retention period (BR-AUD-001). Enforced by database grants — the application role holds `INSERT` and `SELECT` on audit tables and nothing else. This is stronger than an application-level convention, and it is the point.
+
+Corrections are new records referencing the original, exactly as with boarding events (BR-BOARD-001).
+
+### Data-access audit
+
+Child-data reads are high-volume, so they are recorded in a separate table from action audit — same guarantees, different retention and indexing. This is the control that makes insider misuse *detectable*: a staff member browsing children outside their operational need produces a visible pattern.
+
+---
+
+## Logging
+
+### Format
+
+Structured JSON. Every entry carries: timestamp, level, correlation ID, tenant ID, actor ID, module, message.
+
+Correlation ID enters at the edge, propagates through events and jobs, and appears in audit records — so a support question can be traced from a parent's report to the exact request and its audit trail.
+
+### Levels
+
+| Level | Use |
+|---|---|
+| `ERROR` | Operation failed, intervention likely needed |
+| `WARN` | Degraded or unexpected but handled — provider retry, template gap |
+| `INFO` | Significant lifecycle events — trip started, batch completed |
+| `DEBUG` | Development only; not enabled in production by default |
+
+### Never logged
+
+Passwords, tokens, OTPs, provider credentials, encryption keys, full child records, guardian contact details, position coordinates tied to a named child.
+
+**Students appear as IDs, never names.** A test scans log output for known-sensitive field names and fails the build on a hit — because this rule is otherwise violated by accident, repeatedly, in every system that merely writes it down.
+
+### Metrics and traces
+
+Metrics on every safety-critical path: boarding events recorded, reconciliation outcomes, notification dispatch and failure rates, alert volumes by type, ingestion throughput and rejection rate.
+
+Traces span ingestion → processing → notification, so end-to-end latency against the charter's 10-second notification budget is measurable rather than assumed.
+
+Detail in [`OBSERVABILITY.md`](../08-deployment/OBSERVABILITY.md).
+
+---
+
+## Retention
+
+| Data | Retention |
+|---|---|
+| Action audit | Per region profile legal obligation; platform floor applies (BR-AUD-007) |
+| Data-access audit | Shorter than action audit, long enough for investigation |
+| Safety events | Full retention; never early-deleted |
+| Position history | Tenant configuration, bounded by an investigation-sufficient floor (BR-TRACK-007) |
+| Application logs | Weeks |
+
+Retention is enforced automatically, not manually.
+
+---
+
+## Verification
+
+1. A failing audit write rolls back the business change (BR-AUD-002).
+2. The application role has no `UPDATE` or `DELETE` grant on audit tables.
+3. An override submitted without a reason is rejected (BR-AUD-004).
+4. Every cross-tenant platform operation writes an audit record before the first read.
+5. Every child-data read by a non-guardian writes a data-access record.
+6. Every export writes an audit record including record count.
+7. Log output contains no field from the sensitive-field denylist.
+8. Correlation ID propagates from request through event handling to audit record.
+
+===FILE_END===
+===FILE_START:documentation/02-system-design/INTEGRATION_ARCHITECTURE.md===
+# INTEGRATION ARCHITECTURE
+
+**Document tier:** 2 — System Design
+**Status:** Active
+**Implements:** ADR-0004, ADR-0005, ADR-0007
+
+Every external dependency sits behind a port defined in the application layer. No domain or application class names a vendor — verified by an architecture test.
+
+---
+
+## Integration Inventory
+
+| Integration | Port | Criticality | Failure behaviour |
+|---|---|---|---|
+| GPS devices | `PositionSource` | High | Live tracking degrades; **boarding unaffected** |
+| Push (FCM) | `NotificationChannel` | High | Fallback to SMS for `CRITICAL` |
+| SMS (per-tenant provider) | `NotificationChannel` | **Critical** | The floor channel; failure escalates to staff |
+| Email | `NotificationChannel` | Low | Retry; administrative only |
+| Maps: tiles | client-side | Medium | Map blank; tracking data still readable as text |
+| Maps: geocoding | `GeocodingService` | Low | Manual coordinate entry |
+| Maps: routing | `RoutingService` | Medium | Straight-line fallback for ETA and deviation |
+| School MIS import | file-based | Low | Manual import path remains |
+
+**Ranking note:** SMS is the most critical outbound integration, not push. Push depends on an app being installed, a token being fresh, and a device being reachable; SMS reaches any phone ([`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) §6).
+
+---
+
+## GPS Devices
+
+Inbound, machine-authenticated, high volume. See [`REALTIME_TRACKING_DESIGN.md`](REALTIME_TRACKING_DESIGN.md).
+
+- **Authentication:** device credential, mutual TLS where the device supports it. Never the human auth path (ADR-0006).
+- **Adapters** normalise vendor payloads to a canonical `PositionReport`. Adding a vendor is a new adapter plus a configuration row.
+- **Unknown devices** are logged and ignored, never auto-registered (BR-FLEET-006). Auto-registration would let anyone inject positions for a vehicle they do not own.
+- **Rate limited per device** — one malfunctioning unit cannot flood ingestion.
+
+---
+
+## Notification Providers
+
+Outbound, per-tenant configured (ADR-0005). See [`NOTIFICATION_ARCHITECTURE.md`](NOTIFICATION_ARCHITECTURE.md).
+
+Regional SMS regimes vary — sender-ID registration, template pre-approval, opt-out handling. All of it is region-profile and tenant configuration (ADR-0007), never a code branch.
+
+Provider credentials are encrypted at rest and are **never returned by any API**, including to the tenant that set them.
+
+---
+
+## Map and Routing
+
+Client-side tiles; server-side geocoding and routing behind ports.
+
+Routing serves ETA (BR-TRACK-006) and route-corridor calculation for deviation detection (BR-ALERT-002). On failure, both degrade to straight-line approximation, and ETA is presented with reduced confidence rather than withheld — a rough estimate labelled as rough is more useful to a waiting parent than nothing.
+
+Tile provider is configurable; no provider is hardcoded in client code.
+
+---
+
+## School MIS Import
+
+Schools hold student data in existing systems. R1 supports file import (STU-002) with per-row validation and a downloadable error report — the file is never rejected wholesale ([`PERSONAS.md`](../01-product-discovery/PERSONAS.md), Fatima).
+
+A live MIS API integration is deliberately **not** in R1. Doing it properly requires a per-vendor mapping layer and a conflict policy for records edited on both sides; that needs its own ADR. Import remains available regardless, so no tenant is blocked.
+
+---
+
+## Resilience Patterns
+
+Applied uniformly to every outbound integration:
+
+| Pattern | Application |
+|---|---|
+| Timeout | Every call. No unbounded waits — a hung provider call must never occupy a request thread. |
+| Retry with backoff | Transient failures only; bounded attempts; jittered. |
+| Circuit breaker | Repeated failure opens the circuit; probes for recovery. Prevents one dead provider consuming the worker pool. |
+| Bulkhead | Separate pools per integration, so SMS trouble cannot starve push. |
+| Idempotency | Provider references recorded; retries do not double-send. |
+| Fallback | Defined per integration in the table above. |
+
+**No outbound call happens inside a business transaction.** Dispatch is enqueued and performed by the worker after commit — otherwise a slow provider would hold a database transaction open, and a provider outage would become a database outage.
+
+---
+
+## Adding an Integration
+
+1. Define the port in the application layer, in the language of the domain — not the vendor's.
+2. Implement the adapter in infrastructure.
+3. Add configuration keys with types and defaults (BR-CFG-001).
+4. Define the failure behaviour and record it in the inventory above.
+5. Write a contract test against a recorded provider fixture.
+6. Add metrics and alerting for its failure rate.
+7. If the integration processes child data, record it in [`SECURITY_ARCHITECTURE.md`](SECURITY_ARCHITECTURE.md) and confirm the data-protection position.
+
+## Verification
+
+1. No domain or application class imports a vendor SDK.
+2. Every outbound integration has a timeout, retry policy, and circuit breaker configured.
+3. No outbound call occurs within a business transaction.
+4. Each adapter has a contract test against a recorded fixture.
+5. Provider credentials are never present in any API response.
+6. A simulated provider outage degrades per the documented fallback and raises the expected alert.
+
+===FILE_END===
+===FILE_START:documentation/02-system-design/MULTI_TENANCY.md===
+# MULTI-TENANCY
+
+**Document tier:** 2 — System Design
+**Status:** Active
+**Implements:** ADR-0001, ADR-0002 · **Enforces:** BR-TEN-001 … BR-TEN-007
+
+---
+
+## Model
+
+Shared database, shared schema, `tenant_id` discriminator, **PostgreSQL Row-Level Security as the enforcement boundary**.
+
+```
+Organization  ← the tenant; tenant_id refers to this
+   └── School      ← operational data lives here
+         └── Branch    ← optional (ADR-0002)
+```
+
+`tenant_id` is always the **organization** ID. School and branch scoping is *authorisation*, layered above isolation. Conflating the two is the most common mistake in this design — isolation says "which data exists for you at all"; authorisation says "which of it you may see".
+
+---
+
+## The Two Layers
+
+| Layer | Mechanism | Fails how |
+|---|---|---|
+| **Isolation** | RLS on `tenant_id` | Returns zero rows |
+| **Authorisation** | Permission + scope in the application | Returns `403` |
+
+A bug in the application layer produces a wrong answer *within* a tenant. It cannot produce another tenant's data. That is the property ADR-0001 buys.
+
+---
+
+## Tenant Context Propagation
+
+```
+JWT (carries tenant_id)                              ADR-0006
+      ▼
+TenantContextFilter
+      ▼
+TenantContext  (request-scoped holder)
+      ▼
+Transaction begins
+      ▼
+SET LOCAL app.tenant_id = '<uuid>'
+      ▼
+Every query in the transaction is RLS-filtered
+      ▼
+Transaction ends — SET LOCAL expires automatically
+```
+
+**`SET LOCAL`, not `SET`.** The value is scoped to the transaction and vanishes on commit or rollback. This is what makes the setting safe with a connection pool: a pooled connection cannot carry a stale tenant into the next request. Using `SET` here would be a cross-tenant leak waiting to happen, and is explicitly forbidden.
+
+### Non-request contexts
+
+| Context | How tenant is established |
+|---|---|
+| Scheduled job | Iterates tenants explicitly; sets context per tenant, per transaction |
+| Event handler | Tenant travels in the event payload; set before handling |
+| Ingestion | Resolved from the device's vehicle registration |
+| Platform operation | Explicit, permissioned, audited elevation (BR-TEN-004) |
+
+A job that forgets to set context reads nothing — it does not read everything. The failure mode is safe by construction.
+
+---
+
+## Database Enforcement
+
+Every tenant-scoped table:
+
+```sql
+ALTER TABLE students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE students FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON students
+    USING (tenant_id = current_setting('app.tenant_id', true)::uuid)
+    WITH CHECK (tenant_id = current_setting('app.tenant_id', true)::uuid);
+```
+
+Four details that matter:
+
+1. **`FORCE`** — without it, the table owner bypasses the policy. The migration role owns tables; forcing ensures no role escapes by accident.
+2. **`WITH CHECK`** — blocks *writing* a row into another tenant, not just reading one. A policy with only `USING` is half a control.
+3. **`current_setting(..., true)`** — the `true` returns null rather than erroring when unset. With a `NOT NULL` comparison this yields zero rows: **unset context means no access**, which is the correct default.
+4. **The application role is not the owner and lacks `BYPASSRLS`.** Verified by test.
+
+Full policy list: [`RLS_POLICIES.md`](../03-database/RLS_POLICIES.md).
+
+### Non-tenant-scoped tables
+
+Platform reference data — countries, locales, region profiles, permission definitions — carries no `tenant_id` and no RLS. These are read-only to tenants and managed by platform operations.
+
+---
+
+## Scope Resolution
+
+Once isolation guarantees "this organization's data", authorisation narrows further:
+
+```
+PLATFORM      across organizations — audited elevation only
+   ▼
+ORG           all schools in the organization
+   ▼
+SCHOOL        assigned school(s)
+   ▼
+ROUTE         assigned routes
+   ▼
+TRIP          the currently active trip only
+   ▼
+OWN_CHILDREN  actively linked students          BR-IAM-005
+   ▼
+SELF
+```
+
+Scope is resolved per request (BR-IAM-004) and applied as a predicate in the application layer. See [`PERMISSION_MATRIX.md`](../01-product-discovery/PERMISSION_MATRIX.md).
+
+---
+
+## The Platform Operations Path
+
+The single deliberate exception to isolation (BR-TEN-004).
+
+```
+Operator requests tenant access
+      ▼
+PERM-PLATFORM-TENANT-ACCESS checked
+      ▼
+Justification REQUIRED — no justification, no access
+      ▼
+Audit record written BEFORE access is granted    AUD-004
+      ▼
+Time-boxed elevated context established
+      ▼
+Every read during elevation is logged            BR-IAM-012
+      ▼
+Elevation expires automatically
+```
+
+This path exists because support is impossible without it. It is instrumented more heavily than any other path in the system precisely because it is the one hole.
+
+---
+
+## Indexing
+
+Every tenant-scoped index leads with `tenant_id`:
+
+```sql
+CREATE INDEX idx_students_tenant_school ON students (tenant_id, school_id);
+```
+
+The RLS predicate applies to every query, so an index not leading with `tenant_id` will not serve it well. See [`INDEXING_AND_PARTITIONING.md`](../03-database/INDEXING_AND_PARTITIONING.md).
+
+---
+
+## Onboarding a Tenant
+
+1. Create the organization (TEN-001).
+2. Attach a region profile — supplies defaults for documents, credentials, formats, retention (ADR-0007).
+3. Create at least one school (BR-TEN-002) with its time zone.
+4. Seed default roles from platform templates.
+5. Create the first admin user.
+6. Seed notification templates in the tenant's locales.
+
+**No deployment, no code change, no schema change.** A new country is a new region profile row (ADR-0007).
+
+---
+
+## Verification
+
+Every item is an automated test — this design is only as good as its enforcement.
+
+| # | Test |
+|---|---|
+| 1 | For every tenant-scoped repository: data written under tenant A returns zero rows when read under tenant B. |
+| 2 | Every table with a `tenant_id` column has RLS **enabled and forced** — fails the build when a new table is added without a policy. |
+| 3 | Every RLS policy declares both `USING` and `WITH CHECK`. |
+| 4 | The application role lacks `BYPASSRLS` and does not own the tables. |
+| 5 | Two sequential transactions on the same pooled connection with different tenants do not leak context. |
+| 6 | With no tenant context set, tenant-scoped reads return zero rows. |
+| 7 | A write attempting to insert a foreign `tenant_id` is rejected by `WITH CHECK`. |
+| 8 | Platform elevation without a justification is refused, and successful elevation writes an audit record before the first read. |
+
+===FILE_END===
+===FILE_START:documentation/02-system-design/NOTIFICATION_ARCHITECTURE.md===
+# NOTIFICATION ARCHITECTURE
+
+**Document tier:** 2 — System Design
+**Status:** Active
+**Implements:** ADR-0005 · **Enforces:** BR-NTF-*, BR-SAFE-004 · **Catalog:** [`NOTIFICATION_CATALOG.md`](../01-product-discovery/NOTIFICATION_CATALOG.md)
+
+---
+
+## Pipeline
+
+```
+Domain event  (published after commit)
+      ▼
+┌─────────────────────────────────────────────┐
+│ 1  Resolve notification definition          │  catalog ID + priority class
+│ 2  Resolve recipients        BR-NTF-001     │  by RIGHT, never role alone
+│ 3  Apply preferences         BR-NTF-003     │  ← skipped for CRITICAL
+│ 4  Apply quiet hours         BR-NTF-004     │  ← skipped for CRITICAL
+│ 5  Select channels                          │  per preference / class
+│ 6  Render template           BR-NTF-002     │  tenant × locale × channel
+│ 7  Enqueue dispatch                         │  durable queue
+└──────────────────┬──────────────────────────┘
+                   ▼
+        ┌──────────────────────┐
+        │ NotificationChannel  │  port
+        └──┬────┬────┬─────┬───┘
+           ▼    ▼    ▼     ▼
+         Push  SMS  Email  InApp
+           │    │    │     │
+           ▼    ▼    ▼     ▼
+      Delivery records — every attempt, every outcome   BR-NTF-005
+```
+
+Steps 3 and 4 are the only conditional ones, and `CRITICAL` skips both (BR-NTF-006). Everything else runs identically for every notification.
+
+---
+
+## Recipient Resolution
+
+**By right, never by role** (BR-NTF-001). A transport manager is not notified about a specific child because they are a manager; they are notified because the notification definition names their role for that event class and their scope includes the trip.
+
+```
+Guardian recipients  = active guardian links
+                       ∧ holds "receive notifications" right
+                       ∧ no restriction blocking visibility     BR-GRD-008
+Staff recipients     = role named in the definition
+                       ∧ scope includes the subject
+```
+
+**Multi-recipient safety** (BR-NTF-007): a notification sent to more than one family — a trip-wide incident, for example — may not interpolate any student name. Enforced by a test asserting multi-recipient templates cannot reference student-name variables.
+
+---
+
+## Channels
+
+```java
+public interface NotificationChannel {
+    ChannelType type();
+    boolean supports(Recipient recipient);
+    DeliveryResult send(RenderedNotification notification, Recipient recipient);
+}
+```
+
+| Channel | Provider | Notes |
+|---|---|---|
+| Push | FCM adapter | Primary for app users; silent failure if token stale — hence delivery records |
+| SMS | Per-tenant provider adapter | The reliable floor; works on any phone ([`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) §6) |
+| Email | SMTP or provider adapter | Administrative and reporting |
+| In-app | Internal, persisted | Read-tracked; the durable record a parent can scroll back through |
+
+Provider selection, credentials, and sender identity are **tenant configuration** (ADR-0007). No domain or application class imports a provider SDK — verified by test.
+
+---
+
+## Templates
+
+Data, not code (BR-CFG-005). Keyed by `(tenant, notificationId, channel, locale)`, versioned, with variables declared and validated.
+
+Resolution: tenant + locale → tenant + default locale → platform default for locale → platform default. A fallback beyond the first step logs a template gap so it can be filled (BR-NTF-002).
+
+Rendering escapes all interpolated values (BR-NTF-008). Channel constraints are enforced at render time — SMS length, push payload limits — rather than discovered at the provider.
+
+---
+
+## Priority Classes
+
+| Class | Preferences | Quiet hours | Channels | Retry |
+|---|---|---|---|---|
+| 🔴 `CRITICAL` | ignored | ignored | all available | aggressive + **fallback channel** |
+| 🟠 `URGENT` | channel choice only | ignored | push + SMS | standard |
+| 🟡 `STANDARD` | respected | deferred | per preference | standard |
+| ⚪ `INFO` | respected | deferred | in-app, optional push | minimal |
+
+**Quiet hours defer; they never discard** (BR-NTF-004). A suppressed standard notification is delivered when quiet hours end, not dropped.
+
+---
+
+## Delivery, Retry, Escalation
+
+Every attempt writes a delivery record: notification, recipient, channel, provider reference, status, failure reason, timestamp. This is what lets the platform answer *"why was I not told?"* — a question that will be asked after an incident.
+
+```
+Attempt → success                        → recorded, done
+        → transient failure              → backoff retry, bounded
+        → permanent failure (bad token)  → recorded; token invalidated
+        → all attempts exhausted
+              ├─ CRITICAL  → FALLBACK CHANNEL, then alert staff   BR-NTF-006
+              └─ other     → recorded as failed; visible in admin
+```
+
+Delivery receipts vary in fidelity by provider. The model records **what the provider reported** and does not represent "sent" as "read" (ADR-0005).
+
+---
+
+## Ordering and Idempotency
+
+- Handlers are idempotent — a redelivered domain event produces one notification, keyed on `(eventId, recipientId, channel)`.
+- Per-recipient ordering is preserved for related events. A "boarded" message must not arrive after "arrived at school".
+- Bursts are coalesced where sensible: many students of one guardian boarding the same trip yields one message, not several.
+
+---
+
+## Failure Behaviour
+
+| Failure | Behaviour |
+|---|---|
+| One provider down | Retry, then fallback channel for `CRITICAL`; others recorded failed |
+| All providers down | Queue holds; alert to platform operations; in-app still available |
+| Worker down | Queue persists; delivery delayed, not lost |
+| Template missing | Fallback chain; gap logged; never blocks dispatch of a `CRITICAL` |
+| Recipient has no channel | Recorded; for `CRITICAL`, escalated to staff |
+
+The consistent principle: **a `CRITICAL` notification that cannot reach a parent escalates to a human at the school.** It is never silently dropped.
+
+---
+
+## Verification
+
+1. `CRITICAL` dispatches with all preferences disabled and quiet hours active.
+2. `CRITICAL` primary-channel failure escalates to fallback; both attempts recorded.
+3. Multi-recipient templates cannot interpolate a student name (BR-NTF-007).
+4. Quiet-hours suppression defers and later delivers; nothing is discarded.
+5. A redelivered domain event produces exactly one notification per recipient/channel.
+6. No domain or application class imports a provider SDK.
+7. Every catalog ID has a template in the default locale for each of its channels.
+8. Every dispatch attempt writes a delivery record, including failures.
+
+===FILE_END===
+===FILE_START:documentation/02-system-design/REALTIME_TRACKING_DESIGN.md===
+# REAL-TIME TRACKING DESIGN
+
+**Document tier:** 2 — System Design
+**Status:** Active
+**Implements:** ADR-0004 · **Enforces:** BR-TRACK-*, BR-ALERT-*
+
+---
+
+## Pipeline
+
+```
+GPS Device
+   │  vendor protocol (TCP, HTTP, MQTT)
+   ▼
+┌──────────────────┐
+│ Device Adapter   │  implements PositionSource port
+└────────┬─────────┘
+         ▼
+┌──────────────────┐
+│ Ingestion        │  authenticate device → resolve vehicle → validate
+└───┬──────────┬───┘
+    │          │
+    ▼          ▼
+┌────────┐  ┌──────────────────┐
+│ Redis  │  │ position_history │  batched, day-partitioned
+│ latest │  └──────────────────┘
+└───┬────┘         │
+    │              ▼
+    │      ┌──────────────────┐
+    │      │ Event Processor  │  geofence · deviation · speed · ETA
+    │      └────────┬─────────┘
+    │               ▼
+    │      ┌──────────────────┐
+    │      │  Alerts + Domain │──► Notification
+    │      │     Events       │
+    │      └──────────────────┘
+    ▼
+┌──────────────────┐
+│ WebSocket/STOMP  │──► parent app, admin web
+└──────────────────┘
+```
+
+---
+
+## Device Adapters
+
+Devices differ in protocol, field names, units, and coordinate conventions. That variety is confined to adapters (ADR-0004).
+
+```java
+public interface PositionSource {
+    /** Normalises a vendor payload into the canonical report, or empty if unparseable. */
+    Optional<PositionReport> parse(RawDeviceMessage message);
+}
+```
+
+`PositionReport` is canonical: device identifier, coordinates, speed (m/s), heading, ignition state, device timestamp, accuracy.
+
+**Adding a vendor is a new adapter and a configuration row — never a change to ingestion, processing, or domain code.** A test asserts no ingestion class references a vendor name.
+
+---
+
+## Validation
+
+Rejected reports are logged and dropped, never stored as fact (BR-TRACK-004):
+
+| Check | Rejects |
+|---|---|
+| Coordinate range | Out-of-range latitude/longitude, null-island `0,0` |
+| Speed plausibility | Above a configured maximum |
+| Implied speed | Distance from previous fix over elapsed time exceeding a threshold — catches teleporting fixes |
+| Timestamp sanity | Future beyond clock-skew tolerance, or implausibly old |
+| Accuracy | Below a configured confidence floor |
+| Known device | Unregistered or unassigned device logged and ignored (BR-FLEET-006) |
+
+**Ordering:** reports can arrive out of order after a device buffers through a coverage gap. Live position updates only if the report's timestamp is newer than the cached one; history accepts any valid report and orders on read.
+
+---
+
+## Live Position (Hot Path)
+
+Redis, one key per vehicle:
+
+```
+Key    livepos:{tenantId}:{vehicleId}
+Value  { lat, lon, speed, heading, ignition, deviceTime, receivedAt, tripId }
+TTL    configurable, comfortably above the expected report interval
+```
+
+Reads never touch PostgreSQL. TTL expiry is meaningful: an absent key means "not currently reporting", which is exactly what a stale-position indicator needs (BR-TRACK-003).
+
+**Redis loss degrades live tracking but loses no data** — history writes are independent, and the cache repopulates on the next report (ADR-0004).
+
+---
+
+## Position History (Cold Path)
+
+`position_history`, partitioned by day ([`INDEXING_AND_PARTITIONING.md`](../03-database/INDEXING_AND_PARTITIONING.md)).
+
+- Written in batches — per-report inserts would not survive peak load.
+- Retention by dropping partitions, not deleting rows (BR-TRACK-007).
+- Partitions created ahead by a scheduled job; **a missing future partition breaks ingestion**, so its absence alerts.
+
+---
+
+## Event Processing
+
+Asynchronous — a slow geofence evaluation must never delay ingestion acknowledgement.
+
+| Evaluation | Rule | Notes |
+|---|---|---|
+| Stop geofence entry | BR-ALERT-001 | Triggers approach and arrival notifications |
+| School geofence | ALT-003 | Arrival and departure |
+| Route deviation | BR-ALERT-002 | Corridor distance sustained beyond a duration |
+| Overspeed | BR-ALERT-003 | Speed sustained beyond a duration, not instantaneous |
+| Unscheduled stop | BR-ALERT-004 | Stationary outside a defined stop |
+| Signal loss | BR-TRACK-005 | Absence of reports during an active trip |
+
+**Sustained-condition checks matter.** An instantaneous speed spike from a bad fix is not overspeed; a momentary GPS wander is not a deviation. Every threshold has both a magnitude and a duration, and both are tenant configuration bounded by platform floors (BR-CFG-003).
+
+**Deduplication** (BR-ALERT-005): a continuing condition holds one open alert. Alerts resolve when the condition clears or an owner resolves them (BR-ALERT-006).
+
+---
+
+## ETA
+
+Inputs: current position, remaining route path, historical segment times for this route, time of day.
+
+**ETA is always presented as an estimate with its calculation time** (BR-TRACK-006). The platform never states an arrival time as fact — a parent who leaves the house on a wrong ETA and misses the bus is a product failure.
+
+Recalculated on each position report; published to subscribers for the affected stop.
+
+---
+
+## Client Delivery
+
+WebSocket/STOMP. Clients subscribe per trip.
+
+```
+Client connects → JWT authenticated
+Client subscribes /topic/trip/{tripId}
+   ▼
+Authorisation checked AT SUBSCRIBE TIME
+   • guardian: is one of their children on this trip's manifest?  BR-TRACK-002
+   • staff/manager: is the trip in scope?
+   ▼
+Subscription accepted → position and ETA updates pushed
+   ▼
+Trip reaches COMPLETED → subscriptions closed
+```
+
+**Subscription authorisation is the control that matters here.** An unchecked topic subscription would expose any vehicle's live position to anyone who could guess a trip ID.
+
+**Tracking is trip-scoped** (BR-TRACK-001): vehicles are not tracked outside trip windows, and no subscription exists for a vehicle not on an active trip. This is what keeps the platform a safety tool rather than staff surveillance ([`STAKEHOLDERS.md`](../01-product-discovery/STAKEHOLDERS.md) conflicts).
+
+Fallback: clients unable to hold a WebSocket poll a REST endpoint at a longer interval.
+
+---
+
+## Performance Budgets
+
+| Stage | Target |
+|---|---|
+| Ingestion acknowledgement | p95 < 100 ms |
+| Position visible in live cache | p95 < 500 ms from receipt |
+| Geofence event raised | p95 < 3 s from receipt |
+| Notification dispatched from event | p95 < 5 s |
+| **Board/alight notification, end to end** | **p95 < 10 s** (charter measure) |
+| Live position freshness at client | p95 < 30 s (charter measure) |
+
+---
+
+## Verification
+
+1. Sustained ingestion at 3× projected peak stays within acknowledgement budget.
+2. With Redis stopped, positions still persist and no ingestion request fails.
+3. Out-of-order reports do not move live position backwards; history retains all.
+4. Implausible reports are rejected and logged, not stored.
+5. A subscriber without permission cannot subscribe to a trip topic.
+6. No position is served for a vehicle outside an active trip.
+7. A continuing deviation produces one alert, not a stream.
+8. Missing future partition triggers an alert before ingestion is affected.
+
+===FILE_END===
+===FILE_START:documentation/02-system-design/SCALABILITY.md===
+# SCALABILITY
+
+**Document tier:** 2 — System Design
+**Status:** Active
+**Implements:** charter commitment "works for one school and for a group of five hundred"
+
+---
+
+## The Load Profile
+
+School transport load is **bimodal and predictable**, unlike most SaaS:
+
+```
+Load
+ │      ██                              ██
+ │      ██                              ██
+ │      ██                              ██
+ │     ████                            ████
+ │  ▁▁██████▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁██████▁▁▁▁▁▁▁▁
+ └────────────────────────────────────────────────► time
+     06:30  08:30              14:00  16:00
+```
+
+Two peaks of roughly two hours, near-zero between, nothing on weekends and holidays.
+
+**This shapes every decision below.** The system must handle 3× peak, and idle cheaply. Optimising for average load would be optimising for a state the system is rarely in.
+
+---
+
+## Reference Scale
+
+| Dimension | R1 target | Design headroom |
+|---|---|---|
+| Organizations | 50 | 500 |
+| Schools | 200 | 2,000 |
+| Students | 200,000 | 2,000,000 |
+| Vehicles | 3,000 | 30,000 |
+| Concurrent trips at peak | 2,000 | 20,000 |
+| Position reports/sec at peak | 200 | 2,000 |
+| Notifications/min at peak | 5,000 | 50,000 |
+| Concurrent WebSocket subscribers | 20,000 | 200,000 |
+
+Headroom is one order of magnitude. Beyond that, the ADRs deliberately left doors open — Kafka for ingestion (ADR-0004), schema-per-tenant for the largest customers (ADR-0001).
+
+---
+
+## Scaling by Component
+
+### API
+Stateless; scales horizontally. Bottleneck is **database connections**, not CPU. Sessions are token-based, so no sticky routing is needed except for WebSocket, which uses a shared broker relay rather than affinity.
+
+### Ingestion
+Scales on active vehicles × report rate. Separate deployable precisely so a device storm cannot degrade the parent app ([`ARCHITECTURE_OVERVIEW.md`](ARCHITECTURE_OVERVIEW.md)). Writes are batched — per-report inserts would not survive peak.
+
+### Worker
+Scales on notification volume. The real ceiling is **provider rate limits**, not the platform. Bulkheaded pools per channel so one slow provider cannot starve the others.
+
+### PostgreSQL
+Single primary for writes; read replicas for reporting (BR-RPT-004 — reporting must never block operational writes).
+
+`position_history` dominates volume and is partitioned by day, so it is dropped rather than deleted (BR-TRACK-007). Excluding it, the operational dataset is modest — student and trip data at reference scale is comfortably within a single primary.
+
+### Redis
+Memory scales with active vehicles; live positions carry a TTL. Loss degrades tracking but loses no data (ADR-0004).
+
+---
+
+## Query Patterns That Matter
+
+| Query | Frequency | Approach |
+|---|---|---|
+| Live position for a trip | Very high at peak | Redis only; never touches PostgreSQL |
+| Guardian's children's trips today | Very high at peak | Indexed on `(tenant_id, guardian_id, date)`; short-TTL cache |
+| Trip manifest | High | Materialised at trip start (BR-TRIP-003), cached for the trip's life |
+| Reconciliation at trip close | Per trip | Bounded by manifest size |
+| Position history replay | Rare | Partition-pruned by date |
+| Reporting aggregates | Scheduled | Read replica; pre-aggregated where hot |
+
+**Every index leads with `tenant_id`** — the RLS predicate applies to every query ([`MULTI_TENANCY.md`](MULTI_TENANCY.md)).
+
+---
+
+## Caching
+
+| Cache | TTL | Invalidation |
+|---|---|---|
+| Live position | Short, above report interval | Overwritten by next report |
+| Resolved permissions | Seconds | On role change (BR-IAM-004) |
+| Tenant configuration | Minutes | On configuration change |
+| Trip manifest | Trip lifetime | On manifest amendment |
+| Route and stop definitions | Hours | On route change |
+
+Permission cache TTL is deliberately short. A longer TTL would improve throughput and weaken the revocation guarantee ADR-0006 exists to provide — safety outranks throughput.
+
+---
+
+## Multi-Tenant Fairness
+
+One tenant must not degrade another:
+
+- Rate limits per tenant as well as per user and per IP.
+- Ingestion limits per device.
+- Reporting and export jobs are queued with per-tenant concurrency caps.
+- Bulk imports are chunked and throttled.
+- Notification dispatch is fair-queued across tenants — a group sending 50,000 messages cannot delay another school's `CRITICAL` alert.
+
+That last point is safety-relevant, not merely polite.
+
+---
+
+## Cost Shape
+
+Idle cost matters when the system is idle most of the day.
+
+- Autoscale API and worker on the daily schedule; the peaks are known in advance, so scaling can be **predictive rather than reactive** — reactive scaling lags a peak that arrives in minutes.
+- Ingestion scales with active trips, which is naturally near-zero off-peak.
+- Position history is the dominant storage cost and is controlled by retention.
+
+---
+
+## Known Limits and Their Triggers
+
+| Limit | Trigger to act | Action |
+|---|---|---|
+| Single write primary | Sustained write saturation at peak | Partition further; consider write sharding by tenant |
+| Position volume | History queries degrade despite pruning | Adopt TimescaleDB (ADR-0004 alternative) |
+| Ingestion throughput | Backpressure at 3× peak | Adopt Kafka behind `PositionSource` (ADR-0004) |
+| Largest tenant dominance | One tenant's volume affects others | Schema or database separation for that tenant (ADR-0001) |
+| WebSocket fan-out | Broker saturation | External broker relay, already the deployment shape |
+
+Each limit has a **named successor already documented in an ADR**. None requires a redesign — which is the actual scalability claim being made here.
+
+---
+
+## Verification
+
+1. Load test at 3× projected peak across ingestion, API, and notification; all budgets in [`REALTIME_TRACKING_DESIGN.md`](REALTIME_TRACKING_DESIGN.md) hold.
+2. A tenant generating extreme load does not degrade another tenant's p95 latency.
+3. Reporting queries against a replica do not affect operational write latency.
+4. Partition pruning verified: a history query for one day does not scan other partitions.
+5. Every tenant-scoped query plan uses an index leading with `tenant_id`.
+
+===FILE_END===
+===FILE_START:documentation/02-system-design/SECURITY_ARCHITECTURE.md===
+# SECURITY ARCHITECTURE
+
+**Document tier:** 2 — System Design
+**Status:** Active
+**Implements:** ADR-0001, ADR-0006 · **Enforces:** BR-IAM-*, BR-TEN-004, BR-AUD-*
+
+The platform holds location and identity data for children. The threat that matters most is not financial fraud — it is **an adult obtaining a specific child's location or collecting a child they have no right to**.
+
+---
+
+## Threat Model
+
+| Threat | Control |
+|---|---|
+| Cross-tenant data access | RLS at the database layer (ADR-0001, [`MULTI_TENANCY.md`](MULTI_TENANCY.md)) |
+| Guardian accessing another family's child | Scope predicate `OWN_CHILDREN` + data-access audit (BR-IAM-005, BR-IAM-012) |
+| Dismissed staff retaining access | Immediate session revocation + denylist (BR-IAM-008, ADR-0006) |
+| Unauthorised adult collecting a child | Handover verification, never disableable (BR-HAND-001) 🔴 |
+| Restricted guardian collecting a child | Custody restriction blocks and escalates (BR-GRD-008, BR-HAND-006) 🔴 |
+| Stolen driver device | Encrypted local store, remote-revocable, wiped on logout (ADR-0008) |
+| Position spoofing | Device credentials + plausibility validation (BR-TRACK-004, BR-FLEET-006) |
+| Credential stuffing | Rate limiting, lockout, anomaly alerting (BR-IAM-011) |
+| Token theft | 15-minute access tokens, rotating single-use refresh, reuse detection (BR-IAM-009) |
+| Insider misuse by school staff | Scope limits + every child-data read audited (BR-IAM-012) |
+| Insider misuse by platform operator | Justified, time-boxed, fully audited elevation (BR-TEN-004) |
+| Bulk exfiltration via export | Permission-gated, audited with record counts (BR-RPT-002) |
+
+---
+
+## Authentication
+
+Per ADR-0006.
+
+| Client | Method | Session |
+|---|---|---|
+| Staff | Password + optional second factor | 15-min access, rotating refresh |
+| Guardian | Phone + OTP | Longer refresh — losing a session mid-emergency is itself a safety problem |
+| Admin web | Password + second factor | Shorter refresh, higher privilege |
+| GPS device | Device credential, mutual TLS where supported | Long-lived, rotatable, never the human path |
+
+**Password storage:** Argon2id. **Token signing:** RS256 with rotating keys published at a JWKS endpoint. **OTP:** short-lived, single-use, rate-limited per number and per source.
+
+### Why permissions are not in the token
+
+An embedded permission set is stale the moment a role changes. In a system where "revoke this person's access to children's data" must take effect now, that is unacceptable. Permissions are resolved per request from a short-TTL cache invalidated on role change (BR-IAM-004).
+
+---
+
+## Authorisation
+
+Two independent checks, both required:
+
+```
+Permission   PERM-STUDENT-VIEW held?          → else 403
+     ×
+Scope        is THIS student within scope?    → else 403 (never 404-vs-403 leakage)
+```
+
+Deny by default (BR-IAM-002): an endpoint with no declared permission is unreachable, verified by an architecture test.
+
+**Object-level checks are mandatory.** Holding `PERM-STUDENT-VIEW` never implies access to a specific student — the commonest real-world API vulnerability class, and the reason scope is checked per object rather than per endpoint.
+
+---
+
+## Child Data Protection
+
+### Minimisation
+Children are not individually tracked. Their location is inferred from the **vehicle's** position during a trip they boarded. There is no per-child GPS.
+
+### Classification
+
+| Class | Examples | Handling |
+|---|---|---|
+| **Sensitive child data** | Name, photo, stop, journey history | Encrypted at rest; access audited; strict scope |
+| **Contact data** | Guardian phone, email | Encrypted at rest; visible only where operationally required |
+| **Operational data** | Vehicle position, trip state | Standard protection |
+| **Reference data** | Countries, document types | Public within the platform |
+
+### Access logging
+Every read of child personal data by a non-guardian is recorded (BR-IAM-012): actor, subject, time, purpose. This is what makes insider misuse detectable rather than merely prohibited.
+
+### In transit and at rest
+TLS 1.2+ everywhere, including device ingestion. Database encrypted at rest; sensitive columns additionally encrypted at the application layer. Backups encrypted. Device local stores encrypted (ADR-0008).
+
+### Retention
+Configured per tenant within the region profile's legal bounds (ADR-0007, BR-TRACK-007, BR-AUD-007). Position history is dropped by partition. Safety and audit records are retained for their full period and are never soft-deleted early (BR-AUD-001).
+
+---
+
+## Secrets
+
+Sourced from the environment or a secret manager — **never from source control**. Per-tenant provider credentials (SMS, push) are encrypted at rest with a platform key and are never returned by any API, including to the tenant that set them. Rotation is supported without redeployment.
+
+---
+
+## Input Handling
+
+Validate at the boundary; never trust a client-supplied identifier. All persistence through parameterised queries. Output encoding on every rendered surface. Notification content is template-rendered with escaping (BR-NTF-008). Uploads (student photos, documents) are type- and size-checked, stored outside the web root, and served through an authorising endpoint.
+
+---
+
+## API Protection
+
+Rate limiting per user, per IP, and per tenant. Stricter limits on authentication and OTP endpoints. Ingestion limited per device — one device cannot flood the pipeline. Request size limits. CORS restricted to known client origins. Standard security headers.
+
+---
+
+## Logging Discipline
+
+Logs carry correlation ID and tenant ID and are structured JSON.
+
+**Never logged:** passwords, tokens, OTPs, provider credentials, full child records. Student identifiers appear as IDs, not names. Verified by a test that scans log output for known-sensitive field names.
+
+---
+
+## Mobile Client Security
+
+| Concern | Control |
+|---|---|
+| Local safety data | Encrypted store, key in platform keystore (ADR-0008) |
+| Session revocation | Remote revocation wipes local data on next contact |
+| Logout | Local store cleared |
+| Transport | Certificate pinning on both mobile apps |
+| Shared driver devices | Short foreground session; explicit end-of-shift logout |
+| Screenshots | Suppressed on screens showing child personal data |
+
+---
+
+## Incident Response
+
+1. **Detect** — anomaly alerts on failed auth, unusual export volume, cross-tenant attempts, refresh-token reuse.
+2. **Contain** — revoke sessions, suspend accounts, disable an integration.
+3. **Investigate** — audit trail is append-only and complete (BR-AUD-001).
+4. **Notify** — per the region profile's breach obligations.
+5. **Remediate** — fix, then add the regression test.
+
+A suspected compromise of a **guardian relationship or handover control** is treated as a child-safety incident, not merely a data incident, and escalates on the safety path.
+
+---
+
+## Verification
+
+| # | Test |
+|---|---|
+| 1 | Every endpoint declares a permission from [`PERMISSION_MATRIX.md`](../01-product-discovery/PERMISSION_MATRIX.md). |
+| 2 | Object-level scope enforced: a guardian requesting another family's student receives `403`. |
+| 3 | Cross-tenant request with a valid token returns no data (see [`MULTI_TENANCY.md`](MULTI_TENANCY.md)). |
+| 4 | Revoked session rejected within the denylist window. |
+| 5 | Refresh-token reuse invalidates the session family and raises an alert. |
+| 6 | Role change takes effect on the next request without re-issuing a token. |
+| 7 | Log output contains no field from the sensitive-field denylist. |
+| 8 | Every child-data read by a non-guardian produces an audit record. |
+| 9 | Every export produces an audit record with actor, scope, and record count. |
+| 10 | Dependency and container scanning in CI; findings above threshold fail the build. |
+
+A security review runs against this document before each release — see [`/security-review`](../06-development/DEFINITION_OF_DONE.md).
+
+===FILE_END===
+===FILE_START:documentation/03-database/CONVENTIONS.md===
+# DATABASE CONVENTIONS
+
+**Document tier:** 3 — Database
+**Status:** Active
+
+Stated once here; **not repeated in each table specification**. Every table in [`tables/`](tables/) follows these unless it explicitly documents a deviation and why.
+
+---
+
+## Naming
+
+| Object | Convention | Example |
+|---|---|---|
+| Table | `snake_case`, plural | `boarding_events` |
+| Column | `snake_case` | `boarded_at` |
+| Primary key | `id` | |
+| Foreign key | `<referenced_singular>_id` | `student_id` |
+| Index | `idx_<table>_<columns>` | `idx_students_tenant_school` |
+| Unique constraint | `uq_<table>_<columns>` | `uq_students_tenant_admission_no` |
+| Check constraint | `ck_<table>_<rule>` | `ck_trips_status_valid` |
+| Foreign key constraint | `fk_<table>_<referenced>` | `fk_trips_vehicle` |
+| Partition | `<table>_<yyyy_mm_dd>` | `position_history_2026_08_03` |
+
+Reserved words are never used as identifiers. Boolean columns read as assertions: `is_active`, `has_attendant`.
+
+---
+
+## Standard Columns
+
+### Every tenant-scoped table
+
+```sql
+id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+tenant_id    UUID        NOT NULL REFERENCES organizations(id),
+created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+created_by   UUID,
+updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+updated_by   UUID,
+version      BIGINT      NOT NULL DEFAULT 0
+```
+
+- **UUID primary keys.** Sequential integers would leak tenant volume across a shared schema and make identifiers guessable.
+- **`tenant_id` is the organization ID**, always ([`MULTI_TENANCY.md`](../02-system-design/MULTI_TENANCY.md)). Never the school ID.
+- **`version`** drives JPA optimistic locking. Concurrent edits fail rather than silently overwrite.
+- **`created_by` / `updated_by`** are nullable — system-generated rows have no user actor.
+
+### Soft delete, where applicable
+
+```sql
+is_active    BOOLEAN     NOT NULL DEFAULT true,
+deleted_at   TIMESTAMPTZ,
+deleted_by   UUID
+```
+
+**Safety and audit tables have no soft delete and no delete path at all** (BR-AUD-001, BR-BOARD-001). Corrections are compensating records.
+
+---
+
+## Types
+
+| Use | Type | Reason |
+|---|---|---|
+| Identifier | `UUID` | See above |
+| Timestamp | `TIMESTAMPTZ` | Always. Never `TIMESTAMP`. |
+| Date without time | `DATE` | Trip service date |
+| Time of day | `TIME` | Scheduled stop times |
+| Money | `NUMERIC(19,4)` | Never floating point |
+| Coordinates | `NUMERIC(9,6)` lat / `NUMERIC(9,6)` lon | Sufficient precision; exact comparison |
+| Distance, speed | `NUMERIC` in SI units — metres, m/s | Conversion happens at display |
+| Enum | `VARCHAR` + `CHECK` constraint | Not native `ENUM` — altering one requires locks and migration pain |
+| Free text | `TEXT` | No arbitrary `VARCHAR(n)` limits |
+| Structured extension | `JSONB` | Sparingly; never for anything queried in a hot path or governed by a business rule |
+
+### Time handling
+
+**All timestamps are stored in UTC** (`TIMESTAMPTZ`) and displayed in the school's configured time zone (BR-CFG-006). The school's time zone is data.
+
+Offline-recorded safety events carry two timestamps (ADR-0008, BR-BOARD-008):
+
+```sql
+occurred_at        TIMESTAMPTZ NOT NULL,  -- device clock
+recorded_at        TIMESTAMPTZ NOT NULL,  -- server receipt
+clock_skew_seconds INTEGER                -- measured at sync
+```
+
+Reports use `occurred_at`. Investigations can see both. **The device clock is never treated as authoritative.**
+
+---
+
+## Constraints
+
+Constraints belong in the database, not only in application code. An application bug should hit a constraint, not corrupt data.
+
+- `NOT NULL` wherever the domain requires a value.
+- Foreign keys always declared, with explicit `ON DELETE` behaviour — `RESTRICT` by default. `CASCADE` is used only where the child has no meaning without the parent, and never on a table holding safety records.
+- Enum-like columns always carry a `CHECK` constraint listing valid values.
+- Unique constraints include `tenant_id` where uniqueness is per-tenant: `UNIQUE (tenant_id, school_id, admission_no)`.
+- Domain invariants expressible in SQL are expressed in SQL — a stop sequence must be positive, a geofence radius must fall within platform bounds (BR-ROUTE-003).
+
+---
+
+## Row-Level Security
+
+Every tenant-scoped table (ADR-0001):
+
+```sql
+ALTER TABLE <table> ENABLE ROW LEVEL SECURITY;
+ALTER TABLE <table> FORCE  ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON <table>
+    USING      (tenant_id = current_setting('app.tenant_id', true)::uuid)
+    WITH CHECK (tenant_id = current_setting('app.tenant_id', true)::uuid);
+```
+
+Both `USING` and `WITH CHECK` are mandatory — `USING` alone protects reads but permits writing a row into another tenant. Full detail and rationale: [`RLS_POLICIES.md`](RLS_POLICIES.md).
+
+A migration adding a table with a `tenant_id` column but no forced RLS policy **fails the build**.
+
+---
+
+## Indexing
+
+Every tenant-scoped index leads with `tenant_id` — the RLS predicate applies to every query.
+
+```sql
+CREATE INDEX idx_students_tenant_school ON students (tenant_id, school_id);
+```
+
+Index foreign keys used in joins. Partial indexes for common filtered queries:
+
+```sql
+CREATE INDEX idx_trips_active ON trips (tenant_id, status)
+    WHERE status IN ('STARTED', 'IN_PROGRESS');
+```
+
+See [`INDEXING_AND_PARTITIONING.md`](INDEXING_AND_PARTITIONING.md).
+
+---
+
+## Append-Only Tables
+
+`audit_records`, `data_access_records`, `boarding_events`, `handovers`, `sos_alerts`.
+
+Enforced by **grants, not convention**:
+
+```sql
+GRANT INSERT, SELECT ON boarding_events TO guardian_app;
+-- no UPDATE, no DELETE
+```
+
+A trigger additionally rejects `UPDATE` and `DELETE`. Two controls because this is the property the platform's evidentiary value rests on.
+
+---
+
+## Migrations
+
+Flyway, versioned, forward-only. See [`MIGRATION_STRATEGY.md`](MIGRATION_STRATEGY.md).
+
+Never edit an applied migration. Never write a destructive migration without an expand-contract sequence. Every migration is tested against a database seeded with realistic data before it reaches production.
+
+---
+
+## Ownership
+
+Each table is owned by exactly one module ([`MODULE_MAP.md`](../01-product-discovery/MODULE_MAP.md) cross-module rule 1). Cross-module reads go through the owning module's application layer, never by querying its tables directly.
+
+The table specification in [`tables/`](tables/) names the owning module.
+
+---
+
+## What Does Not Go in the Database
+
+- Business logic in triggers, beyond integrity enforcement. Rules live in the domain, once (BR: [`ENGINEERING_PRINCIPLES.md`](../ENGINEERING_PRINCIPLES.md) §6).
+- Stored procedures for application behaviour.
+- Configuration that belongs in the typed configuration registry (MOD-17).
+- User-facing text — localised resource keys only (BR-CFG-005).
+
+===FILE_END===

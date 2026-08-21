@@ -18,15 +18,15 @@ jobs:
           flutter-version: 'stable'
       - name: Analyze driver app
         run: |
-          cd guardian-driver-app
+          cd flutter/driver_attender_app
           flutter analyze
       - name: Analyze parent app
         run: |
-          cd guardian-parent-app
+          cd flutter/parent_app
           flutter analyze
       - name: Analyze admin web
         run: |
-          cd guardian-admin-web
+          cd admin
           flutter analyze
 
   backend_build:
@@ -42,5 +42,5 @@ jobs:
           distribution: 'temurin'
       - name: Build backend
         run: |
-          cd guardian-backend
+          cd backend
           ./gradlew build -x test
