@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed -i '' 's|^distributionUrl=.*|distributionUrl=https\\\\\\\\://services.gradle.org/distributions/gradle-9.2.0-bin.zip|' gradle/wrapper/gradle-wrapper.properties)",
+      "Bash(chmod +x gradlew)",
+      "Bash(./gradlew compileJava)",
+      "Bash(./gradlew test *)",
+      "Bash(python3 -c ' *)"
+    ]
+  }
+}

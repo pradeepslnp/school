@@ -1,0 +1,56 @@
+[versions]
+springBoot = "3.3.4"
+springDependencyManagement = "1.1.6"
+archunit = "1.3.0"
+classgraph = "4.8.174"
+testcontainers = "1.21.3"
+# Matches what Spring Security 6.3 resolves, so the two cannot disagree on the classpath.
+nimbusJoseJwt = "9.37.3"
+# Argon2PasswordEncoder delegates here; also not carried by the Spring Boot BOM.
+bouncycastle = "1.78.1"
+spotless = "6.25.0"
+
+[libraries]
+spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" }
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+# JdbcTemplate and spring-tx, without JPA. Used by guardian-parent, which owns no tables and
+# maps no entity (ADR-0010) — the JPA starter there would invite exactly the entity it must not
+# have.
+spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+# Required for @AutoConfigureMockMvc to apply the real security filter chain. Without it MockMvc
+# skips authentication entirely and a test asserting 403 passes for the wrong reason.
+spring-security-test = { module = "org.springframework.security:spring-security-test" }
+
+jakarta-servlet-api = { module = "jakarta.servlet:jakarta.servlet-api" }
+
+# Authentication (MOD-02). Versions come from the Spring Boot BOM so they move together with
+# the framework rather than needing separate review.
+#
+# spring-security-crypto alone, not the whole security starter: guardian-identity needs Argon2id
+# and nothing else from Spring Security. Pulling the starter into a domain module would put a
+# servlet filter chain on the classpath of code that has no HTTP concerns.
+spring-security-crypto = { module = "org.springframework.security:spring-security-crypto" }
+# Argon2PasswordEncoder delegates to BouncyCastle; without it the encoder throws at first use.
+bouncycastle-provider = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+# RS256 signing and verification (ADR-0006). Pinned rather than BOM-managed: the Spring Boot BOM
+# does not carry a version for this module, and an unpinned coordinate fails to resolve at all.
+nimbus-jose-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusJoseJwt" }
+
+flyway-core = { module = "org.flywaydb:flyway-core" }
+flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+postgresql = { module = "org.postgresql:postgresql" }
+
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
+
+testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

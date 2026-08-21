@@ -1,0 +1,11 @@
+# Local environment overrides — compose reads these, they never belong in git
+.env
+.env.*
+!.env.example
+
+# Container volume data, if ever bind-mounted locally
+data/
+pgdata/
+
+*.log
+.DS_Store

@@ -1,0 +1,45 @@
+# Local development infrastructure.
+#
+# Start with:  docker compose -f infra/docker-compose.yml up -d
+# Reset with:  docker compose -f infra/docker-compose.yml down -v   (-v deletes local data)
+#
+# See docs/06-development/LOCAL_SETUP.md.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: guardian-postgres
+    environment:
+      POSTGRES_DB: guardian
+      # The OWNER role. Flyway connects as this; the application does not.
+      POSTGRES_USER: guardian_owner
+      POSTGRES_PASSWORD: ${GUARDIAN_DB_OWNER_PASSWORD:-local_owner}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Runs once on first start, before any migration.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guardian_owner -d guardian"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: guardian-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
+  redis-data:
