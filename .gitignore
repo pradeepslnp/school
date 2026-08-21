@@ -1,0 +1,21 @@
+# Sibling project repositories.
+#
+# Per CLAUDE.md §1, each project folder is its own independent git repository with its
+# own remote. The root `school` repo tracks only root-level shared files (CLAUDE.md,
+# AGENTS.md, documentation/, AI_CONTENT/, .vscode/, .github/). These folders live here
+# because several projects resolve each other by relative path — not because this repo
+# owns their contents.
+admin/
+backend/
+infrastructure/
+
+# Leftover folders from the 2026-08 restructure (CLAUDE.md §1). These contained only
+# build output; guardian-admin-web/.dart_tool held a full Chrome profile with live
+# credentials that was purged from history on 2026-08-22.
+guardian-admin-web/
+guardian-backend/
+
+# Build output and tool caches — never tracked.
+.dart_tool/
+.gradle/
+build/
