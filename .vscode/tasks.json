@@ -1,0 +1,134 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Open admin Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/admin"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open backend Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open documentation Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/documentation"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open flutter/driver_attender_app Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/flutter/driver_attender_app"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open infrastructure Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/infrastructure"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open flutter/parent_app Terminal",
+      "type": "shell",
+      "command": "${env:SHELL}",
+      "args": ["-i"],
+      "options": {
+        "cwd": "${workspaceFolder}/flutter/parent_app"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "close": "never"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open All Project Terminals",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "Open admin Terminal",
+        "Open backend Terminal",
+        "Open documentation Terminal",
+        "Open flutter/driver_attender_app Terminal",
+        "Open infrastructure Terminal",
+        "Open flutter/parent_app Terminal"
+      ]
+    },
+    {
+      "label": "Analyze flutter/driver_attender_app",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["analyze"],
+      "options": { "cwd": "${workspaceFolder}/flutter/driver_attender_app" },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Analyze flutter/parent_app",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["analyze"],
+      "options": { "cwd": "${workspaceFolder}/flutter/parent_app" },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Analyze admin",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["analyze"],
+      "options": { "cwd": "${workspaceFolder}/admin" },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    }
+  ]
+}

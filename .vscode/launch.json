@@ -1,0 +1,73 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run flutter/driver_attender_app (DEV)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/flutter/driver_attender_app",
+      "args": ["--flavor", "dev", "--dart-define=ENVIRONMENT=dev", "--dart-define=API_BASE_URL=http://localhost:8080/api/v1"]
+    },
+    {
+      "name": "Run flutter/driver_attender_app (PROD)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/flutter/driver_attender_app",
+      "args": ["--flavor", "prod", "--dart-define=ENVIRONMENT=production", "--dart-define=API_BASE_URL=https://api.guardian.example/api/v1"]
+    },
+    {
+      "name": "Run flutter/parent_app (DEV)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/flutter/parent_app",
+      "args": ["--flavor", "dev", "--dart-define=ENVIRONMENT=dev", "--dart-define=API_BASE_URL=http://localhost:8080/api/v1"]
+    },
+    {
+      "name": "Run flutter/parent_app (PROD)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/flutter/parent_app",
+      "args": ["--flavor", "prod", "--dart-define=ENVIRONMENT=production", "--dart-define=API_BASE_URL=https://api.guardian.example/api/v1"]
+    },
+    {
+      "name": "Run admin (DEV) - Chrome",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/admin",
+      "deviceId": "chrome",
+      "args": ["--flavor", "dev", "--dart-define=ENVIRONMENT=dev", "--dart-define=API_BASE_URL=http://localhost:8080/api/v1"]
+    },
+    {
+      "name": "Run admin (PROD) - Chrome",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/admin",
+      "deviceId": "chrome",
+      "args": ["--flavor", "prod", "--dart-define=ENVIRONMENT=production", "--dart-define=API_BASE_URL=https://api.guardian.example/api/v1"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run All (DEV)",
+      "configurations": [
+        "Run flutter/driver_attender_app (DEV)",
+        "Run flutter/parent_app (DEV)",
+        "Run admin (DEV) - Chrome"
+      ]
+    },
+    {
+      "name": "Run All (PROD)",
+      "configurations": [
+        "Run flutter/driver_attender_app (PROD)",
+        "Run flutter/parent_app (PROD)",
+        "Run admin (PROD) - Chrome"
+      ]
+    }
+  ]
+}

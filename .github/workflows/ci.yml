@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  flutter_analyze:
+    name: Flutter Analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+      - name: Analyze driver app
+        run: |
+          cd flutter/driver_attender_app
+          flutter analyze
+      - name: Analyze parent app
+        run: |
+          cd flutter/parent_app
+          flutter analyze
+      - name: Analyze admin web
+        run: |
+          cd admin
+          flutter analyze
+
+  backend_build:
+    name: Backend Build
+    runs-on: ubuntu-latest
+    needs: flutter_analyze
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Build backend
+        run: |
+          cd backend
+          ./gradlew build -x test
