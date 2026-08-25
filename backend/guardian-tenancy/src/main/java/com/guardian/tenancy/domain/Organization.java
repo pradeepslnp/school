@@ -88,6 +88,55 @@ public final class Organization {
         version);
   }
 
+  /**
+   * Suspends this organization (BR-TEN-006): blocks user access without destroying data or
+   * interrupting a trip already in progress. The carve-out for in-flight safety recording is
+   * enforced where requests are authorized ({@code PermissionEnforcementInterceptor}), not
+   * here — this method only tracks the status transition itself.
+   *
+   * <p>Idempotent: suspending an already-suspended organization returns an equivalent instance
+   * rather than failing, so a retried or double-clicked request is harmless.
+   *
+   * @throws IllegalStateException if this organization is {@link OrganizationStatus#CLOSED}.
+   *     No feature closes an organization yet, so no organization can actually hold that
+   *     status today — reaching this branch would mean a bug elsewhere, not a business rule
+   *     a caller can trigger.
+   */
+  public Organization suspend() {
+    if (status == OrganizationStatus.CLOSED) {
+      throw new IllegalStateException("Cannot suspend a closed organization: " + id);
+    }
+    if (status == OrganizationStatus.SUSPENDED) {
+      return this;
+    }
+    return withStatus(OrganizationStatus.SUSPENDED);
+  }
+
+  /**
+   * Reactivates this organization (BR-TEN-006), restoring the access suspension removed.
+   *
+   * <p>Idempotent: reactivating an already-active organization returns an equivalent instance
+   * rather than failing, for the same double-click-safety reason as {@link #suspend()}.
+   *
+   * @throws IllegalStateException if this organization is {@link OrganizationStatus#CLOSED} —
+   *     see {@link #suspend()}'s Javadoc for why this is a defensive guard, not a reachable
+   *     business scenario today.
+   */
+  public Organization reactivate() {
+    if (status == OrganizationStatus.CLOSED) {
+      throw new IllegalStateException("Cannot reactivate a closed organization: " + id);
+    }
+    if (status == OrganizationStatus.ACTIVE) {
+      return this;
+    }
+    return withStatus(OrganizationStatus.ACTIVE);
+  }
+
+  private Organization withStatus(OrganizationStatus newStatus) {
+    return new Organization(
+        id, code, name, regionProfileCode, newStatus, contactEmail, contactPhone, version);
+  }
+
   private static String requireText(String value, String field) {
     Objects.requireNonNull(value, field);
     String trimmed = value.trim();

@@ -93,6 +93,51 @@ class OrganizationTest {
         .isEqualTo(ErrorCode.VALIDATION_REQUIRED_FIELD_MISSING);
   }
 
+  @Test
+  @BusinessRule("BR-TEN-006")
+  @DisplayName("suspend blocks user access by flipping status, without touching other fields")
+  void suspendChangesOnlyStatus() {
+    Organization original = anOrganization();
+
+    Organization suspended = original.suspend();
+
+    assertThat(suspended.status()).isEqualTo(OrganizationStatus.SUSPENDED);
+    assertThat(suspended.id()).isEqualTo(original.id());
+    assertThat(suspended.name()).isEqualTo(original.name());
+    assertThat(original.status()).isEqualTo(OrganizationStatus.ACTIVE);
+  }
+
+  @Test
+  @BusinessRule("BR-TEN-006")
+  @DisplayName("suspending an already-suspended organization is idempotent")
+  void suspendIsIdempotent() {
+    Organization suspended = anOrganization().suspend();
+
+    Organization suspendedAgain = suspended.suspend();
+
+    assertThat(suspendedAgain.status()).isEqualTo(OrganizationStatus.SUSPENDED);
+  }
+
+  @Test
+  @BusinessRule("BR-TEN-006")
+  @DisplayName("reactivate reverses suspend")
+  void reactivateReversesSuspend() {
+    Organization suspended = anOrganization().suspend();
+
+    Organization reactivated = suspended.reactivate();
+
+    assertThat(reactivated.status()).isEqualTo(OrganizationStatus.ACTIVE);
+  }
+
+  @Test
+  @BusinessRule("BR-TEN-006")
+  @DisplayName("reactivating an already-active organization is idempotent")
+  void reactivateIsIdempotent() {
+    Organization reactivatedAgain = anOrganization().reactivate();
+
+    assertThat(reactivatedAgain.status()).isEqualTo(OrganizationStatus.ACTIVE);
+  }
+
   @Nested
   @DisplayName("OrganizationCode")
   class OrganizationCodeTest {

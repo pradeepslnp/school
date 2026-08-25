@@ -18,11 +18,14 @@ class OrganizationDetailsView extends StatelessWidget {
     required this.organization,
     required this.school,
     required this.isSubmitting,
+    required this.actorRoles,
     required this.onOrganizationSave,
     required this.onSchoolSave,
     required this.onAddSchool,
     required this.onSkipSchool,
     required this.onStartAnother,
+    required this.onSuspend,
+    required this.onReactivate,
   });
 
   final CreatedOrganization organization;
@@ -31,6 +34,12 @@ class OrganizationDetailsView extends StatelessWidget {
   final CreatedSchool? school;
 
   final bool isSubmitting;
+
+  /// The signed-in operator's own roles — gates the suspend/reactivate control to
+  /// `SUPER_ADMIN`, the only role holding `PERM-ORG-SUSPEND` (PERMISSION_MATRIX.md). Hiding
+  /// it for anyone else is UX only; the server enforces the real rule regardless
+  /// (`OrganizationController.suspend`/`reactivate`).
+  final List<String> actorRoles;
 
   final void Function({
     required String name,
@@ -60,6 +69,16 @@ class OrganizationDetailsView extends StatelessWidget {
 
   final VoidCallback onStartAnother;
 
+  /// Dispatches `OrganizationSuspendRequested` (TEN-004, BR-TEN-006). The confirmation
+  /// dialog lives in this widget, not the bloc — matching `UserListScreen`'s
+  /// `_confirmToggleStatus` for the same "irreversible-feeling action needs a pause" reason.
+  final VoidCallback onSuspend;
+
+  /// The reverse of [onSuspend].
+  final VoidCallback onReactivate;
+
+  bool get _canManageLifecycle => actorRoles.contains('SUPER_ADMIN');
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -67,6 +86,15 @@ class OrganizationDetailsView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _OrganizationLifecycleHeader(
+          key: ValueKey('org_lifecycle_${organization.id}'),
+          organization: organization,
+          isSubmitting: isSubmitting,
+          canManage: _canManageLifecycle,
+          onSuspend: onSuspend,
+          onReactivate: onReactivate,
+        ),
+        const SizedBox(height: AdminSpacing.lg),
         Text('Organization details', style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.md),
         _OrganizationEditForm(
@@ -102,6 +130,129 @@ class OrganizationDetailsView extends StatelessWidget {
           onPressed: isSubmitting ? null : onStartAnother,
           child: const Text('Onboard another organization'),
         ),
+      ],
+    );
+  }
+}
+
+/// Status badge plus the suspend/reactivate control (TEN-004, BR-TEN-006).
+///
+/// A `CLOSED` organization is not expected to reach this view via any button this console
+/// currently offers (see `Organization.suspend`/`reactivate` on the backend) — the badge
+/// still renders correctly for it, but no lifecycle button does, since neither action is
+/// valid from that state.
+class _OrganizationLifecycleHeader extends StatelessWidget {
+  const _OrganizationLifecycleHeader({
+    super.key,
+    required this.organization,
+    required this.isSubmitting,
+    required this.canManage,
+    required this.onSuspend,
+    required this.onReactivate,
+  });
+
+  final CreatedOrganization organization;
+  final bool isSubmitting;
+  final bool canManage;
+  final VoidCallback onSuspend;
+  final VoidCallback onReactivate;
+
+  Future<void> _confirm(
+    BuildContext context, {
+    required String title,
+    required String body,
+    required String confirmLabel,
+    required VoidCallback onConfirmed,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const Key('org_lifecycle_confirm_button'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(confirmLabel),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) onConfirmed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final status = context.status;
+
+    final (Color badgeColor, String badgeLabel) = switch (organization.status) {
+      'SUSPENDED' => (status.critical, 'Suspended'),
+      'CLOSED' => (theme.colorScheme.onSurfaceVariant, 'Closed'),
+      _ => (status.safe, 'Active'),
+    };
+
+    return Row(
+      children: [
+        Container(
+          key: const Key('org_lifecycle_status_badge'),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AdminSpacing.sm,
+            vertical: AdminSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            color: badgeColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            badgeLabel,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: badgeColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const Spacer(),
+        if (canManage && organization.status == 'ACTIVE')
+          OutlinedButton.icon(
+            key: const Key('org_lifecycle_suspend_button'),
+            onPressed: isSubmitting
+                ? null
+                : () => _confirm(
+                      context,
+                      title: 'Suspend ${organization.name}?',
+                      body:
+                          'This blocks sign-in and administrative access for everyone in '
+                          '${organization.name}. No data is deleted, and any trip already in '
+                          'progress keeps recording safety events as normal (BR-TEN-006). You '
+                          'can reactivate at any time.',
+                      confirmLabel: 'Suspend organization',
+                      onConfirmed: onSuspend,
+                    ),
+            icon: const Icon(Icons.pause_circle_outline),
+            label: const Text('Suspend organization'),
+          )
+        else if (canManage && organization.status == 'SUSPENDED')
+          FilledButton.icon(
+            key: const Key('org_lifecycle_reactivate_button'),
+            onPressed: isSubmitting
+                ? null
+                : () => _confirm(
+                      context,
+                      title: 'Reactivate ${organization.name}?',
+                      body:
+                          'This restores sign-in and administrative access for everyone in '
+                          '${organization.name}.',
+                      confirmLabel: 'Reactivate organization',
+                      onConfirmed: onReactivate,
+                    ),
+            icon: const Icon(Icons.play_circle_outline),
+            label: const Text('Reactivate organization'),
+          ),
       ],
     );
   }

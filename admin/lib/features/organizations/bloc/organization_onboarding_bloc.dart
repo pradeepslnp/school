@@ -20,6 +20,8 @@ class OrganizationOnboardingBloc
     on<OrganizationDetailsEdited>(_onOrganizationEdited);
     on<SchoolDetailsEdited>(_onSchoolEdited);
     on<OrganizationSelectedForViewing>(_onOrganizationSelectedForViewing);
+    on<OrganizationSuspendRequested>(_onSuspendRequested);
+    on<OrganizationReactivateRequested>(_onReactivateRequested);
     on<SchoolStepSkipped>(_onSchoolStepSkipped);
     on<OnboardingReset>(_onReset);
   }
@@ -217,7 +219,53 @@ class OrganizationOnboardingBloc
     }
   }
 
-  void _onSchoolStepSkipped(
+  Future<void> _onSuspendRequested(
+    OrganizationSuspendRequested event,
+    Emitter<OrganizationOnboardingState> emit,
+  ) async {
+    final organization = state.organization;
+    if (organization == null) {
+      emit(state.copyWith(error: ErrorCode.internalError));
+      return;
+    }
+
+    emit(state.copyWith(isSubmitting: true, clearError: true));
+
+    final result =
+        await _repository.suspendOrganization(organizationId: organization.id);
+
+    switch (result) {
+      case Success<CreatedOrganization>(:final value):
+        emit(state.copyWith(isSubmitting: false, clearError: true, organization: value));
+      case Failure(:final code, :final messageKey):
+        emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));
+    }
+  }
+
+  Future<void> _onReactivateRequested(
+    OrganizationReactivateRequested event,
+    Emitter<OrganizationOnboardingState> emit,
+  ) async {
+    final organization = state.organization;
+    if (organization == null) {
+      emit(state.copyWith(error: ErrorCode.internalError));
+      return;
+    }
+
+    emit(state.copyWith(isSubmitting: true, clearError: true));
+
+    final result =
+        await _repository.reactivateOrganization(organizationId: organization.id);
+
+    switch (result) {
+      case Success<CreatedOrganization>(:final value):
+        emit(state.copyWith(isSubmitting: false, clearError: true, organization: value));
+      case Failure(:final code, :final messageKey):
+        emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));
+    }
+  }
+
+    void _onSchoolStepSkipped(
     SchoolStepSkipped event,
     Emitter<OrganizationOnboardingState> emit,
   ) {

@@ -19,7 +19,12 @@ import '../widgets/onboarding_scaffold.dart';
 /// piece of navigation that belongs here rather than in the bloc: leaving this screen once an
 /// edit to the organization's own details has saved. See [_savingOrganization].
 class OrganizationOnboardingScreen extends StatefulWidget {
-  const OrganizationOnboardingScreen({super.key});
+  const OrganizationOnboardingScreen({super.key, required this.actorRoles});
+
+  /// The signed-in operator's own roles — passed straight through to
+  /// `OrganizationDetailsView` to gate the suspend/reactivate control. See that widget's
+  /// `_canManageLifecycle`.
+  final List<String> actorRoles;
 
   @override
   State<OrganizationOnboardingScreen> createState() =>
@@ -110,6 +115,7 @@ class _OrganizationOnboardingScreenState
                     organization: state.organization!,
                     school: state.school,
                     isSubmitting: state.isSubmitting,
+                    actorRoles: widget.actorRoles,
                     onOrganizationSave: ({
                       required String name,
                       required String regionProfileCode,
@@ -166,6 +172,12 @@ class _OrganizationOnboardingScreenState
                     onStartAnother: () => context
                         .read<OrganizationOnboardingBloc>()
                         .add(const OnboardingReset()),
+                    onSuspend: () => context
+                        .read<OrganizationOnboardingBloc>()
+                        .add(const OrganizationSuspendRequested()),
+                    onReactivate: () => context
+                        .read<OrganizationOnboardingBloc>()
+                        .add(const OrganizationReactivateRequested()),
                   ),
               },
               if (state.error != null)

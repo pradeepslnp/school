@@ -154,6 +154,31 @@ class ConsoleDestinations {
       // PERM-ROUTE-MANAGE's holders, verbatim from PERMISSION_MATRIX.md.
       requiredAnyRole: ['SUPER_ADMIN', 'ORG_ADMIN', 'SCHOOL_ADMIN', 'TRANSPORT_MANAGER'],
     ),
+    ConsoleDestination(
+      id: 'A-43',
+      label: 'Users',
+      icon: Icons.manage_accounts_outlined,
+      selectedIcon: Icons.manage_accounts,
+      location: '/users',
+      // An administration screen, not an incident-response one — same reasoning as A-23.
+      availableOnNarrowLayout: false,
+      // PERM-USER-VIEW's holders among the roles that can reach this console at all —
+      // PRINCIPAL and TRANSPORT_MANAGER hold no PERM-USER-* permission (PERMISSION_MATRIX.md)
+      // and never see this destination.
+      requiredAnyRole: ['SUPER_ADMIN', 'ORG_ADMIN', 'SCHOOL_ADMIN'],
+    ),
+    ConsoleDestination(
+      id: 'A-44',
+      label: 'Roles',
+      icon: Icons.rule_folder_outlined,
+      selectedIcon: Icons.rule_folder,
+      location: '/roles',
+      availableOnNarrowLayout: false,
+      // A reference screen open to the same audience as Users (A-43) — deliberately not
+      // gated to a PERM-ROLE-MANAGE-only audience, since today it only ever displays the
+      // fixed system-role matrix rather than editing anything (see `RoleReferenceScreen`).
+      requiredAnyRole: ['SUPER_ADMIN', 'ORG_ADMIN', 'SCHOOL_ADMIN'],
+    ),
   ];
 
   /// The subset shown below 768 px (ADMIN_WEB.md §Responsive).

@@ -82,9 +82,51 @@ public final class User {
         0L);
   }
 
+  /**
+   * A brand-new, active administrative account — the shape Users &amp; Roles (A-43, feature
+   * IAM-005/IAM-008) needs. Unlike {@link #create}, phone is optional and email is required:
+   * admin console staff sign in by email and password ({@code StaffLoginUseCase}), not phone OTP
+   * (see this class's own documentation on why guardians and staff are provisioned differently).
+   */
+  public static User createAdministrative(
+      UserId id,
+      String email,
+      PhoneNumber phone,
+      String firstName,
+      String lastName,
+      String preferredLocale) {
+    return new User(
+        id,
+        phone,
+        Objects.requireNonNull(email, "email"),
+        firstName,
+        lastName,
+        preferredLocale,
+        UserStatus.ACTIVE,
+        null,
+        0L);
+  }
+
   /** Records a successful sign-in. */
   public User signedInAt(Instant now) {
     return new User(id, phone, email, firstName, lastName, preferredLocale, status, now, version);
+  }
+
+  /**
+   * Applies an administrative edit to name and locale (feature IAM-005, screen A-43).
+   *
+   * <p>Deliberately narrow — see {@code UpdateAdministrativeUserCommand}'s documentation on why
+   * role and scope are not editable this way.
+   */
+  public User withProfile(String firstName, String lastName, String preferredLocale) {
+    return new User(
+        id, phone, email, firstName, lastName, preferredLocale, status, lastLoginAt, version);
+  }
+
+  /** Deactivates or reactivates the account (feature IAM-005, {@code PERM-USER-DEACTIVATE}). */
+  public User withStatus(UserStatus status) {
+    return new User(
+        id, phone, email, firstName, lastName, preferredLocale, status, lastLoginAt, version);
   }
 
   public UserId id() {

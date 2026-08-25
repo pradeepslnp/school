@@ -5,10 +5,12 @@ import com.guardian.identity.application.port.AccessTokenIssuer;
 import com.guardian.identity.application.port.RefreshTokenFactory;
 import com.guardian.identity.application.port.SessionRepository;
 import com.guardian.identity.application.port.UserRepository;
+import com.guardian.identity.application.port.UserScopeRepository;
 import com.guardian.identity.application.result.IssuedSession;
 import com.guardian.identity.domain.ClientType;
 import com.guardian.identity.domain.Session;
 import com.guardian.identity.domain.User;
+import com.guardian.identity.domain.UserScope;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -19,8 +21,8 @@ import org.springframework.stereotype.Service;
  * <p>Shared by sign-in and refresh so the two cannot drift. They already differ in the ways that
  * matter — a refresh rotates within an existing family, a sign-in starts a new one — and the parts
  * that must stay identical are exactly the security-relevant ones: the refresh token is stored only
- * as a hash, the access token carries no roles, and the returned roles are marked as presentation
- * data.
+ * as a hash, the access token carries no roles, and the returned roles and scopes are marked as
+ * presentation data.
  *
  * <p>Must be called inside a transaction that already carries the tenant. It performs no tenant
  * resolution of its own.
@@ -30,16 +32,19 @@ public class SessionFactory {
 
   private final SessionRepository sessions;
   private final UserRepository users;
+  private final UserScopeRepository userScopes;
   private final RefreshTokenFactory refreshTokens;
   private final AccessTokenIssuer accessTokens;
 
   public SessionFactory(
       SessionRepository sessions,
       UserRepository users,
+      UserScopeRepository userScopes,
       RefreshTokenFactory refreshTokens,
       AccessTokenIssuer accessTokens) {
     this.sessions = sessions;
     this.users = users;
+    this.userScopes = userScopes;
     this.refreshTokens = refreshTokens;
     this.accessTokens = accessTokens;
   }
@@ -85,6 +90,13 @@ public class SessionFactory {
     // sign-in as well as on the next request (BR-IAM-004).
     List<String> roles = users.roleCodesOf(user.id());
 
+    // Same "read now, never cache" treatment as roles, and the same affordance-only framing —
+    // see IssuedSession.AuthenticatedUserView's documentation. Added alongside the Users &
+    // Roles screen (A-43): before user_scopes existed, this was always empty, which is why the
+    // admin console's own scope-based auto-fill silently never fired for anyone.
+    List<IssuedSession.ScopeView> scopes =
+        userScopes.findByUser(user.id()).stream().map(SessionFactory::toScopeView).toList();
+
     return new IssuedSession(
         accessToken.value(),
         rawRefreshToken,
@@ -94,7 +106,13 @@ public class SessionFactory {
             user.firstName(),
             user.lastName(),
             user.preferredLocale(),
-            roles));
+            roles,
+            scopes));
+  }
+
+  private static IssuedSession.ScopeView toScopeView(UserScope scope) {
+    return new IssuedSession.ScopeView(
+        scope.level().name(), scope.refId() == null ? null : scope.refId().toString());
   }
 
   /** The stored session alongside what the client is told about it. */

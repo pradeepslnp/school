@@ -118,6 +118,19 @@ final class OrganizationSelectedForViewing extends OrganizationOnboardingEvent {
   List<Object?> get props => [organization];
 }
 
+/// The operator confirmed suspending the organization being viewed (TEN-004, BR-TEN-006).
+/// Which organization is implicit — the bloc's own `state.organization` — matching
+/// [SchoolDetailsSubmitted]'s "the widget reports what happened, not the state it depends
+/// on" discipline.
+final class OrganizationSuspendRequested extends OrganizationOnboardingEvent {
+  const OrganizationSuspendRequested();
+}
+
+/// The reverse of [OrganizationSuspendRequested] (BR-TEN-006).
+final class OrganizationReactivateRequested extends OrganizationOnboardingEvent {
+  const OrganizationReactivateRequested();
+}
+
 /// The operator chose to finish onboarding without adding a school yet.
 ///
 /// A real choice, not a shortcut: BR-TEN-002 only requires a school before the organization

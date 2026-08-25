@@ -40,6 +40,15 @@ Envelope format: [`API_STANDARDS.md`](API_STANDARDS.md).
 
 ---
 
+## Identity & Access
+
+| Code | HTTP | Rule | Meaning |
+|---|---|---|---|
+| `USER_EMAIL_EXISTS` | 409 | | Data-integrity constraint (`uq_users_tenant_email`) — another account in this organization already uses this email, same treatment as a vehicle's registration number |
+| `USER_NOT_FOUND` | 404 | | Not found, or not visible to the caller at all |
+
+---
+
 ## Validation
 
 | Code | HTTP | Meaning |

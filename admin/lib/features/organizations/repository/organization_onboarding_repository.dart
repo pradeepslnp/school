@@ -131,6 +131,36 @@ class OrganizationOnboardingRepository {
     return Success<CreatedOrganization>(organization);
   }
 
+  /// `POST /organizations/{id}/suspend` — blocks the organization's user access on its
+  /// operators' next request without touching any data (TEN-004, `PERM-ORG-SUSPEND`,
+  /// BR-TEN-006). `SUPER_ADMIN` only.
+  Future<Result<CreatedOrganization>> suspendOrganization({
+    required String organizationId,
+  }) async {
+    final response = await dataProvider.suspendOrganization(organizationId: organizationId);
+    if (!response.isSuccess) return _toFailure<CreatedOrganization>(response);
+
+    final organization = _parseOrganization(response.data);
+    if (organization == null) {
+      return const Failure<CreatedOrganization>(ErrorCode.internalError);
+    }
+    return Success<CreatedOrganization>(organization);
+  }
+
+  /// The reverse of [suspendOrganization] (BR-TEN-006). `SUPER_ADMIN` only.
+  Future<Result<CreatedOrganization>> reactivateOrganization({
+    required String organizationId,
+  }) async {
+    final response = await dataProvider.reactivateOrganization(organizationId: organizationId);
+    if (!response.isSuccess) return _toFailure<CreatedOrganization>(response);
+
+    final organization = _parseOrganization(response.data);
+    if (organization == null) {
+      return const Failure<CreatedOrganization>(ErrorCode.internalError);
+    }
+    return Success<CreatedOrganization>(organization);
+  }
+
   Future<Result<CreatedSchool>> updateSchool({
     required String schoolId,
     required String organizationId,
@@ -177,10 +207,12 @@ class OrganizationOnboardingRepository {
     final code = data['code'];
     final name = data['name'];
     final regionProfileCode = data['regionProfileCode'];
+    final status = data['status'];
     if (id is! String ||
         code is! String ||
         name is! String ||
-        regionProfileCode is! String) {
+        regionProfileCode is! String ||
+        status is! String) {
       return null;
     }
     return CreatedOrganization(
@@ -188,6 +220,7 @@ class OrganizationOnboardingRepository {
       code: code,
       name: name,
       regionProfileCode: regionProfileCode,
+      status: status,
       contactEmail: data['contactEmail'] as String?,
       contactPhone: data['contactPhone'] as String?,
     );

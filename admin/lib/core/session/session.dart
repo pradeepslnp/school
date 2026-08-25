@@ -125,6 +125,28 @@ class AuthenticatedUser extends Equatable {
     return null;
   }
 
+  /// The organization this user's role is scoped to, or null if they hold no single-organization
+  /// scope (a `PLATFORM`-scoped role, e.g. `SUPER_ADMIN`, which oversees more than one
+  /// organization and so has no one id to default to — or a `SCHOOL`-scoped role, which has
+  /// [schoolScopeId] instead and never needs this one).
+  ///
+  /// Used only to skip the organization step of `SchoolPickerField` for an `ORG_ADMIN`, who
+  /// already knows which organization they run and should go straight to picking one of its
+  /// schools. Affordance only, like [schoolScopeId]: the server re-scopes every request
+  /// regardless of what this returns.
+  ///
+  /// Compared against `'ORG'`, not `'ORGANIZATION'` — matching the wire value `user_scopes`
+  /// and `IssuedSession.ScopeView` actually send (`UserScope.Level.ORG.name()`, per
+  /// `MOD-02-identity.md`'s `scope_level` column). This getter originally checked
+  /// `'ORGANIZATION'`, a guess made before the backend's scope plumbing existed; it was
+  /// never exercised end-to-end until now, which is how the mismatch stayed hidden.
+  String? get organizationScopeId {
+    for (final scope in scopes) {
+      if (scope.level == 'ORG') return scope.refId;
+    }
+    return null;
+  }
+
   String get displayName => '$firstName $lastName'.trim();
 
   /// Initials for the account control. Falls back to a single letter rather than an empty

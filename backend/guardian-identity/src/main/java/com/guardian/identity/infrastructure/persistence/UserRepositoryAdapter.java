@@ -31,6 +31,18 @@ class UserRepositoryAdapter implements UserRepository {
   }
 
   @Override
+  public Optional<User> findByEmail(String email) {
+    return jpaRepository.findByEmailIgnoreCase(email).map(UserRepositoryAdapter::toDomain);
+  }
+
+  @Override
+  public List<User> findAdministrativeUsers() {
+    return jpaRepository.findAdministrativeUsers().stream()
+        .map(UserRepositoryAdapter::toDomain)
+        .toList();
+  }
+
+  @Override
   public List<String> roleCodesOf(UserId id) {
     return jpaRepository.findRoleCodes(id.value());
   }
@@ -60,7 +72,7 @@ class UserRepositoryAdapter implements UserRepository {
     // Loads the managed instance and mutates it, rather than persisting a detached copy: only
     // then do Hibernate's dirty checking and @Version apply. A detached save would bypass
     // optimistic locking and let a concurrent administrative edit be silently overwritten by a
-    // sign-in.
+    // sign-in, or the reverse.
     UserEntity entity =
         jpaRepository
             .findById(user.id().value())
@@ -69,7 +81,14 @@ class UserRepositoryAdapter implements UserRepository {
                     new IllegalStateException(
                         "user " + user.id() + " disappeared between read and write"));
 
+    // Applies every mutable field the domain object carries, not just lastLoginAt: this method
+    // now backs both StaffLoginUseCase/VerifyOtpUseCase's post-sign-in save (which only ever
+    // changes lastLoginAt, so re-applying the rest is a no-op) and
+    // UpdateAdministrativeUserUseCase/SetAdministrativeUserStatusUseCase's edits (which need
+    // exactly this). One save path rather than two keeps optimistic locking in one place.
     entity.applySignIn(user.lastLoginAt());
+    entity.applyAdministrativeState(
+        user.firstName(), user.lastName(), user.preferredLocale(), user.status().name());
     return toDomain(jpaRepository.save(entity));
   }
 

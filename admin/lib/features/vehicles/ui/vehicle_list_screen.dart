@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
+import '../../school_scope/widgets/school_picker_field.dart';
 import '../bloc/vehicle_list_bloc.dart';
 import '../bloc/vehicle_list_event.dart';
 import '../bloc/vehicle_list_state.dart';
@@ -30,31 +31,27 @@ class VehicleListScreen extends StatefulWidget {
 }
 
 class _VehicleListScreenState extends State<VehicleListScreen> {
-  late final TextEditingController _schoolId;
+  /// The school currently loaded — from [widget.initialSchoolId], from `WorkspaceContext`, or
+  /// from `SchoolPickerField` (shown only when neither of those is set; see [build]).
+  String? _selectedSchoolId;
 
   @override
   void initState() {
     super.initState();
     // The role's own school wins if known; otherwise fall back to whatever school the
     // operator last looked at on another of these screens (WorkspaceContext) — either way,
-    // the point is to not make them paste the id again.
+    // the point is to not make them pick it again.
     final remembered = DependencyScope.readOnce(context).workspaceContext.value;
     final schoolId = widget.initialSchoolId ?? remembered;
-    _schoolId = TextEditingController(text: schoolId);
+    _selectedSchoolId = schoolId;
     if (schoolId != null && schoolId.isNotEmpty) {
       context.read<VehicleListBloc>().add(VehicleListRequested(schoolId: schoolId));
     }
   }
 
-  @override
-  void dispose() {
-    _schoolId.dispose();
-    super.dispose();
-  }
-
-  void _load(BuildContext context) {
-    final schoolId = _schoolId.text.trim();
+  void _load(BuildContext context, String schoolId) {
     if (schoolId.isEmpty) return;
+    setState(() => _selectedSchoolId = schoolId);
     DependencyScope.of(context).workspaceContext.value = schoolId;
     context.read<VehicleListBloc>().add(VehicleListRequested(schoolId: schoolId));
   }
@@ -137,30 +134,12 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: AdminSpacing.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    key: const Key('vehicle_list_school_id_field'),
-                    controller: _schoolId,
-                    onSubmitted: (_) => _load(context),
-                    decoration: const InputDecoration(
-                      labelText: 'School ID',
-                      hintText: 'Paste a school ID to see its fleet',
-                      border: OutlineInputBorder(),
-                      constraints: BoxConstraints(minHeight: kAdminTouchTarget),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AdminSpacing.md),
-                FilledButton.tonal(
-                  key: const Key('vehicle_list_load_button'),
-                  onPressed: () => _load(context),
-                  child: const Text('Load'),
-                ),
-              ],
-            ),
+            if (widget.initialSchoolId == null) ...[
+              const SizedBox(height: AdminSpacing.lg),
+              SchoolPickerField(
+                onSchoolSelected: (schoolId) => _load(context, schoolId),
+              ),
+            ],
             const SizedBox(height: AdminSpacing.lg),
             Expanded(
               child: BlocBuilder<VehicleListBloc, VehicleListState>(
@@ -175,7 +154,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                     final color = context.status.critical;
                     return Center(
                       child: Text(
-                        'That could not be loaded right now. Check the school ID and try again.',
+                        'That could not be loaded right now. Try again.',
                         style: theme.textTheme.bodyMedium?.copyWith(color: color),
                       ),
                     );
@@ -184,7 +163,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                   if (state.vehicles.isEmpty) {
                     return Center(
                       child: Text(
-                        'No fleet loaded. Enter a school ID above, or add the first vehicle.',
+                        'No fleet loaded. Pick a school above, or add the first vehicle.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

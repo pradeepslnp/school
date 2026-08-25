@@ -17,9 +17,24 @@ public record SessionResponse(
    * @param roles present <strong>for UI affordances only</strong>. Never trusted for authorisation
    *     — every request re-resolves permissions server-side (BR-IAM-001, BR-IAM-004). The parent
    *     app deliberately does not model this field at all.
+   * @param scopes same affordance-only treatment as {@code roles} (BR-IAM-006) — the admin console
+   *     uses this to pre-select an {@code ORG_ADMIN}/{@code SCHOOL_ADMIN}'s own organization or
+   *     school on a scoped screen rather than making them pick it every time.
    */
   public record UserResponse(
-      String id, String firstName, String lastName, String preferredLocale, List<String> roles) {}
+      String id,
+      String firstName,
+      String lastName,
+      String preferredLocale,
+      List<String> roles,
+      List<ScopeResponse> scopes) {}
+
+  public record ScopeResponse(String level, String refId) {
+
+    static ScopeResponse from(IssuedSession.ScopeView scope) {
+      return new ScopeResponse(scope.level(), scope.refId());
+    }
+  }
 
   public static SessionResponse from(IssuedSession issued) {
     return new SessionResponse(
@@ -32,6 +47,7 @@ public record SessionResponse(
             issued.user().firstName(),
             issued.user().lastName(),
             issued.user().preferredLocale(),
-            issued.user().roles()));
+            issued.user().roles(),
+            issued.user().scopes().stream().map(ScopeResponse::from).toList()));
   }
 }

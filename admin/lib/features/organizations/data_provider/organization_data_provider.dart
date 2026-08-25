@@ -110,7 +110,20 @@ class OrganizationDataProvider {
     );
   }
 
-  /// `PATCH /schools/{id}` — edits a school's own details (TEN-002, `PERM-SCHOOL-EDIT`).
+  /// `POST /organizations/{id}/suspend` (TEN-004, `PERM-ORG-SUSPEND`, BR-TEN-006). No body:
+  /// the target is entirely in the path, and who is acting comes from the auth token, the
+  /// same shape as every other write in this provider.
+  Future<ApiResponse> suspendOrganization({required String organizationId}) {
+    return client.post('/organizations/$organizationId/suspend');
+  }
+
+  /// `POST /organizations/{id}/reactivate` — the reverse of [suspendOrganization]
+  /// (BR-TEN-006).
+  Future<ApiResponse> reactivateOrganization({required String organizationId}) {
+    return client.post('/organizations/$organizationId/reactivate');
+  }
+
+    /// `PATCH /schools/{id}` — edits a school's own details (TEN-002, `PERM-SCHOOL-EDIT`).
   ///
   /// `organizationId` travels in the body even though the school id is already in the path —
   /// the server needs it to establish tenant context before it can read the row at all; see

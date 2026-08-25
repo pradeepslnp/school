@@ -15,6 +15,8 @@ import '../features/staff/data_provider/staff_data_provider.dart';
 import '../features/students/data_provider/student_data_provider.dart';
 import '../features/students/repository/student_repository.dart';
 import '../features/staff/repository/staff_repository.dart';
+import '../features/users/data_provider/user_data_provider.dart';
+import '../features/users/repository/user_repository.dart';
 import '../features/vehicles/data_provider/vehicle_data_provider.dart';
 import '../features/vehicles/repository/vehicle_repository.dart';
 import 'app_config.dart';
@@ -39,6 +41,7 @@ class AppDependencies {
     required this.vehicleRepository,
     required this.routeRepository,
     required this.dutyAssignmentRepository,
+    required this.userRepository,
     required this.workspaceContext,
   });
 
@@ -73,6 +76,10 @@ class AppDependencies {
   /// Duty (crew) assignment (STF-004) — reached from the Routes screen by roles holding
   /// `PERM-DUTY-ASSIGN` (PERMISSION_MATRIX.md); see `RouteCrewDialog`.
   final DutyAssignmentRepository dutyAssignmentRepository;
+
+  /// Administrative-user management (IAM-005, IAM-008, screen A-43) — reached by roles
+  /// holding `PERM-USER-VIEW`; see `ConsoleDestinations`.
+  final UserRepository userRepository;
 
   /// The school id remembered across the Drivers, Vehicles, and Routes screens for this
   /// session — see `WorkspaceContext`.
@@ -125,6 +132,10 @@ class AppDependencies {
       dataProvider: DutyAssignmentDataProvider(client: restClient),
     );
 
+    final userRepository = UserRepository(
+      dataProvider: UserDataProvider(client: restClient),
+    );
+
     final workspaceContext = WorkspaceContext();
 
     sessionManager = SessionManager(
@@ -143,6 +154,7 @@ class AppDependencies {
       vehicleRepository: vehicleRepository,
       routeRepository: routeRepository,
       dutyAssignmentRepository: dutyAssignmentRepository,
+      userRepository: userRepository,
       workspaceContext: workspaceContext,
     );
 

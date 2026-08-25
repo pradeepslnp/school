@@ -93,6 +93,20 @@ public class UserEntity {
     this.updatedAt = Instant.now();
   }
 
+  /**
+   * Applies an administrative edit and/or status change (feature IAM-005, screen A-43) — every
+   * mutable column except {@code lastLoginAt}, which {@link #applySignIn} owns exclusively so an
+   * administrative save can never accidentally clear a sign-in timestamp it never looked at.
+   */
+  void applyAdministrativeState(
+      String firstName, String lastName, String preferredLocale, String status) {
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.preferredLocale = preferredLocale;
+    this.status = status;
+    this.updatedAt = Instant.now();
+  }
+
   UUID getId() {
     return id;
   }

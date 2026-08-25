@@ -26,6 +26,21 @@ public interface UserRepository {
   Optional<User> findByPhone(PhoneNumber phone);
 
   /**
+   * A case-insensitive email lookup within the caller's own tenant (feature IAM-005) — the
+   * identifier administrative accounts sign in with, matching {@link #findByPhone}'s treatment
+   * of the phone-based staff path.
+   */
+  Optional<User> findByEmail(String email);
+
+  /**
+   * Every user in this tenant holding an administrative (non-transport, non-guardian) system
+   * role — ORG_ADMIN, SCHOOL_ADMIN, PRINCIPAL, or TRANSPORT_MANAGER — for the Users screen (A-43,
+   * feature IAM-005, IAM-008). Deliberately excludes DRIVER/ATTENDANT (managed from the Drivers
+   * screen, A-23) and GUARDIAN (never administered this way).
+   */
+  List<User> findAdministrativeUsers();
+
+  /**
    * The user's role codes, read at the moment of asking.
    *
    * <p>Not cached on the user and not carried in the access token: a permission or role change must

@@ -14,7 +14,14 @@ import 'organization_onboarding_screen.dart';
 /// than as a fresh "add organization" flow — the bloc jumps straight to the details/edit step
 /// for that organization instead of starting at step 1.
 class OrganizationOnboardingRoute extends StatelessWidget {
-  const OrganizationOnboardingRoute({super.key, this.viewingOrganization});
+  const OrganizationOnboardingRoute({
+    super.key,
+    required this.actorRoles,
+    this.viewingOrganization,
+  });
+
+  /// Passed straight through to `OrganizationOnboardingScreen` — see its own documentation.
+  final List<String> actorRoles;
 
   final CreatedOrganization? viewingOrganization;
 
@@ -33,7 +40,7 @@ class OrganizationOnboardingRoute extends StatelessWidget {
         }
         return bloc;
       },
-      child: const OrganizationOnboardingScreen(),
+      child: OrganizationOnboardingScreen(actorRoles: actorRoles),
     );
   }
 }

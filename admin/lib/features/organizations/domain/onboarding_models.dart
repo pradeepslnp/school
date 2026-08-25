@@ -12,6 +12,7 @@ class CreatedOrganization extends Equatable {
     required this.code,
     required this.name,
     required this.regionProfileCode,
+    required this.status,
     this.contactEmail,
     this.contactPhone,
   });
@@ -20,12 +21,20 @@ class CreatedOrganization extends Equatable {
   final String code;
   final String name;
   final String regionProfileCode;
+
+  /// `ACTIVE`, `SUSPENDED`, or `CLOSED` (`OrganizationStatus` on the backend, BR-TEN-006).
+  /// Carried as the raw wire string rather than a Dart enum: this console has no other reason
+  /// to branch on every possible value, and a string survives a status the backend adds later
+  /// without a matching Flutter release, the same tradeoff `AdminUser`'s scope fields make.
+  final String status;
   final String? contactEmail;
   final String? contactPhone;
 
+  bool get isSuspended => status == 'SUSPENDED';
+
   @override
   List<Object?> get props =>
-      [id, code, name, regionProfileCode, contactEmail, contactPhone];
+      [id, code, name, regionProfileCode, status, contactEmail, contactPhone];
 }
 
 /// A school as returned by `GET /schools/{id}`, `POST /schools`, or `PATCH /schools/{id}`

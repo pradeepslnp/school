@@ -25,6 +25,34 @@ interface UserJpaRepository extends JpaRepository<UserEntity, UUID> {
   Optional<UserEntity> findByPhone(String phone);
 
   /**
+   * Whichever row this tenant already has for the email, if any (feature IAM-005). Case-
+   * insensitive, matching {@code uq_users_tenant_email}'s {@code lower(email)} index.
+   */
+  Optional<UserEntity> findByEmailIgnoreCase(String email);
+
+  /**
+   * Every user holding one of the four administrative (non-transport, non-guardian) system
+   * roles, for the Users screen (A-43, feature IAM-005, IAM-008).
+   *
+   * <p>A native query, matching {@link #findRoleCodes}: {@code roles}/{@code user_roles} have no
+   * entity mapping here (see {@code RoleProvisioningPort}'s documentation), so joining through
+   * JPQL is not available and would not be clearer than SQL if it were. RLS still applies —
+   * this is an ordinary tenant-scoped read, just one expressed in SQL.
+   */
+  @Query(
+      value =
+          """
+          SELECT DISTINCT u.*
+          FROM users u
+          JOIN user_roles ur ON ur.user_id = u.id
+          JOIN roles r ON r.id = ur.role_id
+          WHERE r.code IN ('ORG_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'TRANSPORT_MANAGER')
+          ORDER BY u.first_name, u.last_name
+          """,
+      nativeQuery = true)
+  List<UserEntity> findAdministrativeUsers();
+
+  /**
    * Role codes currently assigned to a user.
    *
    * <p>A native query because {@code roles} and {@code user_roles} have no entities — this

@@ -6,12 +6,14 @@ import '../core/session/session.dart';
 import '../core/session/session_manager.dart';
 import '../features/login/ui/login_route.dart';
 import '../features/organizations/ui/organization_list_route.dart';
+import '../features/roles/ui/role_reference_screen.dart';
 import '../features/routes/ui/route_list_route.dart';
 import '../features/school_settings/ui/school_settings_route.dart';
 import '../features/shell/console_destination.dart';
 import '../features/shell/ui/console_shell.dart';
 import '../features/staff/ui/staff_list_route.dart';
 import '../features/students/ui/student_list_route.dart';
+import '../features/users/ui/user_list_route.dart';
 import '../features/vehicles/ui/vehicle_list_route.dart';
 import 'theme.dart';
 
@@ -185,25 +187,40 @@ class ConsoleRouterDelegate extends RouterDelegate<AdminRoutePath>
 
     if (location == '/organizations' &&
         visible.any((destination) => destination.location == '/organizations')) {
-      return const OrganizationListRoute();
+      return OrganizationListRoute(actorRoles: session.user.roles);
     }
     final schoolId = session.user.schoolScopeId;
+    // Only reaches `SchoolPickerField` when `schoolId` is null (ORG_ADMIN or SUPER_ADMIN) —
+    // see `StudentListRoute.initialOrganizationId`.
+    final organizationId = session.user.organizationScopeId;
 
     if (location == '/students' &&
         visible.any((destination) => destination.location == '/students')) {
-      return StudentListRoute(initialSchoolId: schoolId);
+      return StudentListRoute(initialSchoolId: schoolId, initialOrganizationId: organizationId);
     }
     if (location == '/staff' &&
         visible.any((destination) => destination.location == '/staff')) {
-      return StaffListRoute(initialSchoolId: schoolId);
+      return StaffListRoute(initialSchoolId: schoolId, initialOrganizationId: organizationId);
     }
     if (location == '/vehicles' &&
         visible.any((destination) => destination.location == '/vehicles')) {
-      return VehicleListRoute(initialSchoolId: schoolId);
+      return VehicleListRoute(initialSchoolId: schoolId, initialOrganizationId: organizationId);
     }
     if (location == '/routes' &&
         visible.any((destination) => destination.location == '/routes')) {
-      return RouteListRoute(initialSchoolId: schoolId);
+      return RouteListRoute(initialSchoolId: schoolId, initialOrganizationId: organizationId);
+    }
+    if (location == '/users' &&
+        visible.any((destination) => destination.location == '/users')) {
+      return UserListRoute(
+        actorRoles: session.user.roles,
+        initialOrganizationId: organizationId,
+        initialSchoolId: schoolId,
+      );
+    }
+    if (location == '/roles' &&
+        visible.any((destination) => destination.location == '/roles')) {
+      return const RoleReferenceScreen();
     }
     // Unlike the three destinations above, this one takes no pasted-id fallback: A-41 is
     // gated to `SCHOOL_ADMIN` alone (ConsoleDestinations), a role that always carries a

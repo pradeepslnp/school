@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
+import '../../school_scope/widgets/school_picker_field.dart';
 import '../bloc/student_list_bloc.dart';
 import '../bloc/student_list_event.dart';
 import '../bloc/student_list_state.dart';
@@ -36,7 +37,9 @@ class _StudentListScreenState extends State<StudentListScreen> {
   /// buttons the server will refuse.
   static const _editingRoles = {'SUPER_ADMIN', 'ORG_ADMIN', 'SCHOOL_ADMIN'};
 
-  late final TextEditingController _schoolId;
+  /// The school currently loaded — from [widget.initialSchoolId], from `WorkspaceContext`, or
+  /// from `SchoolPickerField` (shown only when neither of those is set; see [build]).
+  String? _selectedSchoolId;
   final _search = TextEditingController();
   final _scroll = ScrollController();
   String _searchQuery = '';
@@ -46,7 +49,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
     super.initState();
     final remembered = DependencyScope.readOnce(context).workspaceContext.value;
     final schoolId = widget.initialSchoolId ?? remembered;
-    _schoolId = TextEditingController(text: schoolId);
+    _selectedSchoolId = schoolId;
     if (schoolId != null && schoolId.isNotEmpty) {
       context.read<StudentListBloc>().add(StudentListRequested(schoolId: schoolId));
     }
@@ -57,7 +60,6 @@ class _StudentListScreenState extends State<StudentListScreen> {
   void dispose() {
     _scroll.removeListener(_onScroll);
     _scroll.dispose();
-    _schoolId.dispose();
     _search.dispose();
     super.dispose();
   }
@@ -72,8 +74,8 @@ class _StudentListScreenState extends State<StudentListScreen> {
     final remaining = _scroll.position.maxScrollExtent - _scroll.position.pixels;
     if (remaining > 400) return;
 
-    final schoolId = _schoolId.text.trim();
-    if (schoolId.isEmpty) return;
+    final schoolId = _selectedSchoolId;
+    if (schoolId == null || schoolId.isEmpty) return;
     context.read<StudentListBloc>().add(StudentListNextPageRequested(schoolId: schoolId));
   }
 
@@ -83,16 +85,16 @@ class _StudentListScreenState extends State<StudentListScreen> {
     return roles.any(_editingRoles.contains);
   }
 
-  void _load(BuildContext context) {
-    final schoolId = _schoolId.text.trim();
+  void _load(BuildContext context, String schoolId) {
     if (schoolId.isEmpty) return;
+    setState(() => _selectedSchoolId = schoolId);
     DependencyScope.of(context).workspaceContext.value = schoolId;
     context.read<StudentListBloc>().add(StudentListRequested(schoolId: schoolId));
   }
 
   Future<void> _openForm(BuildContext context, {Student? existing}) async {
     final bloc = context.read<StudentListBloc>();
-    final schoolId = _schoolId.text.trim();
+    final schoolId = _selectedSchoolId ?? '';
 
     await showDialog<void>(
       context: context,
@@ -239,30 +241,12 @@ class _StudentListScreenState extends State<StudentListScreen> {
                   ),
               ],
             ),
-            const SizedBox(height: AdminSpacing.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    key: const Key('student_list_school_id_field'),
-                    controller: _schoolId,
-                    onSubmitted: (_) => _load(context),
-                    decoration: const InputDecoration(
-                      labelText: 'School ID',
-                      hintText: 'Paste a school ID to see its register',
-                      border: OutlineInputBorder(),
-                      constraints: BoxConstraints(minHeight: kAdminTouchTarget),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AdminSpacing.md),
-                FilledButton.tonal(
-                  key: const Key('student_list_load_button'),
-                  onPressed: () => _load(context),
-                  child: const Text('Load'),
-                ),
-              ],
-            ),
+            if (widget.initialSchoolId == null) ...[
+              const SizedBox(height: AdminSpacing.lg),
+              SchoolPickerField(
+                onSchoolSelected: (schoolId) => _load(context, schoolId),
+              ),
+            ],
             const SizedBox(height: AdminSpacing.md),
             TextField(
               key: const Key('student_list_search_field'),
@@ -320,7 +304,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
     if (state.students.isEmpty) {
       return Center(
         child: Text(
-          'No register loaded. Enter a school ID above, or enrol the first student.',
+          'No register loaded. Pick a school above, or enrol the first student.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),

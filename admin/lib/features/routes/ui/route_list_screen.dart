@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
+import '../../school_scope/widgets/school_picker_field.dart';
 import '../bloc/route_list_bloc.dart';
 import '../bloc/route_list_event.dart';
 import '../bloc/route_list_state.dart';
@@ -31,31 +32,27 @@ class RouteListScreen extends StatefulWidget {
 }
 
 class _RouteListScreenState extends State<RouteListScreen> {
-  late final TextEditingController _schoolId;
+  /// The school currently loaded — from [widget.initialSchoolId], from `WorkspaceContext`, or
+  /// from `SchoolPickerField` (shown only when neither of those is set; see [build]).
+  String? _selectedSchoolId;
 
   @override
   void initState() {
     super.initState();
     // The role's own school wins if known; otherwise fall back to whatever school the
     // operator last looked at on another of these screens (WorkspaceContext) — either way,
-    // the point is to not make them paste the id again.
+    // the point is to not make them pick it again.
     final remembered = DependencyScope.readOnce(context).workspaceContext.value;
     final schoolId = widget.initialSchoolId ?? remembered;
-    _schoolId = TextEditingController(text: schoolId);
+    _selectedSchoolId = schoolId;
     if (schoolId != null && schoolId.isNotEmpty) {
       context.read<RouteListBloc>().add(RouteListRequested(schoolId: schoolId));
     }
   }
 
-  @override
-  void dispose() {
-    _schoolId.dispose();
-    super.dispose();
-  }
-
-  void _load(BuildContext context) {
-    final schoolId = _schoolId.text.trim();
+  void _load(BuildContext context, String schoolId) {
     if (schoolId.isEmpty) return;
+    setState(() => _selectedSchoolId = schoolId);
     DependencyScope.of(context).workspaceContext.value = schoolId;
     context.read<RouteListBloc>().add(RouteListRequested(schoolId: schoolId));
   }
@@ -134,30 +131,12 @@ class _RouteListScreenState extends State<RouteListScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: AdminSpacing.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    key: const Key('route_list_school_id_field'),
-                    controller: _schoolId,
-                    onSubmitted: (_) => _load(context),
-                    decoration: const InputDecoration(
-                      labelText: 'School ID',
-                      hintText: 'Paste a school ID to see its routes',
-                      border: OutlineInputBorder(),
-                      constraints: BoxConstraints(minHeight: kAdminTouchTarget),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AdminSpacing.md),
-                FilledButton.tonal(
-                  key: const Key('route_list_load_button'),
-                  onPressed: () => _load(context),
-                  child: const Text('Load'),
-                ),
-              ],
-            ),
+            if (widget.initialSchoolId == null) ...[
+              const SizedBox(height: AdminSpacing.lg),
+              SchoolPickerField(
+                onSchoolSelected: (schoolId) => _load(context, schoolId),
+              ),
+            ],
             const SizedBox(height: AdminSpacing.lg),
             Expanded(
               child: BlocBuilder<RouteListBloc, RouteListState>(
@@ -172,7 +151,7 @@ class _RouteListScreenState extends State<RouteListScreen> {
                     final color = context.status.critical;
                     return Center(
                       child: Text(
-                        'That could not be loaded right now. Check the school ID and try again.',
+                        'That could not be loaded right now. Try again.',
                         style: theme.textTheme.bodyMedium?.copyWith(color: color),
                       ),
                     );
@@ -181,7 +160,7 @@ class _RouteListScreenState extends State<RouteListScreen> {
                   if (state.routes.isEmpty) {
                     return Center(
                       child: Text(
-                        'No routes loaded. Enter a school ID above, or add the first route.',
+                        'No routes loaded. Pick a school above, or add the first route.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

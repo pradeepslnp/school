@@ -135,10 +135,43 @@ class _OrganizationTable extends StatelessWidget {
             minVerticalPadding: AdminSpacing.md,
             title: Text(organization.name),
             subtitle: Text('${organization.code} · ${organization.regionProfileCode}'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (organization.isSuspended) _SuspendedChip(theme: theme),
+                const SizedBox(width: AdminSpacing.sm),
+                const Icon(Icons.chevron_right),
+              ],
+            ),
             onTap: () => onOpenOrganization(organization),
           );
         },
+      ),
+    );
+  }
+}
+
+/// A small "Suspended" flag on the organizations list (A-41) so an operator scanning the
+/// whole list spots a suspended organization without opening it — the full status badge with
+/// its Active/Closed states lives on the details view (`_OrganizationLifecycleHeader`);
+/// nothing else on this list is worth flagging at a glance.
+class _SuspendedChip extends StatelessWidget {
+  const _SuspendedChip({required this.theme});
+
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = context.status.critical;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AdminSpacing.sm, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        'Suspended',
+        style: theme.textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.w600),
       ),
     );
   }

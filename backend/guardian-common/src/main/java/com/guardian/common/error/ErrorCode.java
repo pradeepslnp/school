@@ -29,6 +29,10 @@ public enum ErrorCode {
   AUTH_TENANT_MISMATCH(404),
   AUTH_JUSTIFICATION_REQUIRED(403),
 
+  // --- Identity & Access (MOD-02) ------------------------------------------------------
+  USER_EMAIL_EXISTS(409),
+  USER_NOT_FOUND(404),
+
   // --- Validation ---------------------------------------------------------------------
   VALIDATION_FAILED(400),
   VALIDATION_REQUIRED_FIELD_MISSING(400),

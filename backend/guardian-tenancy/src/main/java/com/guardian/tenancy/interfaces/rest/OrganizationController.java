@@ -3,10 +3,13 @@ package com.guardian.tenancy.interfaces.rest;
 import com.guardian.common.security.CurrentActor;
 import com.guardian.common.security.RequiresPermission;
 import com.guardian.tenancy.application.command.CreateOrganizationCommand;
+import com.guardian.tenancy.application.command.OrganizationLifecycleCommand;
 import com.guardian.tenancy.application.command.UpdateOrganizationCommand;
 import com.guardian.tenancy.application.usecase.CreateOrganizationUseCase;
 import com.guardian.tenancy.application.usecase.GetOrganizationUseCase;
 import com.guardian.tenancy.application.usecase.ListOrganizationsUseCase;
+import com.guardian.tenancy.application.usecase.ReactivateOrganizationUseCase;
+import com.guardian.tenancy.application.usecase.SuspendOrganizationUseCase;
 import com.guardian.tenancy.application.usecase.UpdateOrganizationUseCase;
 import com.guardian.tenancy.domain.Organization;
 import com.guardian.tenancy.domain.OrganizationCode;
@@ -46,16 +49,22 @@ public class OrganizationController {
   private final GetOrganizationUseCase getOrganization;
   private final ListOrganizationsUseCase listOrganizations;
   private final UpdateOrganizationUseCase updateOrganization;
+  private final SuspendOrganizationUseCase suspendOrganization;
+  private final ReactivateOrganizationUseCase reactivateOrganization;
 
   public OrganizationController(
       CreateOrganizationUseCase createOrganization,
       GetOrganizationUseCase getOrganization,
       ListOrganizationsUseCase listOrganizations,
-      UpdateOrganizationUseCase updateOrganization) {
+      UpdateOrganizationUseCase updateOrganization,
+      SuspendOrganizationUseCase suspendOrganization,
+      ReactivateOrganizationUseCase reactivateOrganization) {
     this.createOrganization = createOrganization;
     this.getOrganization = getOrganization;
     this.listOrganizations = listOrganizations;
     this.updateOrganization = updateOrganization;
+    this.suspendOrganization = suspendOrganization;
+    this.reactivateOrganization = reactivateOrganization;
   }
 
   /**
@@ -116,5 +125,34 @@ public class OrganizationController {
             actor.role());
 
     return OrganizationResponse.from(updateOrganization.execute(command));
+  }
+
+  /**
+   * {@code SUPER_ADMIN} only (PERMISSION_MATRIX.md) — blocks the organization's user access on
+   * the caller's next request without touching any data (BR-TEN-006). Idempotent: suspending an
+   * already-suspended organization returns 200 with its current state rather than an error.
+   */
+  @PostMapping("/{organizationId}/suspend")
+  @RequiresPermission("PERM-ORG-SUSPEND")
+  public OrganizationResponse suspend(@PathVariable UUID organizationId, CurrentActor actor) {
+    OrganizationLifecycleCommand command =
+        new OrganizationLifecycleCommand(
+            OrganizationId.of(organizationId), actor.userId(), actor.role());
+
+    return OrganizationResponse.from(suspendOrganization.execute(command));
+  }
+
+  /**
+   * The reverse of {@link #suspend}: restores the organization's user access (BR-TEN-006).
+   * Idempotent for the same reason.
+   */
+  @PostMapping("/{organizationId}/reactivate")
+  @RequiresPermission("PERM-ORG-SUSPEND")
+  public OrganizationResponse reactivate(@PathVariable UUID organizationId, CurrentActor actor) {
+    OrganizationLifecycleCommand command =
+        new OrganizationLifecycleCommand(
+            OrganizationId.of(organizationId), actor.userId(), actor.role());
+
+    return OrganizationResponse.from(reactivateOrganization.execute(command));
   }
 }
