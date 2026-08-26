@@ -106,6 +106,9 @@ enum ErrorCode {
   studentNotFound,
   studentAdmissionNoExists,
   studentNotActive,
+  // First met by the student route-assignment flow (RTE-003).
+  studentHasNoActiveGuardian,
+  studentAlreadyAssignedForDirection,
 
   // --- Transport & system ---
   rateLimitExceeded,
@@ -137,6 +140,8 @@ enum ErrorCode {
         'STUDENT_NOT_FOUND' => studentNotFound,
         'STUDENT_ADMISSION_NO_EXISTS' => studentAdmissionNoExists,
         'STUDENT_NOT_ACTIVE' => studentNotActive,
+        'STUDENT_HAS_NO_ACTIVE_GUARDIAN' => studentHasNoActiveGuardian,
+        'STUDENT_ALREADY_ASSIGNED_FOR_DIRECTION' => studentAlreadyAssignedForDirection,
         'RATE_LIMIT_EXCEEDED' => rateLimitExceeded,
         'DEPENDENCY_UNAVAILABLE' => dependencyUnavailable,
         'INTERNAL_ERROR' => internalError,

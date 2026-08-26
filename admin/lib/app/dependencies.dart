@@ -15,6 +15,9 @@ import '../features/routes/data_provider/duty_assignment_data_provider.dart';
 import '../features/routes/data_provider/route_data_provider.dart';
 import '../features/routes/repository/duty_assignment_repository.dart';
 import '../features/routes/repository/route_repository.dart';
+import '../features/route_assignments/data_provider/route_assignment_data_provider.dart';
+import '../features/route_assignments/repository/route_assignment_repository.dart';
+import '../features/routes/repository/stop_repository.dart';
 import '../features/staff/data_provider/staff_data_provider.dart';
 import '../features/students/data_provider/student_data_provider.dart';
 import '../features/students/repository/student_repository.dart';
@@ -44,6 +47,8 @@ class AppDependencies {
     required this.studentRepository,
     required this.vehicleRepository,
     required this.routeRepository,
+    required this.stopRepository,
+    required this.routeAssignmentRepository,
     required this.dutyAssignmentRepository,
     required this.userRepository,
     required this.platformHealthRepository,
@@ -78,6 +83,14 @@ class AppDependencies {
   /// Route creation (A-30, RTE-001) — reached by roles holding `PERM-ROUTE-MANAGE`
   /// (PERMISSION_MATRIX.md); see `ConsoleDestinations`.
   final RouteRepository routeRepository;
+
+  /// A route's stops (RTE-001, A-31 interim) — reached from the Routes screen; written with
+  /// `PERM-ROUTE-MANAGE`.
+  final StopRepository stopRepository;
+
+  /// A student's pickup/drop assignments (RTE-003, A-11) — reached from the student detail
+  /// screen; written with `PERM-ROUTE-ASSIGN-STUDENT`.
+  final RouteAssignmentRepository routeAssignmentRepository;
 
   /// Duty (crew) assignment (STF-004) — reached from the Routes screen by roles holding
   /// `PERM-DUTY-ASSIGN` (PERMISSION_MATRIX.md); see `RouteCrewDialog`.
@@ -143,6 +156,14 @@ class AppDependencies {
       dataProvider: RouteDataProvider(client: restClient),
     );
 
+    final stopRepository = StopRepository(
+      dataProvider: RouteDataProvider(client: restClient),
+    );
+
+    final routeAssignmentRepository = RouteAssignmentRepository(
+      dataProvider: RouteAssignmentDataProvider(client: restClient),
+    );
+
     final dutyAssignmentRepository = DutyAssignmentRepository(
       dataProvider: DutyAssignmentDataProvider(client: restClient),
     );
@@ -176,6 +197,8 @@ class AppDependencies {
       studentRepository: studentRepository,
       vehicleRepository: vehicleRepository,
       routeRepository: routeRepository,
+      stopRepository: stopRepository,
+      routeAssignmentRepository: routeAssignmentRepository,
       dutyAssignmentRepository: dutyAssignmentRepository,
       userRepository: userRepository,
       platformHealthRepository: platformHealthRepository,

@@ -37,4 +37,19 @@ class RouteDataProvider {
   Future<ApiResponse> listRoutes({required String schoolId}) {
     return client.get('/routes', query: {'schoolId': schoolId});
   }
+
+  /// `GET /routes/{routeId}/stops` — the route's ordered stop list (`PERM-ROUTE-VIEW`).
+  Future<ApiResponse> getStops({required String routeId}) {
+    return client.get('/routes/$routeId/stops');
+  }
+
+  /// `PUT /routes/{routeId}/stops` — replaces the route's whole stop list (`PERM-ROUTE-MANAGE`).
+  /// Always the full ordered set, never a single-stop edit — matching the endpoint's own
+  /// contract (FLEET_STAFF_ROUTES_API.md).
+  Future<ApiResponse> replaceStops({
+    required String routeId,
+    required List<Map<String, Object?>> stops,
+  }) {
+    return client.put('/routes/$routeId/stops', body: {'stops': stops});
+  }
 }

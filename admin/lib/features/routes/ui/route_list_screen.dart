@@ -13,6 +13,7 @@ import '../bloc/route_list_state.dart';
 import '../domain/route_models.dart';
 import '../widgets/create_route_form.dart';
 import 'route_crew_dialog.dart';
+import 'route_stops_dialog.dart';
 
 /// A-30 — Route list: the school's standing routes (RTE-001). Reached only by roles holding
 /// `PERM-ROUTE-MANAGE` (PERMISSION_MATRIX.md) — see `ConsoleDestinations`.
@@ -188,6 +189,10 @@ _AddRouteButton(
                       context: context,
                       builder: (_) => RouteCrewDialog(route: route),
                     ),
+                    onOpenStops: (route) => showDialog<void>(
+                      context: context,
+                      builder: (_) => RouteStopsDialog(route: route),
+                    ),
                   );
                 },
               ),
@@ -200,10 +205,15 @@ _AddRouteButton(
 }
 
 class _RouteTable extends StatelessWidget {
-  const _RouteTable({required this.routes, required this.onOpenRoute});
+  const _RouteTable({
+    required this.routes,
+    required this.onOpenRoute,
+    required this.onOpenStops,
+  });
 
   final List<CreatedRoute> routes;
   final ValueChanged<CreatedRoute> onOpenRoute;
+  final ValueChanged<CreatedRoute> onOpenStops;
 
   @override
   Widget build(BuildContext context) {
@@ -227,14 +237,25 @@ class _RouteTable extends StatelessWidget {
             minVerticalPadding: AdminSpacing.md,
             title: Text(route.name),
             subtitle: Text(route.code),
-            trailing: Tooltip(
-              message: route.hasVehicle ? 'Has a default bus' : 'No bus assigned yet',
-              child: Icon(
-                route.hasVehicle ? Icons.directions_bus : Icons.directions_bus_outlined,
-                color: route.hasVehicle
-                    ? context.status.safe
-                    : context.status.warning,
-              ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  key: Key('route_list_stops_${route.id}'),
+                  icon: const Icon(Icons.alt_route_outlined),
+                  tooltip: 'Stops on ${route.name}',
+                  onPressed: () => onOpenStops(route),
+                ),
+                Tooltip(
+                  message: route.hasVehicle ? 'Has a default bus' : 'No bus assigned yet',
+                  child: Icon(
+                    route.hasVehicle ? Icons.directions_bus : Icons.directions_bus_outlined,
+                    color: route.hasVehicle
+                        ? context.status.safe
+                        : context.status.warning,
+                  ),
+                ),
+              ],
             ),
             onTap: () => onOpenRoute(route),
           );
