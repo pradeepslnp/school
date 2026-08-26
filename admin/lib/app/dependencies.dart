@@ -3,6 +3,8 @@ import 'package:flutter/widgets.dart';
 import '../core/network/rest_client.dart';
 import '../core/session/session_manager.dart';
 import '../core/session/session_store.dart';
+import '../features/guardians/data_provider/guardian_data_provider.dart';
+import '../features/guardians/repository/guardian_repository.dart';
 import '../features/login/data_provider/login_data_provider.dart';
 import '../features/login/repository/login_repository.dart';
 import '../features/organizations/data_provider/organization_data_provider.dart';
@@ -45,6 +47,7 @@ class AppDependencies {
     required this.dutyAssignmentRepository,
     required this.userRepository,
     required this.platformHealthRepository,
+    required this.guardianRepository,
     required this.workspaceContext,
   });
 
@@ -87,6 +90,11 @@ class AppDependencies {
   /// Platform health (screen A-62) — `SUPER_ADMIN` only (`PERM-PLATFORM-HEALTH-VIEW`); see
   /// `ConsoleDestinations`.
   final PlatformHealthRepository platformHealthRepository;
+
+  /// A student's guardians (parents) — links, and the sign-in each parent gets from
+  /// their phone (GRD-001, GRD-002, screen A-11). Reached from the student detail
+  /// screen by roles holding `PERM-GUARDIAN-LINK`.
+  final GuardianRepository guardianRepository;
 
   /// The school id remembered across the Drivers, Vehicles, and Routes screens for this
   /// session — see `WorkspaceContext`.
@@ -147,6 +155,10 @@ class AppDependencies {
       dataProvider: PlatformHealthDataProvider(client: restClient),
     );
 
+    final guardianRepository = GuardianRepository(
+      dataProvider: GuardianDataProvider(client: restClient),
+    );
+
     final workspaceContext = WorkspaceContext();
 
     sessionManager = SessionManager(
@@ -167,6 +179,7 @@ class AppDependencies {
       dutyAssignmentRepository: dutyAssignmentRepository,
       userRepository: userRepository,
       platformHealthRepository: platformHealthRepository,
+      guardianRepository: guardianRepository,
       workspaceContext: workspaceContext,
     );
 

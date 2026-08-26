@@ -10,6 +10,7 @@ import '../bloc/student_list_state.dart';
 import '../domain/student_models.dart';
 import '../widgets/student_error_text.dart';
 import '../widgets/student_form.dart';
+import 'student_detail_route.dart';
 
 /// A-10 — Student register: the school's roll, and the entry point to a student's record
 /// (STU-001, STU-004). Reached by roles holding `PERM-STUDENT-VIEW`; the mutation affordances
@@ -90,6 +91,16 @@ class _StudentListScreenState extends State<StudentListScreen> {
     setState(() => _selectedSchoolId = schoolId);
     DependencyScope.of(context).workspaceContext.value = schoolId;
     context.read<StudentListBloc>().add(StudentListRequested(schoolId: schoolId));
+  }
+
+  /// Opens the record for one student (A-11) as a pushed page. A detail view of a
+  /// specific student, so it is navigated to rather than being a nav-rail destination.
+  void _openDetail(BuildContext context, Student student) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => StudentDetailRoute(student: student),
+      ),
+    );
   }
 
   Future<void> _openForm(BuildContext context, {Student? existing}) async {
@@ -355,6 +366,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
               return _StudentRow(
                 student: students[index],
                 canEdit: canEdit,
+                onOpen: () => _openDetail(context, students[index]),
                 onEdit: () => _openForm(context, existing: students[index]),
                 onWithdraw: () => _confirmWithdraw(context, students[index]),
               );
@@ -405,12 +417,14 @@ class _StudentRow extends StatelessWidget {
     required this.canEdit,
     required this.onEdit,
     required this.onWithdraw,
+    required this.onOpen,
   });
 
   final Student student;
   final bool canEdit;
   final VoidCallback onEdit;
   final VoidCallback onWithdraw;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -418,6 +432,7 @@ class _StudentRow extends StatelessWidget {
 
     return ListTile(
       key: Key('student_list_row_${student.id}'),
+      onTap: onOpen,
       leading: CircleAvatar(
         child: Icon(student.hasPhoto ? Icons.face : Icons.person_outline),
       ),
