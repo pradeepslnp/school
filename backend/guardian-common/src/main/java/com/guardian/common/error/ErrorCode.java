@@ -54,6 +54,9 @@ public enum ErrorCode {
   // pick a different number, not a different kind of request (BR-STU-003).
   STUDENT_ADMISSION_NO_EXISTS(409),
   STUDENT_NOT_ACTIVE(422),
+  // BR-STU-002: a child must not be put on a bus with no guardian authorised to receive
+  // them at the other end. Blocks route assignment until at least one exists.
+  STUDENT_HAS_NO_ACTIVE_GUARDIAN(422),
   // 403, not 422: the caller lacks the handover right on the relationship, which is an
   // authorisation fact rather than a malformed nomination (BR-GRD-006).
   GUARDIAN_NOT_AUTHORISED_TO_NOMINATE(403),
@@ -83,6 +86,9 @@ public enum ErrorCode {
   ROUTE_MINIMUM_STOPS_REQUIRED(422),
   ROUTE_GEOFENCE_OUT_OF_BOUNDS(422),
   ROUTE_STOP_TIMES_NOT_INCREASING(422),
+  // BR-ROUTE-004: at most one active pickup and one active drop per student. The DB's
+  // uq_rsa_student_direction is the guarantee; this names the conflict for the client.
+  STUDENT_ALREADY_ASSIGNED_FOR_DIRECTION(409),
 
   // --- Absence ----------------------------------------------------------------------------
   // The manifest is already materialised and immutable; a change after this point is a

@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
+import '../../../core/domain.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
 import '../../school_scope/widgets/school_picker_field.dart';
+import '../../vehicles/domain/vehicle_models.dart';
 import '../bloc/route_list_bloc.dart';
 import '../bloc/route_list_event.dart';
 import '../bloc/route_list_state.dart';
@@ -59,6 +61,18 @@ class _RouteListScreenState extends State<RouteListScreen> {
 
   Future<void> _openAddForm(BuildContext context) async {
     final bloc = context.read<RouteListBloc>();
+    final schoolId = _selectedSchoolId!;
+
+    // The vehicle dropdown below needs this school's fleet — fetched once, here, rather than
+    // inside the dialog, so the dialog itself never needs its own loading state.
+    final dependencies = DependencyScope.of(context);
+    final vehicleResult = await dependencies.vehicleRepository.listVehicles(schoolId: schoolId);
+    final vehicles = switch (vehicleResult) {
+      Success<List<CreatedVehicle>>(:final value) => value,
+      Failure() => const <CreatedVehicle>[],
+    };
+
+    if (!context.mounted) return;
 
     await showDialog<void>(
       context: context,
@@ -75,6 +89,8 @@ class _RouteListScreenState extends State<RouteListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     CreateRouteForm(
+                      schoolId: schoolId,
+                      vehicles: vehicles,
                       isSubmitting: state.isSubmitting,
                       onCancel: () => Navigator.of(dialogContext).pop(),
                       onSubmit: ({
@@ -123,11 +139,9 @@ class _RouteListScreenState extends State<RouteListScreen> {
                 Expanded(
                   child: Text('Routes', style: theme.textTheme.headlineSmall),
                 ),
-                FilledButton.icon(
-                  key: const Key('route_list_add_button'),
+_AddRouteButton(
+                  enabled: _selectedSchoolId != null,
                   onPressed: () => _openAddForm(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add route'),
                 ),
               ],
             ),
@@ -227,5 +241,29 @@ class _RouteTable extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// The "Add route" action — a plain [FilledButton] when a school is selected, or the same
+/// button disabled with a [Tooltip] explaining why when it is not. Enrolling/adding with no
+/// school chosen would submit against an empty schoolId — see `StudentListScreen._EnrolButton`
+/// for the original reasoning, applied identically here.
+class _AddRouteButton extends StatelessWidget {
+  const _AddRouteButton({required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = FilledButton.icon(
+      key: const Key('route_list_add_button'),
+      onPressed: enabled ? onPressed : null,
+      icon: const Icon(Icons.add),
+      label: const Text('Add route'),
+    );
+
+    if (enabled) return button;
+    return Tooltip(message: 'Pick a school first', child: button);
   }
 }

@@ -179,6 +179,18 @@ class ConsoleDestinations {
       // fixed system-role matrix rather than editing anything (see `RoleReferenceScreen`).
       requiredAnyRole: ['SUPER_ADMIN', 'ORG_ADMIN', 'SCHOOL_ADMIN'],
     ),
+    ConsoleDestination(
+      id: 'A-62',
+      label: 'Platform health',
+      icon: Icons.monitor_heart_outlined,
+      selectedIcon: Icons.monitor_heart,
+      location: '/platform-health',
+      // A platform-wide pulse check, not an incident-response tool for one organization's
+      // bus — deliberately outside the narrow-layout subset (ADMIN_WEB.md §Responsive).
+      availableOnNarrowLayout: false,
+      // PERM-PLATFORM-HEALTH-VIEW's sole holder (PERMISSION_MATRIX.md, Platform Operations).
+      requiredAnyRole: ['SUPER_ADMIN'],
+    ),
   ];
 
   /// The subset shown below 768 px (ADMIN_WEB.md §Responsive).

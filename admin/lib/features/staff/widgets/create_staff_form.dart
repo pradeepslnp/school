@@ -6,18 +6,21 @@ import '../../organizations/widgets/onboarding_button_spinner.dart';
 /// Registers a driver or attendant (STF-001) and, in the same request, provisions their
 /// driver-app sign-in — see `CreateTransportStaffUseCase` on the backend.
 ///
-/// `schoolId` is a plain field rather than a picker: this console has no schools list/picker
-/// screen yet (Organizations' own school view only ever shows the organization's first school
-/// today — see `OrganizationDetailsView`), so asking the operator for the id directly is the
-/// smallest correct thing rather than building picker infrastructure this screen would be the
-/// only caller of.
+/// [schoolId] comes in already decided: the operator picked it on the Drivers screen (via
+/// `SchoolPickerField`, or their own single-school scope) before this dialog could even be
+/// opened — see `StaffListScreen`'s add button, which is disabled until a school is selected.
+/// Asking for it again here, whether as free text or a second dropdown, would just be the
+/// same choice made twice.
 class CreateStaffForm extends StatefulWidget {
   const CreateStaffForm({
     super.key,
+    required this.schoolId,
     required this.onSubmit,
     required this.onCancel,
     this.isSubmitting = false,
   });
+
+  final String schoolId;
 
   final void Function({
     required String schoolId,
@@ -37,7 +40,6 @@ class CreateStaffForm extends StatefulWidget {
 }
 
 class _CreateStaffFormState extends State<CreateStaffForm> {
-  final _schoolId = TextEditingController();
   final _employeeCode = TextEditingController();
   final _firstName = TextEditingController();
   final _lastName = TextEditingController();
@@ -47,7 +49,6 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
 
   @override
   void dispose() {
-    _schoolId.dispose();
     _employeeCode.dispose();
     _firstName.dispose();
     _lastName.dispose();
@@ -59,7 +60,7 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
   void _submit() {
     if (widget.isSubmitting) return;
     widget.onSubmit(
-      schoolId: _schoolId.text.trim(),
+      schoolId: widget.schoolId,
       staffType: _staffType,
       firstName: _firstName.text,
       lastName: _lastName.text,
@@ -81,7 +82,8 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
         const SizedBox(height: AdminSpacing.xs),
         Text(
           'Creates the roster record and a working driver-app sign-in in one step — the '
-          'phone number below is what they sign in with (phone + one-time code).',
+          'phone number below is what they sign in with (phone + one-time code). Added to '
+          'the school you have selected above.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -100,21 +102,9 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
         ),
         const SizedBox(height: AdminSpacing.md),
         TextField(
-          key: const Key('staff_form_school_id_field'),
-          controller: _schoolId,
-          autofocus: true,
-          enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'School ID',
-            hintText: 'The school this person drives or assists for',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
           key: const Key('staff_form_first_name_field'),
           controller: _firstName,
+          autofocus: true,
           enabled: !widget.isSubmitting,
           decoration: const InputDecoration(
             labelText: 'First name',

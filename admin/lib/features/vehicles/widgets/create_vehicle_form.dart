@@ -5,16 +5,21 @@ import '../../organizations/widgets/onboarding_button_spinner.dart';
 
 /// Registers a vehicle (FLT-001).
 ///
-/// `schoolId` is a plain field rather than a picker — same reasoning as `CreateStaffForm`: no
-/// schools list/picker screen exists yet, so asking the operator for the id directly is the
-/// smallest correct thing.
+/// [schoolId] comes in already decided: the operator picked it on the Vehicles screen (via
+/// `SchoolPickerField`, or their own single-school scope) before this dialog could even be
+/// opened — see `VehicleListScreen`'s add button, which is disabled until a school is
+/// selected. Asking for it again here, whether as free text or a second dropdown, would just
+/// be the same choice made twice.
 class CreateVehicleForm extends StatefulWidget {
   const CreateVehicleForm({
     super.key,
+    required this.schoolId,
     required this.onSubmit,
     required this.onCancel,
     this.isSubmitting = false,
   });
+
+  final String schoolId;
 
   final void Function({
     required String schoolId,
@@ -33,7 +38,6 @@ class CreateVehicleForm extends StatefulWidget {
 }
 
 class _CreateVehicleFormState extends State<CreateVehicleForm> {
-  final _schoolId = TextEditingController();
   final _registrationNo = TextEditingController();
   final _displayName = TextEditingController();
   final _seatingCapacity = TextEditingController();
@@ -42,7 +46,6 @@ class _CreateVehicleFormState extends State<CreateVehicleForm> {
 
   @override
   void dispose() {
-    _schoolId.dispose();
     _registrationNo.dispose();
     _displayName.dispose();
     _seatingCapacity.dispose();
@@ -53,7 +56,7 @@ class _CreateVehicleFormState extends State<CreateVehicleForm> {
   void _submit() {
     if (widget.isSubmitting) return;
     widget.onSubmit(
-      schoolId: _schoolId.text.trim(),
+      schoolId: widget.schoolId,
       registrationNo: _registrationNo.text,
       displayName: _displayName.text,
       vehicleType: _vehicleType,
@@ -74,7 +77,7 @@ class _CreateVehicleFormState extends State<CreateVehicleForm> {
         const SizedBox(height: AdminSpacing.xs),
         Text(
           'The display name is what parents see in notifications — "Bus 12", not the plate '
-          'number.',
+          'number. Added to the school you have selected above.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -94,20 +97,9 @@ class _CreateVehicleFormState extends State<CreateVehicleForm> {
         ),
         const SizedBox(height: AdminSpacing.md),
         TextField(
-          key: const Key('vehicle_form_school_id_field'),
-          controller: _schoolId,
-          autofocus: true,
-          enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'School ID',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
           key: const Key('vehicle_form_registration_no_field'),
           controller: _registrationNo,
+          autofocus: true,
           enabled: !widget.isSubmitting,
           textCapitalization: TextCapitalization.characters,
           decoration: const InputDecoration(

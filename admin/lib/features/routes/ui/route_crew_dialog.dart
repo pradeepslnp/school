@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
+import '../../../core/domain.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
+import '../../staff/domain/staff_models.dart';
 import '../bloc/duty_assignment_bloc.dart';
 import '../bloc/duty_assignment_event.dart';
 import '../bloc/duty_assignment_state.dart';
@@ -40,6 +42,18 @@ class _RouteCrewView extends StatelessWidget {
   Future<void> _openAssignForm(BuildContext context) async {
     final bloc = context.read<DutyAssignmentBloc>();
 
+    // The driver/attendant dropdown below needs this route's own school's roster — fetched
+    // once, here, rather than inside the dialog, so the dialog itself never needs its own
+    // loading state.
+    final dependencies = DependencyScope.of(context);
+    final staffResult = await dependencies.staffRepository.listStaff(schoolId: route.schoolId);
+    final staffOptions = switch (staffResult) {
+      Success<List<CreatedStaff>>(:final value) => value,
+      Failure() => const <CreatedStaff>[],
+    };
+
+    if (!context.mounted) return;
+
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => Dialog(
@@ -55,6 +69,7 @@ class _RouteCrewView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     AssignDutyForm(
+                      staffOptions: staffOptions,
                       isSubmitting: state.isSubmitting,
                       onCancel: () => Navigator.of(dialogContext).pop(),
                       onSubmit: ({required staffId, required role, direction}) {

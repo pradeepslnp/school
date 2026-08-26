@@ -74,6 +74,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     CreateVehicleForm(
+                      schoolId: _selectedSchoolId!,
                       isSubmitting: state.isSubmitting,
                       onCancel: () => Navigator.of(dialogContext).pop(),
                       onSubmit: ({
@@ -126,11 +127,9 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                 Expanded(
                   child: Text('Vehicles', style: theme.textTheme.headlineSmall),
                 ),
-                FilledButton.icon(
-                  key: const Key('vehicle_list_add_button'),
+_AddVehicleButton(
+                  enabled: _selectedSchoolId != null,
                   onPressed: () => _openAddForm(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add vehicle'),
                 ),
               ],
             ),
@@ -223,5 +222,29 @@ class _VehicleTable extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// The "Add vehicle" action — a plain [FilledButton] when a school is selected, or the same
+/// button disabled with a [Tooltip] explaining why when it is not. Enrolling/adding with no
+/// school chosen would submit against an empty schoolId — see `StudentListScreen._EnrolButton`
+/// for the original reasoning, applied identically here.
+class _AddVehicleButton extends StatelessWidget {
+  const _AddVehicleButton({required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = FilledButton.icon(
+      key: const Key('vehicle_list_add_button'),
+      onPressed: enabled ? onPressed : null,
+      icon: const Icon(Icons.add),
+      label: const Text('Add vehicle'),
+    );
+
+    if (enabled) return button;
+    return Tooltip(message: 'Pick a school first', child: button);
   }
 }

@@ -7,6 +7,8 @@ import '../features/login/data_provider/login_data_provider.dart';
 import '../features/login/repository/login_repository.dart';
 import '../features/organizations/data_provider/organization_data_provider.dart';
 import '../features/organizations/repository/organization_onboarding_repository.dart';
+import '../features/platform_health/data_provider/platform_health_data_provider.dart';
+import '../features/platform_health/repository/platform_health_repository.dart';
 import '../features/routes/data_provider/duty_assignment_data_provider.dart';
 import '../features/routes/data_provider/route_data_provider.dart';
 import '../features/routes/repository/duty_assignment_repository.dart';
@@ -42,6 +44,7 @@ class AppDependencies {
     required this.routeRepository,
     required this.dutyAssignmentRepository,
     required this.userRepository,
+    required this.platformHealthRepository,
     required this.workspaceContext,
   });
 
@@ -80,6 +83,10 @@ class AppDependencies {
   /// Administrative-user management (IAM-005, IAM-008, screen A-43) — reached by roles
   /// holding `PERM-USER-VIEW`; see `ConsoleDestinations`.
   final UserRepository userRepository;
+
+  /// Platform health (screen A-62) — `SUPER_ADMIN` only (`PERM-PLATFORM-HEALTH-VIEW`); see
+  /// `ConsoleDestinations`.
+  final PlatformHealthRepository platformHealthRepository;
 
   /// The school id remembered across the Drivers, Vehicles, and Routes screens for this
   /// session — see `WorkspaceContext`.
@@ -136,6 +143,10 @@ class AppDependencies {
       dataProvider: UserDataProvider(client: restClient),
     );
 
+    final platformHealthRepository = PlatformHealthRepository(
+      dataProvider: PlatformHealthDataProvider(client: restClient),
+    );
+
     final workspaceContext = WorkspaceContext();
 
     sessionManager = SessionManager(
@@ -155,6 +166,7 @@ class AppDependencies {
       routeRepository: routeRepository,
       dutyAssignmentRepository: dutyAssignmentRepository,
       userRepository: userRepository,
+      platformHealthRepository: platformHealthRepository,
       workspaceContext: workspaceContext,
     );
 

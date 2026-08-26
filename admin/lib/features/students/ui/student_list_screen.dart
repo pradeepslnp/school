@@ -232,13 +232,14 @@ class _StudentListScreenState extends State<StudentListScreen> {
                 Expanded(
                   child: Text('Students', style: theme.textTheme.headlineSmall),
                 ),
-                if (canEdit)
-                  FilledButton.icon(
-                    key: const Key('student_list_add_button'),
-                    onPressed: () => _openForm(context),
-                    icon: const Icon(Icons.person_add_alt_1),
-                    label: const Text('Enrol student'),
-                  ),
+                if (canEdit) _EnrolButton(
+                  // Disabled until a school is chosen below — enrolling with no school
+                  // selected would submit an empty schoolId (an operator managing more than
+                  // one organization sees the picker below before any school is known), and
+                  // a disabled button with a reason beats a dialog that fails after the fact.
+                  enabled: _selectedSchoolId != null,
+                  onPressed: () => _openForm(context),
+                ),
               ],
             ),
             if (widget.initialSchoolId == null) ...[
@@ -372,6 +373,28 @@ class _StudentListScreenState extends State<StudentListScreen> {
           ),
       ],
     );
+  }
+}
+
+/// The "Enrol student" action — a plain [FilledButton] when a school is selected, or the
+/// same button disabled with a [Tooltip] explaining why when it is not.
+class _EnrolButton extends StatelessWidget {
+  const _EnrolButton({required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = FilledButton.icon(
+      key: const Key('student_list_add_button'),
+      onPressed: enabled ? onPressed : null,
+      icon: const Icon(Icons.person_add_alt_1),
+      label: const Text('Enrol student'),
+    );
+
+    if (enabled) return button;
+    return Tooltip(message: 'Pick a school first', child: button);
   }
 }
 

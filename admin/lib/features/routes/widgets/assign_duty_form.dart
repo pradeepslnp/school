@@ -2,18 +2,25 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../organizations/widgets/onboarding_button_spinner.dart';
+import '../../staff/domain/staff_models.dart';
 
 /// Assigns a driver or attendant to a route's standing roster (STF-004).
 ///
-/// `staffId` is a plain field — the Drivers screen (A-23) is where an operator finds it; no
-/// combined picker exists yet, matching every other id field in this console.
+/// [staffOptions] is that route's own school's roster, fetched once when the dialog opens
+/// (see `RouteCrewDialog._openAssignForm`) — a name picked from a real, current list beats a
+/// staff id copied from another screen and pasted here, which is what this used to require.
+/// Auto-selects the only entry when there is exactly one, matching `SchoolPickerField`'s own
+/// reasoning for skipping a dropdown that has nothing to decide.
 class AssignDutyForm extends StatefulWidget {
   const AssignDutyForm({
     super.key,
+    required this.staffOptions,
     required this.onSubmit,
     required this.onCancel,
     this.isSubmitting = false,
   });
+
+  final List<CreatedStaff> staffOptions;
 
   final void Function({
     required String staffId,
@@ -29,20 +36,24 @@ class AssignDutyForm extends StatefulWidget {
 }
 
 class _AssignDutyFormState extends State<AssignDutyForm> {
-  final _staffId = TextEditingController();
+  String? _staffId;
   String _role = 'DRIVER';
   String _direction = 'BOTH';
 
   @override
-  void dispose() {
-    _staffId.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    if (widget.staffOptions.length == 1) {
+      _staffId = widget.staffOptions.first.id;
+    }
   }
 
   void _submit() {
     if (widget.isSubmitting) return;
+    final staffId = _staffId;
+    if (staffId == null) return;
     widget.onSubmit(
-      staffId: _staffId.text.trim(),
+      staffId: staffId,
       role: _role,
       direction: _direction == 'BOTH' ? null : _direction,
     );
@@ -58,17 +69,28 @@ class _AssignDutyFormState extends State<AssignDutyForm> {
       children: [
         Text('Assign crew', style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.sm),
-        TextField(
+        DropdownButtonFormField<String>(
           key: const Key('duty_form_staff_id_field'),
-          controller: _staffId,
-          autofocus: true,
-          enabled: !widget.isSubmitting,
+          initialValue: _staffId,
+          isExpanded: true,
           decoration: const InputDecoration(
-            labelText: 'Staff ID',
-            hintText: 'From the Drivers screen',
+            labelText: 'Driver or attendant',
             border: OutlineInputBorder(),
             constraints: BoxConstraints(minHeight: kAdminTouchTarget),
           ),
+          hint: Text(
+            widget.staffOptions.isEmpty ? 'No roster loaded for this school' : 'Select a person',
+          ),
+          items: [
+            for (final staff in widget.staffOptions)
+              DropdownMenuItem(
+                value: staff.id,
+                child: Text('${staff.displayName} · ${staff.staffType}'),
+              ),
+          ],
+          onChanged: widget.isSubmitting || widget.staffOptions.isEmpty
+              ? null
+              : (value) => setState(() => _staffId = value),
         ),
         const SizedBox(height: AdminSpacing.md),
         SegmentedButton<String>(
@@ -108,7 +130,7 @@ class _AssignDutyFormState extends State<AssignDutyForm> {
             Expanded(
               child: FilledButton(
                 key: const Key('duty_form_submit_button'),
-                onPressed: widget.isSubmitting ? null : _submit,
+                onPressed: widget.isSubmitting || _staffId == null ? null : _submit,
                 child: widget.isSubmitting
                     ? const OnboardingButtonSpinner(semanticsLabel: 'Assigning')
                     : const Text('Assign'),

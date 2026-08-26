@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../organizations/widgets/onboarding_button_spinner.dart';
+import '../../vehicles/domain/vehicle_models.dart';
 
 /// Creates a route (RTE-001).
 ///
@@ -11,15 +12,24 @@ import '../../organizations/widgets/onboarding_button_spinner.dart';
 /// only — code, name, and which bus normally runs it — which is everything the crew-assignment
 /// flow (A-25) needs; stop entry is left for the map editor this console does not have yet.
 ///
-/// `schoolId` and `defaultVehicleId` are plain fields for the same reason as
-/// `CreateStaffForm`'s `schoolId`: no picker screens exist yet for either.
+/// [schoolId] comes in already decided: the operator picked it on the Routes screen (via
+/// `SchoolPickerField`, or their own single-school scope) before this dialog could even be
+/// opened — see `RouteListScreen`'s add button, which is disabled until a school is selected.
+/// [vehicles] is that same school's fleet, fetched once when the dialog opens, so "which bus
+/// normally runs it" is a pick from a real, current list rather than a pasted id nobody can
+/// verify by eye.
 class CreateRouteForm extends StatefulWidget {
   const CreateRouteForm({
     super.key,
+    required this.schoolId,
+    required this.vehicles,
     required this.onSubmit,
     required this.onCancel,
     this.isSubmitting = false,
   });
+
+  final String schoolId;
+  final List<CreatedVehicle> vehicles;
 
   final void Function({
     required String schoolId,
@@ -36,27 +46,24 @@ class CreateRouteForm extends StatefulWidget {
 }
 
 class _CreateRouteFormState extends State<CreateRouteForm> {
-  final _schoolId = TextEditingController();
   final _code = TextEditingController();
   final _name = TextEditingController();
-  final _defaultVehicleId = TextEditingController();
+  String? _defaultVehicleId;
 
   @override
   void dispose() {
-    _schoolId.dispose();
     _code.dispose();
     _name.dispose();
-    _defaultVehicleId.dispose();
     super.dispose();
   }
 
   void _submit() {
     if (widget.isSubmitting) return;
     widget.onSubmit(
-      schoolId: _schoolId.text.trim(),
+      schoolId: widget.schoolId,
       code: _code.text,
       name: _name.text,
-      defaultVehicleId: _defaultVehicleId.text,
+      defaultVehicleId: _defaultVehicleId,
     );
   }
 
@@ -72,27 +79,17 @@ class _CreateRouteFormState extends State<CreateRouteForm> {
         const SizedBox(height: AdminSpacing.xs),
         Text(
           'Creates the route itself. Stops are added separately once the map editor exists — '
-          'this is enough for assigning a driver or attendant to it today.',
+          'this is enough for assigning a driver or attendant to it today. Added to the '
+          'school you have selected above.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: AdminSpacing.lg),
         TextField(
-          key: const Key('route_form_school_id_field'),
-          controller: _schoolId,
-          autofocus: true,
-          enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'School ID',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
           key: const Key('route_form_code_field'),
           controller: _code,
+          autofocus: true,
           enabled: !widget.isSubmitting,
           decoration: const InputDecoration(
             labelText: 'Route code',
@@ -114,18 +111,27 @@ class _CreateRouteFormState extends State<CreateRouteForm> {
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
-        TextField(
+        DropdownButtonFormField<String?>(
           key: const Key('route_form_default_vehicle_id_field'),
-          controller: _defaultVehicleId,
-          enabled: !widget.isSubmitting,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _submit(),
+          initialValue: _defaultVehicleId,
+          isExpanded: true,
           decoration: const InputDecoration(
-            labelText: 'Default bus ID (optional)',
-            hintText: 'The vehicle ID from the Vehicles screen',
+            labelText: 'Default bus (optional)',
             border: OutlineInputBorder(),
             constraints: BoxConstraints(minHeight: kAdminTouchTarget),
           ),
+          hint: Text(widget.vehicles.isEmpty ? 'No vehicles on this school yet' : 'None'),
+          items: [
+            const DropdownMenuItem<String?>(value: null, child: Text('None')),
+            for (final vehicle in widget.vehicles)
+              DropdownMenuItem<String?>(
+                value: vehicle.id,
+                child: Text('${vehicle.displayName} · ${vehicle.registrationNo}'),
+              ),
+          ],
+          onChanged: widget.isSubmitting
+              ? null
+              : (value) => setState(() => _defaultVehicleId = value),
         ),
         const SizedBox(height: AdminSpacing.lg),
         Row(

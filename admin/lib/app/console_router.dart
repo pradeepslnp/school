@@ -6,6 +6,7 @@ import '../core/session/session.dart';
 import '../core/session/session_manager.dart';
 import '../features/login/ui/login_route.dart';
 import '../features/organizations/ui/organization_list_route.dart';
+import '../features/platform_health/ui/platform_health_route.dart';
 import '../features/roles/ui/role_reference_screen.dart';
 import '../features/routes/ui/route_list_route.dart';
 import '../features/school_settings/ui/school_settings_route.dart';
@@ -217,6 +218,10 @@ class ConsoleRouterDelegate extends RouterDelegate<AdminRoutePath>
         initialOrganizationId: organizationId,
         initialSchoolId: schoolId,
       );
+    }
+    if (location == '/platform-health' &&
+        visible.any((destination) => destination.location == '/platform-health')) {
+      return const PlatformHealthRoute();
     }
     if (location == '/roles' &&
         visible.any((destination) => destination.location == '/roles')) {

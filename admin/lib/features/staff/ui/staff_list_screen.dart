@@ -84,6 +84,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     CreateStaffForm(
+                      schoolId: _selectedSchoolId!,
                       isSubmitting: state.isSubmitting,
                       onCancel: () => Navigator.of(dialogContext).pop(),
                       onSubmit: ({
@@ -205,11 +206,9 @@ class _StaffListScreenState extends State<StaffListScreen> {
                 Expanded(
                   child: Text('Drivers', style: theme.textTheme.headlineSmall),
                 ),
-                FilledButton.icon(
-                  key: const Key('staff_list_add_button'),
+_AddDriverButton(
+                  enabled: _selectedSchoolId != null,
                   onPressed: () => _openAddForm(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add driver'),
                 ),
               ],
             ),
@@ -344,5 +343,29 @@ class _StaffTable extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// The "Add driver" action — a plain [FilledButton] when a school is selected, or the same
+/// button disabled with a [Tooltip] explaining why when it is not. Enrolling/adding with no
+/// school chosen would submit against an empty schoolId — see `StudentListScreen._EnrolButton`
+/// for the original reasoning, applied identically here.
+class _AddDriverButton extends StatelessWidget {
+  const _AddDriverButton({required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = FilledButton.icon(
+      key: const Key('staff_list_add_button'),
+      onPressed: enabled ? onPressed : null,
+      icon: const Icon(Icons.add),
+      label: const Text('Add driver'),
+    );
+
+    if (enabled) return button;
+    return Tooltip(message: 'Pick a school first', child: button);
   }
 }
