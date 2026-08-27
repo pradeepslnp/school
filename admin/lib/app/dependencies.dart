@@ -3,6 +3,8 @@ import 'package:flutter/widgets.dart';
 import '../core/network/rest_client.dart';
 import '../core/session/session_manager.dart';
 import '../core/session/session_store.dart';
+import '../features/audit/data_provider/audit_data_provider.dart';
+import '../features/audit/repository/audit_repository.dart';
 import '../features/guardians/data_provider/guardian_data_provider.dart';
 import '../features/guardians/repository/guardian_repository.dart';
 import '../features/login/data_provider/login_data_provider.dart';
@@ -53,6 +55,7 @@ class AppDependencies {
     required this.userRepository,
     required this.platformHealthRepository,
     required this.guardianRepository,
+    required this.auditRepository,
     required this.workspaceContext,
   });
 
@@ -108,6 +111,10 @@ class AppDependencies {
   /// their phone (GRD-001, GRD-002, screen A-11). Reached from the student detail
   /// screen by roles holding `PERM-GUARDIAN-LINK`.
   final GuardianRepository guardianRepository;
+
+  /// The audit trail and override register (AUD-002, AUD-003, screens A-54/A-55) — read-only,
+  /// reached by roles holding `PERM-AUDIT-VIEW`; see `ConsoleDestinations`.
+  final AuditRepository auditRepository;
 
   /// The school id remembered across the Drivers, Vehicles, and Routes screens for this
   /// session — see `WorkspaceContext`.
@@ -180,6 +187,10 @@ class AppDependencies {
       dataProvider: GuardianDataProvider(client: restClient),
     );
 
+    final auditRepository = AuditRepository(
+      dataProvider: AuditDataProvider(client: restClient),
+    );
+
     final workspaceContext = WorkspaceContext();
 
     sessionManager = SessionManager(
@@ -203,6 +214,7 @@ class AppDependencies {
       userRepository: userRepository,
       platformHealthRepository: platformHealthRepository,
       guardianRepository: guardianRepository,
+      auditRepository: auditRepository,
       workspaceContext: workspaceContext,
     );
 

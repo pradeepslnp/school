@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../core/session/session.dart';
 import '../core/session/session_manager.dart';
+import '../features/audit/ui/audit_list_route.dart';
 import '../features/login/ui/login_route.dart';
 import '../features/organizations/ui/organization_list_route.dart';
 import '../features/platform_health/ui/platform_health_route.dart';
@@ -226,6 +227,10 @@ class ConsoleRouterDelegate extends RouterDelegate<AdminRoutePath>
     if (location == '/roles' &&
         visible.any((destination) => destination.location == '/roles')) {
       return const RoleReferenceScreen();
+    }
+    if (location == '/audit' &&
+        visible.any((destination) => destination.location == '/audit')) {
+      return const AuditListRoute();
     }
     // Unlike the three destinations above, this one takes no pasted-id fallback: A-41 is
     // gated to `SCHOOL_ADMIN` alone (ConsoleDestinations), a role that always carries a

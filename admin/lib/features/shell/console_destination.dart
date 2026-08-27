@@ -191,6 +191,20 @@ class ConsoleDestinations {
       // PERM-PLATFORM-HEALTH-VIEW's sole holder (PERMISSION_MATRIX.md, Platform Operations).
       requiredAnyRole: ['SUPER_ADMIN'],
     ),
+    ConsoleDestination(
+      id: 'A-54',
+      label: 'Audit trail',
+      icon: Icons.fact_check_outlined,
+      selectedIcon: Icons.fact_check,
+      location: '/audit',
+      // A review-and-investigate screen, not an incident-response one — outside the
+      // narrow-layout subset (ADMIN_WEB.md §Responsive), same reasoning as A-23.
+      availableOnNarrowLayout: false,
+      // PERM-AUDIT-VIEW's holders, verbatim from PERMISSION_MATRIX.md — SUPER_ADMIN, ORG_ADMIN,
+      // SCHOOL_ADMIN, and TRANSPORT_MANAGER. The trail is tenant-scoped server-side (RLS), so
+      // each of these sees only their own tenant's records regardless of this affordance list.
+      requiredAnyRole: ['SUPER_ADMIN', 'ORG_ADMIN', 'SCHOOL_ADMIN', 'TRANSPORT_MANAGER'],
+    ),
   ];
 
   /// The subset shown below 768 px (ADMIN_WEB.md §Responsive).
