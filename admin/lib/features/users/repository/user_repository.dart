@@ -34,7 +34,8 @@ class UserRepository {
     required String firstName,
     required String lastName,
     required String roleCode,
-    required String initialPassword,
+    String? initialPassword,
+    required String deliveryMode,
   }) async {
     final response = await dataProvider.createUser(
       organizationId: organizationId,
@@ -45,6 +46,7 @@ class UserRepository {
       lastName: lastName.trim(),
       roleCode: roleCode,
       initialPassword: initialPassword,
+      deliveryMode: deliveryMode,
     );
     if (!response.isSuccess) return _toFailure<AdminUser>(response);
 
@@ -55,6 +57,28 @@ class UserRepository {
       return const Failure<AdminUser>(ErrorCode.internalError);
     }
     return Success<AdminUser>(user);
+  }
+
+  /// Re-sends an invitation to a pending account (ADR-0012). Success carries no body.
+  Future<Result<void>> resendInvitation({
+    required String userId,
+    required String organizationId,
+  }) async {
+    final response =
+        await dataProvider.resendInvitation(userId: userId, organizationId: organizationId);
+    if (!response.isSuccess) return _toFailure<void>(response);
+    return const Success<void>(null);
+  }
+
+  /// Sends a password-reset link to an active account (ADR-0012). Success carries no body.
+  Future<Result<void>> sendResetLink({
+    required String userId,
+    required String organizationId,
+  }) async {
+    final response =
+        await dataProvider.sendResetLink(userId: userId, organizationId: organizationId);
+    if (!response.isSuccess) return _toFailure<void>(response);
+    return const Success<void>(null);
   }
 
   Future<Result<AdminUser>> updateUser({

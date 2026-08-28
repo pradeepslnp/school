@@ -39,6 +39,9 @@ final class UserListOrganizationSelected extends UserListEvent {
 }
 
 /// The operator created a new administrative account from the Create User dialog.
+///
+/// [deliveryMode] is `INVITE` (the default) or `PASSWORD` (ADR-0012). In invite mode
+/// [initialPassword] is null — the new user sets their own via the emailed link.
 final class UserCreateRequested extends UserListEvent {
   const UserCreateRequested({
     this.schoolId,
@@ -47,7 +50,8 @@ final class UserCreateRequested extends UserListEvent {
     required this.firstName,
     required this.lastName,
     required this.roleCode,
-    required this.initialPassword,
+    this.initialPassword,
+    this.deliveryMode = 'INVITE',
   });
 
   final String? schoolId;
@@ -56,11 +60,34 @@ final class UserCreateRequested extends UserListEvent {
   final String firstName;
   final String lastName;
   final String roleCode;
-  final String initialPassword;
+  final String? initialPassword;
+  final String deliveryMode;
+
+  bool get isInvite => deliveryMode == 'INVITE';
 
   @override
   List<Object?> get props =>
-      [schoolId, email, phone, firstName, lastName, roleCode, initialPassword];
+      [schoolId, email, phone, firstName, lastName, roleCode, initialPassword, deliveryMode];
+}
+
+/// The operator re-sent an invitation to a still-pending account (ADR-0012).
+final class UserInvitationResendRequested extends UserListEvent {
+  const UserInvitationResendRequested(this.userId);
+
+  final String userId;
+
+  @override
+  List<Object?> get props => [userId];
+}
+
+/// The operator sent a password-reset link to an active account (ADR-0012).
+final class UserResetLinkRequested extends UserListEvent {
+  const UserResetLinkRequested(this.userId);
+
+  final String userId;
+
+  @override
+  List<Object?> get props => [userId];
 }
 
 /// The operator saved changes to an existing account's name/locale from the edit dialog.

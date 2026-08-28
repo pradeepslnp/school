@@ -5,6 +5,8 @@ import '../core/session/session_manager.dart';
 import '../core/session/session_store.dart';
 import '../features/audit/data_provider/audit_data_provider.dart';
 import '../features/audit/repository/audit_repository.dart';
+import '../features/auth_recovery/data_provider/auth_recovery_data_provider.dart';
+import '../features/auth_recovery/repository/auth_recovery_repository.dart';
 import '../features/guardians/data_provider/guardian_data_provider.dart';
 import '../features/guardians/repository/guardian_repository.dart';
 import '../features/login/data_provider/login_data_provider.dart';
@@ -56,6 +58,7 @@ class AppDependencies {
     required this.platformHealthRepository,
     required this.guardianRepository,
     required this.auditRepository,
+    required this.authRecoveryRepository,
     required this.workspaceContext,
   });
 
@@ -115,6 +118,10 @@ class AppDependencies {
   /// The audit trail and override register (AUD-002, AUD-003, screens A-54/A-55) — read-only,
   /// reached by roles holding `PERM-AUDIT-VIEW`; see `ConsoleDestinations`.
   final AuditRepository auditRepository;
+
+  /// Account activation and password recovery (IAM-009, IAM-010, ADR-0012) — the public
+  /// accept-invitation, forgot-password, and reset-password pages. No session required.
+  final AuthRecoveryRepository authRecoveryRepository;
 
   /// The school id remembered across the Drivers, Vehicles, and Routes screens for this
   /// session — see `WorkspaceContext`.
@@ -191,6 +198,10 @@ class AppDependencies {
       dataProvider: AuditDataProvider(client: restClient),
     );
 
+    final authRecoveryRepository = AuthRecoveryRepository(
+      dataProvider: AuthRecoveryDataProvider(client: restClient),
+    );
+
     final workspaceContext = WorkspaceContext();
 
     sessionManager = SessionManager(
@@ -215,6 +226,7 @@ class AppDependencies {
       platformHealthRepository: platformHealthRepository,
       guardianRepository: guardianRepository,
       auditRepository: auditRepository,
+      authRecoveryRepository: authRecoveryRepository,
       workspaceContext: workspaceContext,
     );
 

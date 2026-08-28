@@ -42,7 +42,8 @@ class CreateUserForm extends StatefulWidget {
     required String firstName,
     required String lastName,
     required String roleCode,
-    required String initialPassword,
+    String? initialPassword,
+    required String deliveryMode,
   }) onSubmit;
 
   final VoidCallback onCancel;
@@ -61,6 +62,11 @@ class _CreateUserFormState extends State<CreateUserForm> {
   bool _obscurePassword = true;
   String? _roleCode;
   String? _schoolId;
+
+  /// `INVITE` (default) emails a set-password link; `PASSWORD` sets one here and now (ADR-0012).
+  String _deliveryMode = 'INVITE';
+
+  bool get _isInvite => _deliveryMode == 'INVITE';
 
   @override
   void initState() {
@@ -118,7 +124,8 @@ class _CreateUserFormState extends State<CreateUserForm> {
       firstName: _firstName.text,
       lastName: _lastName.text,
       roleCode: roleCode,
-      initialPassword: _password.text,
+      initialPassword: _isInvite ? null : _password.text,
+      deliveryMode: _deliveryMode,
     );
   }
 
@@ -133,11 +140,32 @@ class _CreateUserFormState extends State<CreateUserForm> {
         Text('Add administrator', style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.xs),
         Text(
-          'Creates a working sign-in right away — share the password below with them '
-          'yourself; there is no emailed invite yet.',
+          _isInvite
+              ? 'We email them a link to set their own password and activate the account.'
+              : 'You set a password now and share it with them yourself.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
+        ),
+        const SizedBox(height: AdminSpacing.lg),
+        SegmentedButton<String>(
+          key: const Key('user_form_delivery_mode'),
+          segments: const [
+            ButtonSegment(
+              value: 'INVITE',
+              label: Text('Send invite'),
+              icon: Icon(Icons.mail_outline),
+            ),
+            ButtonSegment(
+              value: 'PASSWORD',
+              label: Text('Set password'),
+              icon: Icon(Icons.password_outlined),
+            ),
+          ],
+          selected: {_deliveryMode},
+          onSelectionChanged: widget.isSubmitting
+              ? null
+              : (selection) => setState(() => _deliveryMode = selection.first),
         ),
         const SizedBox(height: AdminSpacing.lg),
         DropdownButtonFormField<String>(
@@ -229,40 +257,42 @@ class _CreateUserFormState extends State<CreateUserForm> {
             constraints: BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
-          key: const Key('user_form_password_field'),
-          controller: _password,
-          enabled: !widget.isSubmitting,
-          obscureText: _obscurePassword,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _submit(),
-          decoration: InputDecoration(
-            labelText: 'Initial password',
-            hintText: 'At least 8 characters',
-            border: const OutlineInputBorder(),
-            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-            suffixIcon: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  key: const Key('user_form_password_visibility_button'),
-                  tooltip: _obscurePassword ? 'Show password' : 'Hide password',
-                  icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                  onPressed: widget.isSubmitting
-                      ? null
-                      : () => setState(() => _obscurePassword = !_obscurePassword),
-                ),
-                IconButton(
-                  key: const Key('user_form_password_generate_button'),
-                  tooltip: 'Generate a password',
-                  icon: const Icon(Icons.autorenew),
-                  onPressed: widget.isSubmitting ? null : _generatePassword,
-                ),
-              ],
+        if (!_isInvite) ...[
+          const SizedBox(height: AdminSpacing.md),
+          TextField(
+            key: const Key('user_form_password_field'),
+            controller: _password,
+            enabled: !widget.isSubmitting,
+            obscureText: _obscurePassword,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _submit(),
+            decoration: InputDecoration(
+              labelText: 'Initial password',
+              hintText: 'At least 12 characters',
+              border: const OutlineInputBorder(),
+              constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    key: const Key('user_form_password_visibility_button'),
+                    tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+                    icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                    onPressed: widget.isSubmitting
+                        ? null
+                        : () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                  IconButton(
+                    key: const Key('user_form_password_generate_button'),
+                    tooltip: 'Generate a password',
+                    icon: const Icon(Icons.autorenew),
+                    onPressed: widget.isSubmitting ? null : _generatePassword,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
         const SizedBox(height: AdminSpacing.lg),
         Row(
           children: [
@@ -290,9 +320,49 @@ class _CreateUserFormState extends State<CreateUserForm> {
   }
 }
 
-/// Shows the just-created account's credentials once, with a one-tap copy — the operator's
-/// only chance to hand them to the new admin, since the server never returns a password
-/// after this moment and no emailed-invite flow exists yet.
+/// Confirms an invitation was sent (ADR-0012 invite mode). No credential to show — the account
+/// is pending until the invitee sets their own password via the emailed link.
+class InvitationSentView extends StatelessWidget {
+  const InvitationSentView({super.key, required this.email, required this.onDone});
+
+  final String email;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.mark_email_read_outlined, color: context.status.safe),
+            const SizedBox(width: AdminSpacing.sm),
+            Expanded(child: Text('Invitation sent', style: theme.textTheme.titleLarge)),
+          ],
+        ),
+        const SizedBox(height: AdminSpacing.xs),
+        Text(
+          'We’ve emailed $email a link to set their password. It is valid for 72 hours; '
+          'you can re-send it from their row if it expires.',
+          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: AdminSpacing.lg),
+        FilledButton(
+          key: const Key('user_form_invitation_done_button'),
+          onPressed: onDone,
+          child: const Text('Done'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Shows the just-created account's credentials once, with a one-tap copy — the operator's only
+/// chance to hand them to the new admin (password delivery mode, ADR-0012), since the server never
+/// returns a password after this moment.
 class CreatedUserCredentialsView extends StatelessWidget {
   const CreatedUserCredentialsView({
     super.key,

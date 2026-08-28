@@ -16,11 +16,16 @@ class CredentialsForm extends StatefulWidget {
     super.key,
     required this.onSubmit,
     this.isSubmitting = false,
+    this.onForgotPassword,
   });
 
   final void Function({required String email, required String password}) onSubmit;
 
   final bool isSubmitting;
+
+  /// Opens the forgot-password page (ADR-0012). Null hides the link — a build without the
+  /// recovery flow wired shows no dead control.
+  final VoidCallback? onForgotPassword;
 
   @override
   State<CredentialsForm> createState() => _CredentialsFormState();
@@ -121,6 +126,15 @@ class _CredentialsFormState extends State<CredentialsForm> {
               ? const ButtonSpinner(semanticsLabel: 'Signing in')
               : const Text('Sign in'),
         ),
+        if (widget.onForgotPassword != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              key: const Key('admin_login_forgot_password'),
+              onPressed: widget.isSubmitting ? null : widget.onForgotPassword,
+              child: const Text('Forgot password?'),
+            ),
+          ),
       ],
     );
   }

@@ -31,7 +31,8 @@ class AdminUser extends Equatable {
   /// the backend for why this travels on every read.
   final String preferredLocale;
 
-  /// `ACTIVE` or `INACTIVE` — see `UserStatus` on the backend. Never `LOCKED` for an account
+  /// `ACTIVE`, `INACTIVE`, or `PENDING` — see `UserStatus` on the backend. `PENDING` is an
+  /// invited account that has not set a password yet (ADR-0012). Never `LOCKED` for an account
   /// this screen shows: a lock is a login-attempt outcome (BR-IAM-011), not an administrative
   /// state this screen sets.
   final String status;
@@ -48,6 +49,9 @@ class AdminUser extends Equatable {
   String get displayName => '$firstName $lastName'.trim();
 
   bool get isActive => status == 'ACTIVE';
+
+  /// Invited but not yet activated — has no password and cannot sign in (ADR-0012).
+  bool get isPending => status == 'PENDING';
 
   /// The single role this screen expects a row to carry. Administrative accounts are created
   /// with exactly one role today (`CreateAdministrativeUserUseCase`); this is a display

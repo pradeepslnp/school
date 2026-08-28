@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import '../core/session/session.dart';
 import '../core/session/session_manager.dart';
 import '../features/audit/ui/audit_list_route.dart';
+import '../features/auth_recovery/ui/accept_invitation_route.dart';
+import '../features/auth_recovery/ui/forgot_password_route.dart';
+import '../features/auth_recovery/ui/reset_password_route.dart';
 import '../features/login/ui/login_route.dart';
 import '../features/organizations/ui/organization_list_route.dart';
 import '../features/platform_health/ui/platform_health_route.dart';
@@ -48,6 +51,47 @@ final class ConsolePath extends AdminRoutePath {
   final String location;
 }
 
+/// A public account-recovery page (ADR-0012), reached by an emailed link or from the sign-in
+/// screen. These render regardless of auth status — the caller holds a link or an email address,
+/// not a session — so they are first-class route paths rather than console locations.
+sealed class RecoveryPath extends AdminRoutePath {
+  const RecoveryPath();
+}
+
+/// `/accept-invitation?token=…` — an invitee sets their first password.
+final class AcceptInvitationPath extends RecoveryPath {
+  const AcceptInvitationPath(this.token);
+
+  static const String path = '/accept-invitation';
+
+  final String token;
+
+  @override
+  String get location => '$path?token=${Uri.encodeQueryComponent(token)}';
+}
+
+/// `/forgot-password` — request a reset link.
+final class ForgotPasswordPath extends RecoveryPath {
+  const ForgotPasswordPath();
+
+  static const String path = '/forgot-password';
+
+  @override
+  String get location => path;
+}
+
+/// `/reset-password?token=…` — set a new password from a reset link.
+final class ResetPasswordPath extends RecoveryPath {
+  const ResetPasswordPath(this.token);
+
+  static const String path = '/reset-password';
+
+  final String token;
+
+  @override
+  String get location => '$path?token=${Uri.encodeQueryComponent(token)}';
+}
+
 /// Translates between the browser address bar and [AdminRoutePath].
 ///
 /// Real URLs matter more here than in the mobile apps: an operator handling an incident
@@ -60,8 +104,18 @@ class ConsoleRouteInformationParser
   Future<AdminRoutePath> parseRouteInformation(
     RouteInformation routeInformation,
   ) async {
-    final path = routeInformation.uri.path;
+    final uri = routeInformation.uri;
+    final path = uri.path;
     if (path == SignInPath.path) return const SignInPath();
+    // Public recovery pages carry their token in the query string; they render whether or not a
+    // session exists (ADR-0012).
+    if (path == AcceptInvitationPath.path) {
+      return AcceptInvitationPath(uri.queryParameters['token'] ?? '');
+    }
+    if (path == ForgotPasswordPath.path) return const ForgotPasswordPath();
+    if (path == ResetPasswordPath.path) {
+      return ResetPasswordPath(uri.queryParameters['token'] ?? '');
+    }
     return ConsolePath(path.isEmpty ? '/' : path);
   }
 
@@ -105,56 +159,79 @@ class ConsoleRouterDelegate extends RouterDelegate<AdminRoutePath>
   /// ended on its own returns them to the screen they were on, once they sign in again.
   String _consoleLocation = '/';
 
+  /// A public recovery page currently on screen (ADR-0012), or null. When set it overrides the
+  /// auth-status view — these pages are reached by people who have no session yet.
+  RecoveryPath? _recovery;
+
   bool _isSigningOut = false;
 
   @override
-  AdminRoutePath get currentConfiguration => switch (_sessionManager.status) {
-        AuthSignedIn() => ConsolePath(_consoleLocation),
-        // Reported as sign-in while the stored session is still being read. The splash below
-        // is on screen for a frame or two; publishing a console URL for it would put an
-        // address in history that the operator was never actually at.
-        AuthUnknown() || AuthSignedOut() => const SignInPath(),
-      };
+  AdminRoutePath get currentConfiguration {
+    final recovery = _recovery;
+    if (recovery != null) return recovery;
+    return switch (_sessionManager.status) {
+      AuthSignedIn() => ConsolePath(_consoleLocation),
+      // Reported as sign-in while the stored session is still being read. The splash below
+      // is on screen for a frame or two; publishing a console URL for it would put an
+      // address in history that the operator was never actually at.
+      AuthUnknown() || AuthSignedOut() => const SignInPath(),
+    };
+  }
 
   @override
   Future<void> setNewRoutePath(AdminRoutePath configuration) async {
-    if (configuration is ConsolePath) {
-      _consoleLocation = configuration.location;
-      notifyListeners();
+    switch (configuration) {
+      case RecoveryPath():
+        _recovery = configuration;
+      case ConsolePath():
+        _recovery = null;
+        _consoleLocation = configuration.location;
+      case SignInPath():
+        _recovery = null;
     }
+    notifyListeners();
   }
 
   @override
   Widget build(BuildContext context) {
     final status = _sessionManager.status;
+    final recovery = _recovery;
+
+    final Page<void> page = recovery != null
+        ? MaterialPage<void>(
+            key: const ValueKey('admin_recovery'),
+            child: _recoveryScreen(recovery),
+          )
+        : switch (status) {
+            AuthUnknown() => const MaterialPage<void>(
+                key: ValueKey('admin_boot'),
+                child: _BootSplash(),
+              ),
+            AuthSignedOut(:final reason) => MaterialPage<void>(
+                key: const ValueKey('admin_sign_in'),
+                child: LoginRoute(
+                  signedOutReason: reason,
+                  onForgotPassword: _openForgotPassword,
+                ),
+              ),
+            AuthSignedIn(:final session) => MaterialPage<void>(
+                key: const ValueKey('admin_console'),
+                child: ConsoleShell(
+                  user: session.user,
+                  isSigningOut: _isSigningOut,
+                  onSignOut: _signOut,
+                  destinations: ConsoleDestinations.visibleTo(session.user.roles),
+                  selectedDestinationId: _selectedDestinationId(session),
+                  onDestinationSelected: _goTo,
+                  child: _screenFor(_consoleLocation, session),
+                ),
+              ),
+          };
 
     return Navigator(
       key: navigatorKey,
-      pages: [
-        switch (status) {
-          AuthUnknown() => const MaterialPage<void>(
-              key: ValueKey('admin_boot'),
-              child: _BootSplash(),
-            ),
-          AuthSignedOut(:final reason) => MaterialPage<void>(
-              key: const ValueKey('admin_sign_in'),
-              child: LoginRoute(signedOutReason: reason),
-            ),
-          AuthSignedIn(:final session) => MaterialPage<void>(
-              key: const ValueKey('admin_console'),
-              child: ConsoleShell(
-                user: session.user,
-                isSigningOut: _isSigningOut,
-                onSignOut: _signOut,
-                destinations: ConsoleDestinations.visibleTo(session.user.roles),
-                selectedDestinationId: _selectedDestinationId(session),
-                onDestinationSelected: _goTo,
-                child: _screenFor(_consoleLocation, session),
-              ),
-            ),
-        },
-      ],
-      onDidRemovePage: (page) {
+      pages: [page],
+      onDidRemovePage: (removedPage) {
         // Nothing to remove: the stack is one page deep and is derived entirely from auth
         // status. Declared because Navigator requires it, and left empty deliberately rather
         // than mutating a page list that is not the source of truth.
@@ -165,6 +242,30 @@ class ConsoleRouterDelegate extends RouterDelegate<AdminRoutePath>
   void _goTo(ConsoleDestination destination) {
     if (_consoleLocation == destination.location) return;
     _consoleLocation = destination.location;
+    notifyListeners();
+  }
+
+  /// The public recovery page for [path] (ADR-0012). Each carries [_leaveRecovery] as the way
+  /// back to sign-in, so "where to go next" stays answered in one place — matching how signing in
+  /// and out flow through the session rather than through each screen.
+  Widget _recoveryScreen(RecoveryPath path) => switch (path) {
+        AcceptInvitationPath(:final token) =>
+          AcceptInvitationRoute(token: token, onDone: _leaveRecovery),
+        ForgotPasswordPath() => ForgotPasswordRoute(onBack: _leaveRecovery),
+        ResetPasswordPath(:final token) =>
+          ResetPasswordRoute(token: token, onDone: _leaveRecovery),
+      };
+
+  /// Opens the forgot-password page from the sign-in screen.
+  void _openForgotPassword() {
+    _recovery = const ForgotPasswordPath();
+    notifyListeners();
+  }
+
+  /// Leaves a recovery page — back to sign-in when signed out, or the console when signed in.
+  void _leaveRecovery() {
+    if (_recovery == null) return;
+    _recovery = null;
     notifyListeners();
   }
 

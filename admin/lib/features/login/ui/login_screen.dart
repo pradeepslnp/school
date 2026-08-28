@@ -18,7 +18,10 @@ import '../widgets/sign_in_scaffold.dart';
 /// session, and this screen is replaced — so "where to go next" is answered in exactly one
 /// place rather than by every screen that can end a session.
 class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.onForgotPassword});
+
+  /// Opens the forgot-password page (ADR-0012), supplied by the router. Null hides the link.
+  final VoidCallback? onForgotPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +35,7 @@ class LoginScreen extends StatelessWidget {
                 SessionEndedNotice(reason: state.signedOutReason!),
               CredentialsForm(
                 isSubmitting: state.isSubmitting,
+                onForgotPassword: onForgotPassword,
                 onSubmit: ({
                   required String email,
                   required String password,

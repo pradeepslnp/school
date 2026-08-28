@@ -12,11 +12,14 @@ import 'login_screen.dart';
 /// owns none of it (PROJECT_STRUCTURE.md §Flutter Layout). That split is what lets a widget
 /// test pump [LoginScreen] under a fake bloc without constructing an HTTP client.
 class LoginRoute extends StatelessWidget {
-  const LoginRoute({super.key, this.signedOutReason});
+  const LoginRoute({super.key, this.signedOutReason, this.onForgotPassword});
 
   /// Why the previous session ended, when it ended on its own. Passed in by the router,
   /// which is the only thing that knows.
   final SignOutReason? signedOutReason;
+
+  /// Opens the forgot-password page (ADR-0012). Supplied by the router.
+  final VoidCallback? onForgotPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +31,7 @@ class LoginRoute extends StatelessWidget {
         sessionManager: dependencies.sessionManager,
         signedOutReason: signedOutReason,
       ),
-      child: const LoginScreen(),
+      child: LoginScreen(onForgotPassword: onForgotPassword),
     );
   }
 }

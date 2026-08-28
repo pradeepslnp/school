@@ -71,6 +71,14 @@ enum ErrorCode {
   authRefreshReuseDetected,
   authAccountLocked,
 
+  /// An invitation or password-reset link is unknown, expired, or already used (ADR-0012).
+  /// Reported distinctly so the accept/reset pages can tell the person to request a fresh link
+  /// rather than retype into a dead one — holding the link is not a secret to protect by
+  /// enumeration, so, unlike the OTP codes, the specific condition is safe to show.
+  authLinkInvalid,
+  authLinkExpired,
+  authLinkAlreadyUsed,
+
   // --- Authorisation and tenancy ---
   authPermissionDenied,
   authScopeDenied,
@@ -88,11 +96,21 @@ enum ErrorCode {
   validationInvalidFormat,
   validationValueOutOfRange,
 
+  /// A password below policy — too short, or a known-common password (BR-IAM-013, ADR-0012).
+  /// First met by the accept-invitation and reset-password pages.
+  passwordTooWeak,
+
   // --- Tenancy ---
   // First met by the organization-onboarding screen (TEN-001, TEN-002) — see the note on
   // ErrorCode's own documentation about when a domain code is added.
   orgCodeAlreadyExists,
   schoolCodeAlreadyExists,
+
+  // --- Identity & Access ---
+  // First met by the Users screen's operator actions (IAM-009/010, ADR-0012): resend only
+  // applies to a still-pending account, a reset link only to one that can sign in.
+  userNotPending,
+  userNotActive,
 
   // --- Transport staff ---
   // First met by the Drivers screen's edit dialog (STF-001) — see the note above on when a
@@ -126,6 +144,9 @@ enum ErrorCode {
         'AUTH_SESSION_REVOKED' => authSessionRevoked,
         'AUTH_REFRESH_REUSE_DETECTED' => authRefreshReuseDetected,
         'AUTH_ACCOUNT_LOCKED' => authAccountLocked,
+        'AUTH_LINK_INVALID' => authLinkInvalid,
+        'AUTH_LINK_EXPIRED' => authLinkExpired,
+        'AUTH_LINK_ALREADY_USED' => authLinkAlreadyUsed,
         'AUTH_PERMISSION_DENIED' => authPermissionDenied,
         'AUTH_SCOPE_DENIED' => authScopeDenied,
         'AUTH_TENANT_MISMATCH' => authTenantMismatch,
@@ -134,6 +155,9 @@ enum ErrorCode {
         'VALIDATION_REQUIRED_FIELD_MISSING' => validationRequiredFieldMissing,
         'VALIDATION_INVALID_FORMAT' => validationInvalidFormat,
         'VALIDATION_VALUE_OUT_OF_RANGE' => validationValueOutOfRange,
+        'PASSWORD_TOO_WEAK' => passwordTooWeak,
+        'USER_NOT_PENDING' => userNotPending,
+        'USER_NOT_ACTIVE' => userNotActive,
         'ORG_CODE_ALREADY_EXISTS' => orgCodeAlreadyExists,
         'SCHOOL_CODE_ALREADY_EXISTS' => schoolCodeAlreadyExists,
         'STAFF_EMPLOYEE_CODE_EXISTS' => staffEmployeeCodeExists,

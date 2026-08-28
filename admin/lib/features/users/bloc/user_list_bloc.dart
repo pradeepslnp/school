@@ -27,6 +27,8 @@ class UserListBloc extends Bloc<UserListEvent, UserListState> {
     on<UserCreateRequested>(_onCreateRequested);
     on<UserProfileUpdateRequested>(_onProfileUpdateRequested);
     on<UserStatusToggleRequested>(_onStatusToggleRequested);
+    on<UserInvitationResendRequested>(_onInvitationResendRequested);
+    on<UserResetLinkRequested>(_onResetLinkRequested);
   }
 
   final UserRepository _userRepository;
@@ -128,11 +130,15 @@ class UserListBloc extends Bloc<UserListEvent, UserListState> {
       return;
     }
 
+    // The password is required only in PASSWORD mode; in INVITE mode the new user sets their own
+    // (ADR-0012).
+    final passwordMissing =
+        !event.isInvite && (event.initialPassword == null || event.initialPassword!.trim().isEmpty);
     if (event.email.trim().isEmpty ||
         event.firstName.trim().isEmpty ||
         event.lastName.trim().isEmpty ||
         event.roleCode.trim().isEmpty ||
-        event.initialPassword.trim().isEmpty) {
+        passwordMissing) {
       emit(state.copyWith(error: ErrorCode.validationRequiredFieldMissing));
       return;
     }
@@ -153,6 +159,7 @@ class UserListBloc extends Bloc<UserListEvent, UserListState> {
       lastName: event.lastName,
       roleCode: event.roleCode,
       initialPassword: event.initialPassword,
+      deliveryMode: event.deliveryMode,
     );
 
     switch (result) {
@@ -200,6 +207,40 @@ class UserListBloc extends Bloc<UserListEvent, UserListState> {
           ],
         ));
       case Failure(:final code, :final messageKey):
+        emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));
+    }
+  }
+
+  Future<void> _onInvitationResendRequested(
+      UserInvitationResendRequested event, Emitter<UserListState> emit) async {
+    final organizationId = state.resolvedOrganizationId;
+    if (organizationId == null) return;
+
+    emit(state.copyWith(isSubmitting: true, clearError: true, clearActionNotice: true));
+
+    final result =
+        await _userRepository.resendInvitation(userId: event.userId, organizationId: organizationId);
+    switch (result) {
+      case Success<void>():
+        emit(state.copyWith(isSubmitting: false, actionNotice: 'Invitation re-sent.'));
+      case Failure<void>(:final code, :final messageKey):
+        emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));
+    }
+  }
+
+  Future<void> _onResetLinkRequested(
+      UserResetLinkRequested event, Emitter<UserListState> emit) async {
+    final organizationId = state.resolvedOrganizationId;
+    if (organizationId == null) return;
+
+    emit(state.copyWith(isSubmitting: true, clearError: true, clearActionNotice: true));
+
+    final result =
+        await _userRepository.sendResetLink(userId: event.userId, organizationId: organizationId);
+    switch (result) {
+      case Success<void>():
+        emit(state.copyWith(isSubmitting: false, actionNotice: 'Password-reset link sent.'));
+      case Failure<void>(:final code, :final messageKey):
         emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));
     }
   }

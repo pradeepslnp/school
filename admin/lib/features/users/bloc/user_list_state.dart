@@ -21,6 +21,7 @@ class UserListState extends Equatable {
     this.organizations = const [],
     this.resolvedOrganizationId,
     this.schools = const [],
+    this.actionNotice,
   });
 
   final bool isLoading;
@@ -50,6 +51,10 @@ class UserListState extends Equatable {
   /// `isSchoolScopedRole`). Loaded alongside the user list once the organization is known.
   final List<CreatedSchool> schools;
 
+  /// A one-off confirmation to surface (e.g. "Invitation re-sent") after an operator action that
+  /// returns no row — resend invitation / send reset link (ADR-0012). Shown once, then cleared.
+  final String? actionNotice;
+
   UserListState copyWith({
     bool? isLoading,
     bool? isSubmitting,
@@ -62,6 +67,8 @@ class UserListState extends Equatable {
     List<CreatedOrganization>? organizations,
     String? resolvedOrganizationId,
     List<CreatedSchool>? schools,
+    String? actionNotice,
+    bool clearActionNotice = false,
   }) {
     return UserListState(
       isLoading: isLoading ?? this.isLoading,
@@ -74,6 +81,7 @@ class UserListState extends Equatable {
       organizations: organizations ?? this.organizations,
       resolvedOrganizationId: resolvedOrganizationId ?? this.resolvedOrganizationId,
       schools: schools ?? this.schools,
+      actionNotice: clearActionNotice ? null : (actionNotice ?? this.actionNotice),
     );
   }
 
@@ -89,5 +97,6 @@ class UserListState extends Equatable {
         organizations,
         resolvedOrganizationId,
         schools,
+        actionNotice,
       ];
 }

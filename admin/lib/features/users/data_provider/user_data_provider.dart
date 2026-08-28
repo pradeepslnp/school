@@ -22,6 +22,9 @@ class UserDataProvider {
 
   /// `POST /users` — creates an administrative login (`PERM-USER-CREATE`). `schoolId` is
   /// omitted for an organization-scoped role; see `CreateAdministrativeUserUseCase`.
+  ///
+  /// `deliveryMode` is `INVITE` (the account is emailed a set-password link) or `PASSWORD` (the
+  /// operator supplies one). `initialPassword` travels only in `PASSWORD` mode (ADR-0012).
   Future<ApiResponse> createUser({
     required String organizationId,
     String? schoolId,
@@ -30,7 +33,8 @@ class UserDataProvider {
     required String firstName,
     required String lastName,
     required String roleCode,
-    required String initialPassword,
+    String? initialPassword,
+    required String deliveryMode,
   }) {
     return client.post(
       '/users',
@@ -42,8 +46,29 @@ class UserDataProvider {
         'firstName': firstName,
         'lastName': lastName,
         'roleCode': roleCode,
-        'initialPassword': initialPassword,
+        'deliveryMode': deliveryMode,
+        if (initialPassword != null && initialPassword.isNotEmpty)
+          'initialPassword': initialPassword,
       },
+    );
+  }
+
+  /// `POST /users/{id}/resend-invitation?organizationId=` (`PERM-USER-EDIT`) — re-sends an
+  /// invitation to a pending account (ADR-0012). No idempotency key: a repeat simply issues a
+  /// fresh token, which is harmless.
+  Future<ApiResponse> resendInvitation({required String userId, required String organizationId}) {
+    return client.post(
+      '/users/$userId/resend-invitation',
+      query: {'organizationId': organizationId},
+    );
+  }
+
+  /// `POST /users/{id}/send-reset-link?organizationId=` (`PERM-USER-EDIT`) — sends a
+  /// password-reset link to an active account (ADR-0012).
+  Future<ApiResponse> sendResetLink({required String userId, required String organizationId}) {
+    return client.post(
+      '/users/$userId/send-reset-link',
+      query: {'organizationId': organizationId},
     );
   }
 

@@ -162,14 +162,19 @@ class _UserListScreenState extends State<UserListScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(AdminSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(child: Text('Users', style: theme.textTheme.headlineSmall)),
+    return BlocListener<UserListBloc, UserListState>(
+      listenWhen: (previous, current) =>
+          current.actionNotice != null && previous.actionNotice != current.actionNotice,
+      listener: (context, state) => ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(state.actionNotice!))),
+      child: Padding(
+        padding: const EdgeInsets.all(AdminSpacing.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(child: Text('Users', style: theme.textTheme.headlineSmall)),
               BlocBuilder<UserListBloc, UserListState>(
                 buildWhen: (previous, current) =>
                     previous.resolvedOrganizationId != current.resolvedOrganizationId,
@@ -284,11 +289,17 @@ class _UserListScreenState extends State<UserListScreen> {
                   users: filtered,
                   onTapUser: (user) => _openEditForm(context, user),
                   onToggleStatus: (user) => _confirmToggleStatus(context, user),
+                  onResendInvite: (user) => context
+                      .read<UserListBloc>()
+                      .add(UserInvitationResendRequested(user.id)),
+                  onSendReset: (user) =>
+                      context.read<UserListBloc>().add(UserResetLinkRequested(user.id)),
                 );
               },
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -344,8 +355,10 @@ class _CreateUserDialogBody extends StatefulWidget {
 class _CreateUserDialogBodyState extends State<_CreateUserDialogBody> {
   String? _pendingEmail;
   String? _pendingPassword;
+  String _pendingMode = 'INVITE';
   String? _createdEmail;
   String? _createdPassword;
+  String? _createdMode;
 
   @override
   Widget build(BuildContext context) {
@@ -356,17 +369,28 @@ class _CreateUserDialogBodyState extends State<_CreateUserDialogBody> {
         setState(() {
           _createdEmail = _pendingEmail;
           _createdPassword = _pendingPassword;
+          _createdMode = _pendingMode;
         });
       },
       builder: (context, state) {
         final createdEmail = _createdEmail;
-        final createdPassword = _createdPassword;
-        if (createdEmail != null && createdPassword != null) {
-          return CreatedUserCredentialsView(
-            email: createdEmail,
-            password: createdPassword,
-            onDone: () => Navigator.of(context).pop(),
-          );
+        if (createdEmail != null) {
+          // Invite mode never has a password to show — the account is pending until the invitee
+          // sets one (ADR-0012).
+          if (_createdMode == 'INVITE') {
+            return InvitationSentView(
+              email: createdEmail,
+              onDone: () => Navigator.of(context).pop(),
+            );
+          }
+          final createdPassword = _createdPassword;
+          if (createdPassword != null) {
+            return CreatedUserCredentialsView(
+              email: createdEmail,
+              password: createdPassword,
+              onDone: () => Navigator.of(context).pop(),
+            );
+          }
         }
 
         return Column(
@@ -386,10 +410,12 @@ class _CreateUserDialogBodyState extends State<_CreateUserDialogBody> {
                 required String firstName,
                 required String lastName,
                 required String roleCode,
-                required String initialPassword,
+                String? initialPassword,
+                required String deliveryMode,
               }) {
                 _pendingEmail = email;
                 _pendingPassword = initialPassword;
+                _pendingMode = deliveryMode;
                 context.read<UserListBloc>().add(UserCreateRequested(
                       schoolId: schoolId,
                       email: email,
@@ -398,6 +424,7 @@ class _CreateUserDialogBodyState extends State<_CreateUserDialogBody> {
                       lastName: lastName,
                       roleCode: roleCode,
                       initialPassword: initialPassword,
+                      deliveryMode: deliveryMode,
                     ));
               },
             ),
@@ -411,11 +438,19 @@ class _CreateUserDialogBodyState extends State<_CreateUserDialogBody> {
 }
 
 class _UserTable extends StatelessWidget {
-  const _UserTable({required this.users, required this.onTapUser, required this.onToggleStatus});
+  const _UserTable({
+    required this.users,
+    required this.onTapUser,
+    required this.onToggleStatus,
+    required this.onResendInvite,
+    required this.onSendReset,
+  });
 
   final List<AdminUser> users;
   final ValueChanged<AdminUser> onTapUser;
   final ValueChanged<AdminUser> onToggleStatus;
+  final ValueChanged<AdminUser> onResendInvite;
+  final ValueChanged<AdminUser> onSendReset;
 
   @override
   Widget build(BuildContext context) {
@@ -434,6 +469,11 @@ class _UserTable extends StatelessWidget {
         itemBuilder: (context, index) {
           final user = users[index];
           final statusColor = user.isActive ? context.status.safe : context.status.warning;
+          final statusLabel = user.isActive
+              ? 'Active'
+              : user.isPending
+                  ? 'Pending'
+                  : 'Inactive';
 
           return ListTile(
             key: Key('user_list_row_${user.id}'),
@@ -451,17 +491,55 @@ class _UserTable extends StatelessWidget {
                     border: Border.all(color: statusColor),
                   ),
                   child: Text(
-                    user.isActive ? 'Active' : 'Inactive',
+                    statusLabel,
                     style: theme.textTheme.labelSmall?.copyWith(color: statusColor),
                   ),
                 ),
-                IconButton(
-                  key: Key('user_list_toggle_${user.id}'),
-                  tooltip: user.isActive ? 'Deactivate' : 'Reactivate',
-                  icon: Icon(
-                    user.isActive ? Icons.block_outlined : Icons.check_circle_outline,
+                if (!user.isPending)
+                  IconButton(
+                    key: Key('user_list_toggle_${user.id}'),
+                    tooltip: user.isActive ? 'Deactivate' : 'Reactivate',
+                    icon: Icon(
+                      user.isActive ? Icons.block_outlined : Icons.check_circle_outline,
+                    ),
+                    onPressed: () => onToggleStatus(user),
                   ),
-                  onPressed: () => onToggleStatus(user),
+                // Invitation / reset actions (ADR-0012). A menu rather than more inline icons —
+                // pending accounts get resend, active ones get a reset link; an inactive account
+                // has neither, so no menu is shown.
+                if (user.isPending || user.isActive)
+                  PopupMenuButton<String>(
+                  key: Key('user_list_actions_${user.id}'),
+                  tooltip: 'More actions',
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (action) {
+                    switch (action) {
+                      case 'resend':
+                        onResendInvite(user);
+                      case 'reset':
+                        onSendReset(user);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    if (user.isPending)
+                      const PopupMenuItem(
+                        value: 'resend',
+                        child: ListTile(
+                          leading: Icon(Icons.mail_outline),
+                          title: Text('Resend invitation'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    if (user.isActive)
+                      const PopupMenuItem(
+                        value: 'reset',
+                        child: ListTile(
+                          leading: Icon(Icons.lock_reset_outlined),
+                          title: Text('Send reset link'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
