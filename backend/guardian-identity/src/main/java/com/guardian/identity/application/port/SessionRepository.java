@@ -23,4 +23,14 @@ public interface SessionRepository {
    * @see com.guardian.identity.domain.Session for why the whole family goes (BR-IAM-009)
    */
   int revokeFamily(UUID familyId, String reason, Instant now);
+
+  /**
+   * Revokes every live session belonging to one user, across all families, and returns how many.
+   *
+   * <p>What a password reset calls (ADR-0012): a reset means the old password may be compromised, so
+   * every session that old password could have opened must end at once — not just one rotation
+   * family. Atomic for the same reason as {@link #revokeFamily}: a partial revocation leaves exactly
+   * the sessions an attacker may be holding.
+   */
+  int revokeAllForUser(UUID userId, String reason);
 }

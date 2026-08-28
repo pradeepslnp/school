@@ -18,14 +18,22 @@ import java.util.UUID;
  * in through {@code StaffLoginUseCase} (email and password), never the guardian OTP path. {@code
  * phone} is optional contact information only.
  *
- * <p>{@code initialPassword} exists because no self-service "set your own password" or emailed
- * invite flow is built yet (flagged as a follow-up, not silently assumed away): the creating admin
- * chooses an initial password here and hands it to the new user out of band. It is hashed
- * immediately inside the use case and never stored or logged in the clear.
+ * <p>{@code deliveryMode} chooses how the account gets a usable sign-in (ADR-0012):
+ *
+ * <ul>
+ *   <li>{@code INVITE} (the default): the account is created {@code PENDING} with no password, and
+ *       an invitation link is emailed so the person sets their own. {@code initialPassword} is
+ *       ignored and may be null.
+ *   <li>{@code PASSWORD}: the creating admin supplies {@code initialPassword} and the account is
+ *       active at once — the fallback for onboarding in person or where email is unreliable. The
+ *       password is hashed immediately inside the use case and never stored or logged in the clear.
+ * </ul>
  *
  * @param schoolId required for a school-scoped role (SCHOOL_ADMIN, PRINCIPAL,
  *     TRANSPORT_MANAGER), null for an organization-scoped one (ORG_ADMIN) — validated against
  *     {@code roleCode} inside the use case (BR-IAM-006).
+ * @param initialPassword required only in {@code PASSWORD} mode; the use case enforces that.
+ * @param deliveryMode {@code INVITE} or {@code PASSWORD}; null is treated as {@code INVITE}.
  */
 public record CreateAdministrativeUserCommand(
     UUID organizationId,
@@ -36,6 +44,7 @@ public record CreateAdministrativeUserCommand(
     String lastName,
     String roleCode,
     String initialPassword,
+    String deliveryMode,
     UUID actorId,
     String actorRole) {
 
@@ -45,8 +54,38 @@ public record CreateAdministrativeUserCommand(
     Objects.requireNonNull(firstName, "firstName");
     Objects.requireNonNull(lastName, "lastName");
     Objects.requireNonNull(roleCode, "roleCode");
-    Objects.requireNonNull(initialPassword, "initialPassword");
+    // initialPassword is intentionally nullable: INVITE mode has no password. PASSWORD mode's
+    // requirement is enforced in the use case so it can surface a typed domain error.
     Objects.requireNonNull(actorId, "actorId");
     Objects.requireNonNull(actorRole, "actorRole");
+  }
+
+  /**
+   * Backward-compatible constructor for callers predating {@code deliveryMode} (ADR-0012): they
+   * supplied a password, so this defaults to {@code PASSWORD} mode.
+   */
+  public CreateAdministrativeUserCommand(
+      UUID organizationId,
+      UUID schoolId,
+      String email,
+      String phone,
+      String firstName,
+      String lastName,
+      String roleCode,
+      String initialPassword,
+      UUID actorId,
+      String actorRole) {
+    this(
+        organizationId,
+        schoolId,
+        email,
+        phone,
+        firstName,
+        lastName,
+        roleCode,
+        initialPassword,
+        "PASSWORD",
+        actorId,
+        actorRole);
   }
 }

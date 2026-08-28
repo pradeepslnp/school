@@ -64,6 +64,11 @@ class SessionRepositoryAdapter implements SessionRepository {
     return jpaRepository.revokeFamily(familyId, reason);
   }
 
+  @Override
+  public int revokeAllForUser(UUID userId, String reason) {
+    return jpaRepository.revokeAllForUser(userId, reason);
+  }
+
   private static Session toDomain(SessionEntity entity) {
     return Session.rehydrate(
         SessionId.of(entity.getId()),

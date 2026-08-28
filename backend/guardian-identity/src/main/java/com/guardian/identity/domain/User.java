@@ -107,6 +107,32 @@ public final class User {
         0L);
   }
 
+  /**
+   * A brand-new administrative account created by invitation (ADR-0012) — email required, phone
+   * optional, and status {@link UserStatus#PENDING} with no password credential written. It cannot
+   * sign in until {@code AcceptInvitationUseCase} sets a password and moves it to {@link
+   * UserStatus#ACTIVE}. Contrast {@link #createAdministrative}, which is active immediately because
+   * the creating admin supplied a password.
+   */
+  public static User createAdministrativeInvited(
+      UserId id,
+      String email,
+      PhoneNumber phone,
+      String firstName,
+      String lastName,
+      String preferredLocale) {
+    return new User(
+        id,
+        phone,
+        Objects.requireNonNull(email, "email"),
+        firstName,
+        lastName,
+        preferredLocale,
+        UserStatus.PENDING,
+        null,
+        0L);
+  }
+
   /** Records a successful sign-in. */
   public User signedInAt(Instant now) {
     return new User(id, phone, email, firstName, lastName, preferredLocale, status, now, version);

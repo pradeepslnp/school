@@ -38,6 +38,10 @@ class PasswordCredentialRepositoryAdapter implements PasswordCredentialRepositor
       // A password row carries no expiry or consumed-at; only the attempt state changes across
       // a sign-in, which is exactly what applyAttemptState updates.
       entity.applyAttemptState(null, credential.failedAttempts(), credential.lockedUntil());
+      // Writes the secret too, so a password reset (PasswordCredential.reissue keeps the same id)
+      // updates the existing row. On an ordinary sign-in the hash is unchanged, so this is a
+      // no-op write of the same value (ADR-0012).
+      entity.applySecret(credential.secretHash());
       return toDomain(jpaRepository.save(entity));
     }
 

@@ -94,6 +94,22 @@ public class UserCredentialEntity {
     this.updatedAt = Instant.now();
   }
 
+  /**
+   * Replaces the stored secret — the one column a password <em>reset</em> changes (ADR-0012).
+   *
+   * <p>Ordinary sign-in leaves the hash untouched (only {@link #applyAttemptState} runs); this is
+   * called exclusively when a new password is set on an existing PASSWORD row, so a reset does not
+   * insert a second row and trip {@code uq_user_credentials_password}.
+   */
+  void applySecret(String secretHash) {
+    this.secretHash = secretHash;
+    this.updatedAt = Instant.now();
+  }
+
+  String getCredentialType() {
+    return credentialType;
+  }
+
   UUID getId() {
     return id;
   }

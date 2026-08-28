@@ -7,6 +7,8 @@ import com.guardian.identity.application.command.UpdateAdministrativeUserCommand
 import com.guardian.identity.application.result.AdministrativeUserView;
 import com.guardian.identity.application.usecase.CreateAdministrativeUserUseCase;
 import com.guardian.identity.application.usecase.ListAdministrativeUsersUseCase;
+import com.guardian.identity.application.usecase.ResendInvitationUseCase;
+import com.guardian.identity.application.usecase.SendPasswordResetLinkUseCase;
 import com.guardian.identity.application.usecase.SetAdministrativeUserStatusUseCase;
 import com.guardian.identity.application.usecase.UpdateAdministrativeUserUseCase;
 import com.guardian.identity.domain.UserStatus;
@@ -49,16 +51,22 @@ public class UserController {
   private final ListAdministrativeUsersUseCase listUsers;
   private final UpdateAdministrativeUserUseCase updateUser;
   private final SetAdministrativeUserStatusUseCase setUserStatus;
+  private final ResendInvitationUseCase resendInvitation;
+  private final SendPasswordResetLinkUseCase sendPasswordResetLink;
 
   public UserController(
       CreateAdministrativeUserUseCase createUser,
       ListAdministrativeUsersUseCase listUsers,
       UpdateAdministrativeUserUseCase updateUser,
-      SetAdministrativeUserStatusUseCase setUserStatus) {
+      SetAdministrativeUserStatusUseCase setUserStatus,
+      ResendInvitationUseCase resendInvitation,
+      SendPasswordResetLinkUseCase sendPasswordResetLink) {
     this.createUser = createUser;
     this.listUsers = listUsers;
     this.updateUser = updateUser;
     this.setUserStatus = setUserStatus;
+    this.resendInvitation = resendInvitation;
+    this.sendPasswordResetLink = sendPasswordResetLink;
   }
 
   @GetMapping
@@ -85,6 +93,7 @@ public class UserController {
             request.lastName(),
             request.roleCode(),
             request.initialPassword(),
+            request.deliveryMode(),
             actor.userId(),
             actor.role());
 
@@ -92,6 +101,34 @@ public class UserController {
 
     return ResponseEntity.created(URI.create("/api/v1/users/" + created.user().id().value()))
         .body(UserResponse.from(created));
+  }
+
+  /**
+   * Re-sends an invitation to an administrator still awaiting activation (ADR-0012). The operator
+   * fallback for a mistyped email or an expired link — see {@link ResendInvitationUseCase}.
+   *
+   * <p>{@code 202}: the account is updated with a fresh token synchronously, but the email leaves
+   * after commit, so acceptance is the honest status.
+   */
+  @PostMapping("/{userId}/resend-invitation")
+  @RequiresPermission("PERM-USER-EDIT")
+  public ResponseEntity<Void> resendInvitation(
+      @PathVariable UUID userId, @RequestParam UUID organizationId, CurrentActor actor) {
+    resendInvitation.execute(organizationId, userId, actor.userId(), actor.role());
+    return ResponseEntity.accepted().build();
+  }
+
+  /**
+   * Sends a password-reset link to an active administrator, on an operator's initiative (ADR-0012)
+   * — the fallback when a person cannot use self-service reset. See {@link
+   * SendPasswordResetLinkUseCase}.
+   */
+  @PostMapping("/{userId}/send-reset-link")
+  @RequiresPermission("PERM-USER-EDIT")
+  public ResponseEntity<Void> sendResetLink(
+      @PathVariable UUID userId, @RequestParam UUID organizationId, CurrentActor actor) {
+    sendPasswordResetLink.execute(organizationId, userId, actor.userId(), actor.role());
+    return ResponseEntity.accepted().build();
   }
 
   @PatchMapping("/{userId}")

@@ -16,7 +16,14 @@ public enum UserStatus {
   INACTIVE,
 
   /** Locked by repeated failed attempts (BR-IAM-011). */
-  LOCKED;
+  LOCKED,
+
+  /**
+   * Invited but not yet activated: an administrative account created by invitation (ADR-0012) that
+   * has no password yet. Cannot sign in until the invitation is accepted, which sets the password
+   * and moves the account to {@link #ACTIVE}.
+   */
+  PENDING;
 
   public boolean canAuthenticate() {
     return this == ACTIVE;

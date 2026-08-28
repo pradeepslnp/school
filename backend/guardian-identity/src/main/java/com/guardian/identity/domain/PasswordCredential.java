@@ -63,6 +63,16 @@ public final class PasswordCredential {
     return new PasswordCredential(UUID.randomUUID(), userId, secretHash, 0, null, 0);
   }
 
+  /**
+   * Replaces the secret on an existing credential (a password reset, ADR-0012), keeping the same
+   * row {@code id} so the reset updates the one PASSWORD row rather than inserting a second and
+   * tripping {@code uq_user_credentials_password}. Any accumulated failures and lock are cleared —
+   * a freshly-set password starts clean.
+   */
+  public PasswordCredential reissue(String newSecretHash) {
+    return new PasswordCredential(id, userId, newSecretHash, 0, null, version);
+  }
+
   /** Rebuilds a credential from storage. */
   public static PasswordCredential rehydrate(
       UUID id,

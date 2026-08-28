@@ -3,25 +3,34 @@ package com.guardian.identity.application.usecase;
 import com.guardian.common.BusinessRule;
 import com.guardian.common.audit.AuditPort;
 import com.guardian.common.audit.AuditRecord;
+import com.guardian.common.error.BusinessRuleViolationException;
 import com.guardian.common.error.DataConflictException;
 import com.guardian.common.error.ErrorCode;
 import com.guardian.common.error.ResourceNotFoundException;
 import com.guardian.common.tenant.TenantContext;
 import com.guardian.common.tenant.TenantId;
 import com.guardian.common.tenant.TenantScopedTransaction;
+import com.guardian.identity.application.PasswordPolicy;
 import com.guardian.identity.application.command.CreateAdministrativeUserCommand;
+import com.guardian.identity.application.port.AccountEmailSender;
+import com.guardian.identity.application.port.AccountTokenRepository;
 import com.guardian.identity.application.port.PasswordCredentialRepository;
 import com.guardian.identity.application.port.RoleProvisioningPort;
 import com.guardian.identity.application.port.SecretHasher;
+import com.guardian.identity.application.port.TokenHasher;
 import com.guardian.identity.application.port.UserRepository;
 import com.guardian.identity.application.port.UserScopeRepository;
 import com.guardian.identity.application.result.AdministrativeUserView;
+import com.guardian.identity.domain.AccountToken;
+import com.guardian.identity.domain.LinkToken;
 import com.guardian.identity.domain.PasswordCredential;
 import com.guardian.identity.domain.PhoneNumber;
 import com.guardian.identity.domain.RoleId;
+import com.guardian.identity.domain.TokenPurpose;
 import com.guardian.identity.domain.User;
 import com.guardian.identity.domain.UserId;
 import com.guardian.identity.domain.UserScope;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -96,6 +105,10 @@ public class CreateAdministrativeUserUseCase {
   private final RoleProvisioningPort roleProvisioning;
   private final PasswordCredentialRepository passwordCredentials;
   private final SecretHasher secretHasher;
+  private final AccountTokenRepository accountTokens;
+  private final TokenHasher tokenHasher;
+  private final AccountEmailSender emailSender;
+  private final PasswordPolicy passwordPolicy;
   private final AuditPort auditPort;
   private final TenantScopedTransaction tenantScoped;
 
@@ -105,6 +118,10 @@ public class CreateAdministrativeUserUseCase {
       RoleProvisioningPort roleProvisioning,
       PasswordCredentialRepository passwordCredentials,
       SecretHasher secretHasher,
+      AccountTokenRepository accountTokens,
+      TokenHasher tokenHasher,
+      AccountEmailSender emailSender,
+      PasswordPolicy passwordPolicy,
       AuditPort auditPort,
       TenantScopedTransaction tenantScoped) {
     this.users = users;
@@ -112,6 +129,10 @@ public class CreateAdministrativeUserUseCase {
     this.roleProvisioning = roleProvisioning;
     this.passwordCredentials = passwordCredentials;
     this.secretHasher = secretHasher;
+    this.accountTokens = accountTokens;
+    this.tokenHasher = tokenHasher;
+    this.emailSender = emailSender;
+    this.passwordPolicy = passwordPolicy;
     this.auditPort = auditPort;
     this.tenantScoped = tenantScoped;
   }
@@ -141,32 +162,54 @@ public class CreateAdministrativeUserUseCase {
       }
     }
 
-    return tenantScoped.execute(TenantId.of(command.organizationId()), () -> createWithin(command));
+    Created created =
+        tenantScoped.execute(TenantId.of(command.organizationId()), () -> createWithin(command));
+
+    // Sent after the transaction commits, never inside it — a rollback must not leave an invitee
+    // holding a link the database never recorded (the same discipline as RequestOtpUseCase).
+    if (created.pendingInvite() != null) {
+      PendingInvite invite = created.pendingInvite();
+      emailSender.sendInvitation(
+          invite.email(), invite.firstName(), invite.rawToken(), TokenPurpose.INVITE.lifetime());
+    }
+
+    return created.view();
   }
 
-  private AdministrativeUserView createWithin(CreateAdministrativeUserCommand command) {
+  private Created createWithin(CreateAdministrativeUserCommand command) {
+    Instant now = Instant.now();
     String email = command.email().trim();
+    boolean invite = !"PASSWORD".equalsIgnoreCase(command.deliveryMode());
 
     if (users.findByEmail(email).isPresent()) {
       throw new DataConflictException(ErrorCode.USER_EMAIL_EXISTS, Map.of("field", "email"));
     }
 
+    // In password mode the password is validated before anything is written, so a weak one fails
+    // the whole create rather than leaving an account behind.
+    if (!invite) {
+      if (command.initialPassword() == null || command.initialPassword().isBlank()) {
+        throw new BusinessRuleViolationException(
+            ErrorCode.VALIDATION_REQUIRED_FIELD_MISSING, "BR-IAM-002", Map.of("field", "initialPassword"));
+      }
+      passwordPolicy.validate(command.initialPassword());
+    }
+
     PhoneNumber phone = parsePhoneOrNull(command.phone());
+    TenantId tenantId = TenantId.of(command.organizationId());
+    UserId newId = UserId.of(UUID.randomUUID());
 
     User created =
         users.create(
-            User.createAdministrative(
-                UserId.of(UUID.randomUUID()),
-                email,
-                phone,
-                command.firstName(),
-                command.lastName(),
-                "en"));
-
-    TenantId tenantId = TenantId.of(command.organizationId());
+            invite
+                ? User.createAdministrativeInvited(
+                    newId, email, phone, command.firstName(), command.lastName(), "en")
+                : User.createAdministrative(
+                    newId, email, phone, command.firstName(), command.lastName(), "en"));
 
     RoleId roleId =
-        roleProvisioning.findOrCreateSystemRole(tenantId, command.roleCode(), roleName(command.roleCode()));
+        roleProvisioning.findOrCreateSystemRole(
+            tenantId, command.roleCode(), roleName(command.roleCode()));
     roleProvisioning.grantIfMissing(tenantId, created.id(), roleId);
 
     UserScope scope =
@@ -174,6 +217,30 @@ public class CreateAdministrativeUserUseCase {
             ? UserScope.school(command.schoolId())
             : UserScope.organization();
     userScopes.add(tenantId, created.id(), scope);
+
+    AdministrativeUserView view =
+        new AdministrativeUserView(created, List.of(command.roleCode()), List.of(scope));
+
+    if (invite) {
+      LinkToken raw = LinkToken.generate();
+      accountTokens.save(
+          AccountToken.issue(created.id(), TokenPurpose.INVITE, tokenHasher.hash(raw.value()), now));
+
+      auditPort.record(
+          AuditRecord.builder()
+              .tenantId(tenantId)
+              .actor(command.actorId(), AuditRecord.ActorType.USER, command.actorRole())
+              .action("ADMINISTRATIVE_USER_INVITED")
+              .subject("User", created.id().value())
+              .after(
+                  Map.<String, Object>of(
+                      "roleCode", command.roleCode(),
+                      "email", maskEmail(email),
+                      "scopeLevel", scope.level().name()))
+              .build());
+
+      return new Created(view, new PendingInvite(raw.value(), email, created.firstName()));
+    }
 
     passwordCredentials.save(
         PasswordCredential.issue(created.id(), secretHasher.hash(command.initialPassword())));
@@ -191,8 +258,14 @@ public class CreateAdministrativeUserUseCase {
                     "scopeLevel", scope.level().name()))
             .build());
 
-    return new AdministrativeUserView(created, List.of(command.roleCode()), List.of(scope));
+    return new Created(view, null);
   }
+
+  /** The created account, plus the invitation to send after commit (null in password mode). */
+  private record Created(AdministrativeUserView view, PendingInvite pendingInvite) {}
+
+  /** The invitation link to deliver once the create transaction has committed. */
+  private record PendingInvite(String rawToken, String email, String firstName) {}
 
   private static PhoneNumber parsePhoneOrNull(String raw) {
     if (raw == null || raw.isBlank()) {

@@ -24,6 +24,13 @@ public enum ErrorCode {
   // code rather than letting them retype into a dead field.
   AUTH_OTP_EXPIRED(401),
   AUTH_OTP_ALREADY_USED(401),
+  // Account-activation / password-reset link tokens (ADR-0012). Distinct from the OTP codes and
+  // from each other so the accept/reset pages can tell a person to request a fresh link rather
+  // than retype into a dead one. Holding the token is not a secret worth protecting by enumeration
+  // — the person followed the link — so, unlike the OTP path, these report the specific condition.
+  AUTH_LINK_INVALID(400),
+  AUTH_LINK_EXPIRED(410),
+  AUTH_LINK_ALREADY_USED(410),
   AUTH_PERMISSION_DENIED(403),
   AUTH_SCOPE_DENIED(403),
   AUTH_TENANT_MISMATCH(404),
@@ -32,6 +39,13 @@ public enum ErrorCode {
   // --- Identity & Access (MOD-02) ------------------------------------------------------
   USER_EMAIL_EXISTS(409),
   USER_NOT_FOUND(404),
+  // Operator-initiated invite/reset (ADR-0012): resending an invitation only makes sense for an
+  // account still awaiting activation, and sending a reset link only for one that can sign in.
+  USER_NOT_PENDING(409),
+  USER_NOT_ACTIVE(409),
+  // A well-formed password refused by policy (BR-IAM-013). 422, not 400: the request parsed fine,
+  // the value is simply too weak — thrown as a BusinessRuleViolationException.
+  PASSWORD_TOO_WEAK(422),
 
   // --- Validation ---------------------------------------------------------------------
   VALIDATION_FAILED(400),

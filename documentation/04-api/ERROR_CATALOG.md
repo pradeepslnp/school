@@ -31,6 +31,9 @@ Envelope format: [`API_STANDARDS.md`](API_STANDARDS.md).
 | `AUTH_ACCOUNT_LOCKED` | 401 | BR-IAM-011 | Too many failed attempts |
 | `AUTH_OTP_EXPIRED` | 401 | | OTP no longer valid |
 | `AUTH_OTP_ALREADY_USED` | 401 | | OTP is single-use |
+| `AUTH_LINK_INVALID` | 400 | ADR-0012 | Invitation / reset link is unknown or malformed |
+| `AUTH_LINK_EXPIRED` | 410 | ADR-0012 | Invitation / reset link has expired — request a fresh one |
+| `AUTH_LINK_ALREADY_USED` | 410 | ADR-0012 | Invitation / reset link was already used (single-use) |
 | `AUTH_PERMISSION_DENIED` | 403 | BR-IAM-002 | Permission not held |
 | `AUTH_SCOPE_DENIED` | 403 | BR-IAM-005, BR-IAM-006 | Permission held, resource out of scope |
 | `AUTH_TENANT_MISMATCH` | 404 | BR-TEN-004 | Cross-tenant — returns `404`, the resource is invisible |
@@ -46,6 +49,9 @@ Envelope format: [`API_STANDARDS.md`](API_STANDARDS.md).
 |---|---|---|---|
 | `USER_EMAIL_EXISTS` | 409 | | Data-integrity constraint (`uq_users_tenant_email`) — another account in this organization already uses this email, same treatment as a vehicle's registration number |
 | `USER_NOT_FOUND` | 404 | | Not found, or not visible to the caller at all |
+| `USER_NOT_PENDING` | 409 | ADR-0012 | Cannot resend an invitation to an account that is already active |
+| `USER_NOT_ACTIVE` | 409 | ADR-0012 | Cannot send a reset link to an account that cannot sign in |
+| `PASSWORD_TOO_WEAK` | 422 | BR-IAM-013 | Password below policy: under 12 characters, or a known-common password |
 
 ---
 

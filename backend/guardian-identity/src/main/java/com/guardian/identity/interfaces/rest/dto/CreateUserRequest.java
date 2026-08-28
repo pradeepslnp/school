@@ -15,8 +15,11 @@ import java.util.UUID;
  *
  * @param schoolId required for a school-scoped role, null for {@code ORG_ADMIN} — see {@code
  *     CreateAdministrativeUserCommand}.
- * @param initialPassword handed to the new user out of band by the creating admin; no self-service
- *     or emailed invite flow exists yet (flagged, not silently assumed).
+ * @param initialPassword required only in {@code PASSWORD} delivery mode; omitted in {@code INVITE}
+ *     mode, where the new user sets their own via the emailed link (ADR-0012). Its strength is
+ *     enforced server-side by {@code PasswordPolicy}, so only a coarse max length is checked here.
+ * @param deliveryMode {@code INVITE} (default) or {@code PASSWORD}; null is treated as {@code
+ *     INVITE}.
  */
 public record CreateUserRequest(
     @NotNull UUID organizationId,
@@ -26,4 +29,22 @@ public record CreateUserRequest(
     @NotBlank @Size(max = 128) String firstName,
     @NotBlank @Size(max = 128) String lastName,
     @NotBlank String roleCode,
-    @NotBlank @Size(min = 8, max = 128) String initialPassword) {}
+    @Size(max = 128) String initialPassword,
+    String deliveryMode) {
+
+  /**
+   * Backward-compatible constructor for callers predating {@code deliveryMode} (ADR-0012): a
+   * supplied password means {@code PASSWORD} mode.
+   */
+  public CreateUserRequest(
+      UUID organizationId,
+      UUID schoolId,
+      String email,
+      String phone,
+      String firstName,
+      String lastName,
+      String roleCode,
+      String initialPassword) {
+    this(organizationId, schoolId, email, phone, firstName, lastName, roleCode, initialPassword, "PASSWORD");
+  }
+}

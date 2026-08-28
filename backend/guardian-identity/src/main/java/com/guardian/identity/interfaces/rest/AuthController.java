@@ -5,14 +5,20 @@ import com.guardian.identity.application.command.RequestOtpCommand;
 import com.guardian.identity.application.command.StaffLoginCommand;
 import com.guardian.identity.application.command.VerifyOtpCommand;
 import com.guardian.identity.application.result.IssuedSession;
+import com.guardian.identity.application.usecase.AcceptInvitationUseCase;
 import com.guardian.identity.application.usecase.RefreshSessionUseCase;
 import com.guardian.identity.application.usecase.RequestOtpUseCase;
+import com.guardian.identity.application.usecase.RequestPasswordResetUseCase;
+import com.guardian.identity.application.usecase.ResetPasswordUseCase;
 import com.guardian.identity.application.usecase.StaffLoginUseCase;
 import com.guardian.identity.application.usecase.VerifyOtpUseCase;
 import com.guardian.identity.domain.OtpCredential;
+import com.guardian.identity.interfaces.rest.dto.AcceptInvitationRequest;
 import com.guardian.identity.interfaces.rest.dto.OtpRequestRequest;
 import com.guardian.identity.interfaces.rest.dto.OtpRequestedResponse;
 import com.guardian.identity.interfaces.rest.dto.OtpVerifyRequest;
+import com.guardian.identity.interfaces.rest.dto.PasswordResetConfirmRequest;
+import com.guardian.identity.interfaces.rest.dto.PasswordResetRequest;
 import com.guardian.identity.interfaces.rest.dto.RefreshRequest;
 import com.guardian.identity.interfaces.rest.dto.SessionResponse;
 import com.guardian.identity.interfaces.rest.dto.StaffLoginRequest;
@@ -51,16 +57,25 @@ public class AuthController {
   private final RequestOtpUseCase requestOtp;
   private final VerifyOtpUseCase verifyOtp;
   private final RefreshSessionUseCase refreshSession;
+  private final AcceptInvitationUseCase acceptInvitation;
+  private final RequestPasswordResetUseCase requestPasswordReset;
+  private final ResetPasswordUseCase resetPassword;
 
   public AuthController(
       StaffLoginUseCase staffLogin,
       RequestOtpUseCase requestOtp,
       VerifyOtpUseCase verifyOtp,
-      RefreshSessionUseCase refreshSession) {
+      RefreshSessionUseCase refreshSession,
+      AcceptInvitationUseCase acceptInvitation,
+      RequestPasswordResetUseCase requestPasswordReset,
+      ResetPasswordUseCase resetPassword) {
     this.staffLogin = staffLogin;
     this.requestOtp = requestOtp;
     this.verifyOtp = verifyOtp;
     this.refreshSession = refreshSession;
+    this.acceptInvitation = acceptInvitation;
+    this.requestPasswordReset = requestPasswordReset;
+    this.resetPassword = resetPassword;
   }
 
   /**
@@ -131,6 +146,46 @@ public class AuthController {
   @PublicEndpoint(reason = "the expired access token cannot authenticate its own replacement")
   public SessionResponse refresh(@Valid @RequestBody RefreshRequest request) {
     return SessionResponse.from(refreshSession.execute(request.refreshToken()));
+  }
+
+  /**
+   * Accepts an invitation: the invitee sets their password and their account becomes active
+   * (IAM-009). Public because they hold a link, not a session — clicking the link is itself the
+   * proof they control the email. A bad, expired, or used link fails with the specific {@code
+   * AUTH_LINK_*} code so the page can tell them to request a fresh one (ADR-0012).
+   */
+  @PostMapping("/invitations/accept")
+  @PublicEndpoint(reason = "an invitee has a link, not a session, until they set their password")
+  public ResponseEntity<Void> acceptInvitation(@Valid @RequestBody AcceptInvitationRequest request) {
+    acceptInvitation.execute(request.token(), request.password());
+    return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Requests a password-reset link.
+   *
+   * <p><strong>Always {@code 202}</strong>, whether or not the address belongs to an account — the
+   * response cannot be used to discover who has one (OWASP). The use case has no failure branch to
+   * report; see {@code RequestPasswordResetUseCase}.
+   */
+  @PostMapping("/password-reset/request")
+  @PublicEndpoint(reason = "a person who forgot their password cannot authenticate to ask for a reset")
+  public ResponseEntity<Void> requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
+    requestPasswordReset.execute(request.email());
+    return ResponseEntity.accepted().build();
+  }
+
+  /**
+   * Completes a password reset: sets the new password and ends every existing session (IAM-010).
+   * Public for the same reason as acceptance — the reset link is the credential. An invalid link
+   * fails with the specific {@code AUTH_LINK_*} code (ADR-0012).
+   */
+  @PostMapping("/password-reset/confirm")
+  @PublicEndpoint(reason = "the reset link is the credential; the old password may be compromised")
+  public ResponseEntity<Void> confirmPasswordReset(
+      @Valid @RequestBody PasswordResetConfirmRequest request) {
+    resetPassword.execute(request.token(), request.password());
+    return ResponseEntity.noContent().build();
   }
 
   /**

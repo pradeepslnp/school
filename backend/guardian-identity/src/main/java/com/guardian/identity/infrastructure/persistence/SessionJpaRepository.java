@@ -29,4 +29,21 @@ interface SessionJpaRepository extends JpaRepository<SessionEntity, UUID> {
       WHERE s.familyId = :familyId AND s.revoked = false
       """)
   int revokeFamily(@Param("familyId") UUID familyId, @Param("reason") String reason);
+
+  /**
+   * Revokes every live session for one user in one statement (ADR-0012, password reset).
+   *
+   * <p>Bulk update with {@code clearAutomatically} for the same reasons as {@link #revokeFamily}:
+   * atomicity, and so a {@link SessionEntity} already loaded this transaction cannot write a stale
+   * {@code revoked = false} back on flush.
+   */
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query(
+      """
+      UPDATE SessionEntity s
+      SET s.revoked = true,
+          s.revokedReason = :reason
+      WHERE s.userId = :userId AND s.revoked = false
+      """)
+  int revokeAllForUser(@Param("userId") UUID userId, @Param("reason") String reason);
 }
