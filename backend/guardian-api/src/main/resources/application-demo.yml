@@ -22,18 +22,19 @@ guardian:
     # exist outside this profile.
     magic-otp: ${GUARDIAN_MAGIC_OTP:123123}
 
-    # Addresses for which the fixed code above is accepted on the **email** sign-in path.
-    #
-    # Deliberately empty: every console account seeded by V901 uses a real mailbox, so each one
-    # receives a genuine generated code — logged until guardian.mail.enabled=true, actually
-    # emailed after. That is the point of using real addresses, and a fixed code would defeat it.
-    #
-    # Empty means the shortcut is off for email sign-in entirely, not that it applies to everyone
-    # (see RequestEmailOtpUseCase.usesMagicCode). List an address here only to opt it in — useful
-    # for an automated test account that has no mailbox to read.
-    #
-    # The phone code above is unaffected: the parent app still signs in with 123123.
-    magic-otp-emails: ${GUARDIAN_MAGIC_OTP_EMAILS:}
+    # The seeded demo accounts (V900, V901) — the only addresses for which the fixed code above
+    # is accepted on the email sign-in path. Any address NOT listed here gets a freshly generated
+    # code, delivered by whichever AccountEmailSender is active: logged by default, actually
+    # emailed once guardian.mail.enabled=true. That is what lets a real address be exercised
+    # end-to-end on this profile without giving every account a guessable code.
+    magic-otp-emails: >-
+      ${GUARDIAN_MAGIC_OTP_EMAILS:superadmin@guardian-platform.example,
+      priya@guardian-platform.example,
+      orgadmin@demo-trust.example,
+      schooladmin@demo-trust.example,
+      principal@demo-trust.example,
+      transportmanager@demo-trust.example,
+      anil@demo-trust.example}
 
 logging:
   level:

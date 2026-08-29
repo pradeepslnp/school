@@ -5,27 +5,23 @@
 --
 -- ## What this adds that V900 does not
 --
--- V900 seeds the fixtures the parent and driver apps need, plus two console accounts on reserved
--- `.example` addresses that can never receive mail. That is enough to demo the apps but not to
--- exercise the console's authorisation, which differs per role, and not to exercise email at all.
+-- V900 seeds one guardian, one driver, one TRANSPORT_MANAGER (Anil) and one SUPER_ADMIN (Priya).
+-- That is enough to demo the apps but not enough to exercise the console's authorisation, which
+-- differs per role: what a PRINCIPAL sees is not what an ORG_ADMIN sees. This file completes the
+-- set so every admin-console role in PERMISSION_MATRIX.md has an account to sign in as.
 --
--- The accounts below use **real addresses**, so the whole account lifecycle runs end to end:
--- invitation → set your own password → sign in → forgot password → reset. Nothing here depends on
--- the fixed development code; every one of these addresses receives a genuine generated code,
--- delivered by whichever AccountEmailSender is active (logged until guardian.mail.enabled=true).
---
--- The V900 `.example` accounts are left in place — AUTHENTICATION_API.md's examples and the parent
--- app's fixtures reference them — but they are not the accounts to sign in with any more. Use the
--- ones below.
---
--- ## Both sign-in methods work for every account
+-- ## Every account has BOTH sign-in methods
 --
 --   * email + password        POST /auth/login
 --   * email + one-time code   POST /auth/email-otp/request → /auth/email-otp/verify
 --
--- Initial password for every account below: Guardian!Demo2026
--- It is a starting credential, not a permanent one: the reset flow is the intended way to replace
--- it, and doing so is the simplest end-to-end test of the email path.
+-- Password for every account below: Guardian!Demo2026
+-- One-time code for every account below: 123123 (the demo profile's magic code)
+--
+-- The magic code applies only to the addresses listed in guardian.auth.magic-otp-emails, which is
+-- exactly this set. Any other address — a real operator's — gets a freshly generated code that is
+-- logged by default and actually emailed once guardian.mail.enabled=true. That is deliberate: the
+-- seeded accounts stay frictionless while the real delivery path is still exercisable.
 --
 -- ## user_scopes matter as much as roles
 --
@@ -35,17 +31,11 @@
 -- V900 predates user_scopes (V15) and seeds no scope rows, so its two accounts are given theirs
 -- here too rather than left half-configured.
 --
--- ## Real addresses in a committed file
---
--- These are live mailboxes belonging to real people. That is deliberate — they are what makes the
--- email flows testable — but it does mean the addresses are in git history. If this repository is
--- ever shared more widely, replace them here rather than assuming the seed is private.
---
 -- SET LOCAL app.tenant_id is load-bearing — see V900's header for why (FORCE ROW LEVEL SECURITY
 -- applies to the table owner Flyway connects as).
 
 -- =======================================================================================
--- Platform-operations tenant — SUPER_ADMIN
+-- Platform-operations tenant — SUPER_ADMIN accounts
 -- =======================================================================================
 SET LOCAL app.tenant_id = 'aa000000-0000-4000-a000-000000000001';
 
@@ -67,8 +57,37 @@ VALUES ('b9000000-0000-4000-a000-000000000001', 'aa000000-0000-4000-a000-0000000
         'ab000000-0000-4000-a000-000000000001', 'PLATFORM', NULL)
 ON CONFLICT (id) DO NOTHING;
 
+-- SUPER_ADMIN — superadmin@guardian-platform.example
+INSERT INTO users (id, tenant_id, email, first_name, last_name, preferred_locale, status)
+VALUES ('ba000000-0000-4000-a000-000000000001', 'aa000000-0000-4000-a000-000000000001',
+        'superadmin@guardian-platform.example', 'Sana', 'Super', 'en', 'ACTIVE')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO user_credentials (id, tenant_id, user_id, credential_type, secret_hash)
+VALUES ('bb000000-0000-4000-a000-000000000001', 'aa000000-0000-4000-a000-000000000001',
+        'ba000000-0000-4000-a000-000000000001', 'PASSWORD',
+        '$argon2id$v=19$m=16384,t=2,p=1$6XCx8RiB8b8Jjo3tB1iajQ$ALUM9XgMpps9dsJxCxFoPVP+x9ne3mkt2jxj6eeVYo8')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO user_roles (id, tenant_id, user_id, role_id)
+VALUES ('bc000000-0000-4000-a000-000000000001', 'aa000000-0000-4000-a000-000000000001',
+        'ba000000-0000-4000-a000-000000000001', 'ad000000-0000-4000-a000-000000000001')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO user_scopes (id, tenant_id, user_id, scope_level, scope_ref_id)
+VALUES ('bd000000-0000-4000-a000-000000000001', 'aa000000-0000-4000-a000-000000000001',
+        'ba000000-0000-4000-a000-000000000001', 'PLATFORM', NULL)
+ON CONFLICT (id) DO NOTHING;
+
 -- ---------------------------------------------------------------------------------------
--- SUPER_ADMIN — pradeepslnp7@gmail.com
+-- A real-address SUPER_ADMIN, for exercising genuine email delivery.
+--
+-- Deliberately NOT in guardian.auth.magic-otp-emails: this account gets a generated code, which
+-- is logged by default and lands in the real inbox once guardian.mail.enabled=true. It is the
+-- account to use when testing that emails actually arrive.
+--
+-- Change the address below to your own before running the seed on a machine that is not the
+-- original developer's.
 --
 -- The ids here match the standalone make_super_admin.sql handed over earlier, on purpose: if that
 -- script has already been run against this database, every insert below is a clean no-op instead
@@ -118,10 +137,10 @@ VALUES ('d2000000-0000-4000-a000-000000000001', 'a0000000-0000-4000-a000-0000000
         'b0000000-0000-4000-a000-000000000001')
 ON CONFLICT (id) DO NOTHING;
 
--- ORG_ADMIN — pradeepslnp07@gmail.com. Organization-scoped: no school ref.
+-- ORG_ADMIN — orgadmin@demo-trust.example. Organization-scoped: no school ref.
 INSERT INTO users (id, tenant_id, email, first_name, last_name, preferred_locale, status)
 VALUES ('d3000000-0000-4000-a000-000000000001', 'a0000000-0000-4000-a000-000000000001',
-        'pradeepslnp07@gmail.com', 'Org', 'Admin', 'en', 'ACTIVE')
+        'orgadmin@demo-trust.example', 'Omar', 'Rao', 'en', 'ACTIVE')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO user_credentials (id, tenant_id, user_id, credential_type, secret_hash)
@@ -140,10 +159,10 @@ VALUES ('d6000000-0000-4000-a000-000000000001', 'a0000000-0000-4000-a000-0000000
         'd3000000-0000-4000-a000-000000000001', 'ORG', NULL)
 ON CONFLICT (id) DO NOTHING;
 
--- SCHOOL_ADMIN — akshay5632@gmail.com. School-scoped.
+-- SCHOOL_ADMIN — schooladmin@demo-trust.example. School-scoped.
 INSERT INTO users (id, tenant_id, email, first_name, last_name, preferred_locale, status)
 VALUES ('d7000000-0000-4000-a000-000000000001', 'a0000000-0000-4000-a000-000000000001',
-        'akshay5632@gmail.com', 'School', 'Admin', 'en', 'ACTIVE')
+        'schooladmin@demo-trust.example', 'Shalini', 'Iyer', 'en', 'ACTIVE')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO user_credentials (id, tenant_id, user_id, credential_type, secret_hash)
@@ -163,10 +182,10 @@ VALUES ('da000000-0000-4000-a000-000000000001', 'a0000000-0000-4000-a000-0000000
         'b0000000-0000-4000-a000-000000000001')
 ON CONFLICT (id) DO NOTHING;
 
--- PRINCIPAL — reelsatdesk@gmail.com. School-scoped, read-mostly (PERMISSION_MATRIX.md).
+-- PRINCIPAL — principal@demo-trust.example. School-scoped, read-mostly (PERMISSION_MATRIX.md).
 INSERT INTO users (id, tenant_id, email, first_name, last_name, preferred_locale, status)
 VALUES ('db000000-0000-4000-a000-000000000001', 'a0000000-0000-4000-a000-000000000001',
-        'reelsatdesk@gmail.com', 'School', 'Principal', 'en', 'ACTIVE')
+        'principal@demo-trust.example', 'Prakash', 'Nair', 'en', 'ACTIVE')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO user_credentials (id, tenant_id, user_id, credential_type, secret_hash)
@@ -186,10 +205,11 @@ VALUES ('de000000-0000-4000-a000-000000000001', 'a0000000-0000-4000-a000-0000000
         'b0000000-0000-4000-a000-000000000001')
 ON CONFLICT (id) DO NOTHING;
 
--- TRANSPORT_MANAGER — 7625055445l@gmail.com. School-scoped.
+-- TRANSPORT_MANAGER — transportmanager@demo-trust.example. A second one alongside Anil, so the
+-- role has an account whose address follows the same convention as the rest of this file.
 INSERT INTO users (id, tenant_id, email, first_name, last_name, preferred_locale, status)
 VALUES ('df000000-0000-4000-a000-000000000001', 'a0000000-0000-4000-a000-000000000001',
-        '7625055445l@gmail.com', 'Transport', 'Manager', 'en', 'ACTIVE')
+        'transportmanager@demo-trust.example', 'Tara', 'Menon', 'en', 'ACTIVE')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO user_credentials (id, tenant_id, user_id, credential_type, secret_hash)
