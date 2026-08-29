@@ -18,15 +18,12 @@ public enum TokenPurpose {
    * Activates a brand-new administrative account: the recipient sets their first password and the
    * account moves {@code PENDING → ACTIVE}. Long-lived because a principal may not check email daily,
    * and it is resendable.
+   *
+   * <p>The only link-token purpose. Password reset does <em>not</em> use a link token — it uses an
+   * emailed one-time code (ADR-0012), stored as an {@code OtpCredential} under its own
+   * {@code credential_type}, so it is not modelled here.
    */
-  INVITE(Duration.ofHours(72)),
-
-  /**
-   * Replaces the password on an existing account. Deliberately short — OWASP treats a reset link as
-   * a bearer credential, and a link that outlives the moment it was requested is a link that can be
-   * used off a screenshot.
-   */
-  RESET(Duration.ofMinutes(60));
+  INVITE(Duration.ofHours(72));
 
   private final Duration lifetime;
 

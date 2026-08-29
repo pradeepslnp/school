@@ -46,13 +46,13 @@ class LoggingAccountEmailSender implements AccountEmailSender {
   }
 
   @Override
-  public void sendPasswordReset(String email, String firstName, String rawToken, Duration validFor) {
+  public void sendPasswordResetCode(String email, String firstName, String code, Duration validFor) {
+    // The code is printed because reading it is the entire purpose in development; the address is
+    // masked. Same containment as the OTP sign-in code (LoggingOtpSender).
     log.warn(
-        "DEVELOPMENT password reset for {} — reset link: {}/reset-password?token={} (valid {}m)."
-            + " No email was sent.",
+        "DEVELOPMENT password reset for {} — reset code is {} (valid {}m). No email was sent.",
         maskEmail(email),
-        baseUrl,
-        rawToken,
+        code,
         validFor.toMinutes());
   }
 

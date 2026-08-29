@@ -176,15 +176,16 @@ public class AuthController {
   }
 
   /**
-   * Completes a password reset: sets the new password and ends every existing session (IAM-010).
-   * Public for the same reason as acceptance — the reset link is the credential. An invalid link
-   * fails with the specific {@code AUTH_LINK_*} code (ADR-0012).
+   * Completes a password reset: verifies the emailed code, sets the new password, and ends every
+   * existing session (IAM-010). Public because a person who forgot their password holds only the
+   * code, not a session. A wrong/expired/used code fails like the sign-in OTP path so the endpoint
+   * cannot be used to enumerate accounts (ADR-0012).
    */
   @PostMapping("/password-reset/confirm")
-  @PublicEndpoint(reason = "the reset link is the credential; the old password may be compromised")
+  @PublicEndpoint(reason = "the emailed code is the credential; the old password may be compromised")
   public ResponseEntity<Void> confirmPasswordReset(
       @Valid @RequestBody PasswordResetConfirmRequest request) {
-    resetPassword.execute(request.token(), request.password());
+    resetPassword.execute(request.email(), request.otp(), request.password());
     return ResponseEntity.noContent().build();
   }
 

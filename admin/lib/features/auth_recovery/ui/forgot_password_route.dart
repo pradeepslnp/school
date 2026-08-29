@@ -5,8 +5,9 @@ import '../../../app/dependencies.dart';
 import '../bloc/forgot_password_bloc.dart';
 import 'forgot_password_screen.dart';
 
-/// Composes the forgot-password page (ADR-0012, IAM-010), reached from the sign-in screen at
-/// `/forgot-password`.
+/// Composes the forgot-password / reset page (ADR-0012, IAM-010), reached from the sign-in screen
+/// at `/forgot-password`. The whole reset — request a code, then enter it with a new password —
+/// happens here; there is no separate reset-link landing page.
 class ForgotPasswordRoute extends StatelessWidget {
   const ForgotPasswordRoute({super.key, required this.onBack});
 
@@ -16,8 +17,8 @@ class ForgotPasswordRoute extends StatelessWidget {
   Widget build(BuildContext context) {
     final dependencies = DependencyScope.of(context);
 
-    return BlocProvider<ForgotPasswordBloc>(
-      create: (_) => ForgotPasswordBloc(repository: dependencies.authRecoveryRepository),
+    return BlocProvider<PasswordResetBloc>(
+      create: (_) => PasswordResetBloc(repository: dependencies.authRecoveryRepository),
       child: ForgotPasswordScreen(onBack: onBack),
     );
   }

@@ -24,8 +24,13 @@ class AuthRecoveryRepository {
     return _outcome(await dataProvider.requestPasswordReset(email: email));
   }
 
-  Future<Result<void>> confirmPasswordReset({required String token, required String password}) async {
-    return _outcome(await dataProvider.confirmPasswordReset(token: token, password: password));
+  Future<Result<void>> confirmPasswordReset({
+    required String email,
+    required String otp,
+    required String password,
+  }) async {
+    return _outcome(
+        await dataProvider.confirmPasswordReset(email: email, otp: otp, password: password));
   }
 
   Result<void> _outcome(ApiResponse response) {

@@ -8,7 +8,7 @@ import com.guardian.identity.application.result.AdministrativeUserView;
 import com.guardian.identity.application.usecase.CreateAdministrativeUserUseCase;
 import com.guardian.identity.application.usecase.ListAdministrativeUsersUseCase;
 import com.guardian.identity.application.usecase.ResendInvitationUseCase;
-import com.guardian.identity.application.usecase.SendPasswordResetLinkUseCase;
+import com.guardian.identity.application.usecase.SendPasswordResetCodeUseCase;
 import com.guardian.identity.application.usecase.SetAdministrativeUserStatusUseCase;
 import com.guardian.identity.application.usecase.UpdateAdministrativeUserUseCase;
 import com.guardian.identity.domain.UserStatus;
@@ -52,7 +52,7 @@ public class UserController {
   private final UpdateAdministrativeUserUseCase updateUser;
   private final SetAdministrativeUserStatusUseCase setUserStatus;
   private final ResendInvitationUseCase resendInvitation;
-  private final SendPasswordResetLinkUseCase sendPasswordResetLink;
+  private final SendPasswordResetCodeUseCase sendPasswordResetCode;
 
   public UserController(
       CreateAdministrativeUserUseCase createUser,
@@ -60,13 +60,13 @@ public class UserController {
       UpdateAdministrativeUserUseCase updateUser,
       SetAdministrativeUserStatusUseCase setUserStatus,
       ResendInvitationUseCase resendInvitation,
-      SendPasswordResetLinkUseCase sendPasswordResetLink) {
+      SendPasswordResetCodeUseCase sendPasswordResetCode) {
     this.createUser = createUser;
     this.listUsers = listUsers;
     this.updateUser = updateUser;
     this.setUserStatus = setUserStatus;
     this.resendInvitation = resendInvitation;
-    this.sendPasswordResetLink = sendPasswordResetLink;
+    this.sendPasswordResetCode = sendPasswordResetCode;
   }
 
   @GetMapping
@@ -119,15 +119,15 @@ public class UserController {
   }
 
   /**
-   * Sends a password-reset link to an active administrator, on an operator's initiative (ADR-0012)
-   * — the fallback when a person cannot use self-service reset. See {@link
-   * SendPasswordResetLinkUseCase}.
+   * Emails a password-reset code to an active administrator, on an operator's initiative (ADR-0012)
+   * — the fallback when a person cannot use self-service reset. The admin still enters the code
+   * themselves. See {@link SendPasswordResetCodeUseCase}.
    */
-  @PostMapping("/{userId}/send-reset-link")
+  @PostMapping("/{userId}/send-reset-code")
   @RequiresPermission("PERM-USER-EDIT")
-  public ResponseEntity<Void> sendResetLink(
+  public ResponseEntity<Void> sendResetCode(
       @PathVariable UUID userId, @RequestParam UUID organizationId, CurrentActor actor) {
-    sendPasswordResetLink.execute(organizationId, userId, actor.userId(), actor.role());
+    sendPasswordResetCode.execute(organizationId, userId, actor.userId(), actor.role());
     return ResponseEntity.accepted().build();
   }
 

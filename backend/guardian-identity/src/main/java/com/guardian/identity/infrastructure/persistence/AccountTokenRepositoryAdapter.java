@@ -69,8 +69,9 @@ class AccountTokenRepositoryAdapter implements AccountTokenRepository {
   }
 
   private static boolean isLinkToken(UserCredentialEntity entity) {
-    String type = entity.getCredentialType();
-    return TokenPurpose.INVITE.name().equals(type) || TokenPurpose.RESET.name().equals(type);
+    // Only invitations use link tokens now — password reset moved to an emailed OTP stored under
+    // credential_type RESET, which this adapter must never map as an AccountToken (ADR-0012).
+    return TokenPurpose.INVITE.name().equals(entity.getCredentialType());
   }
 
   private static AccountToken toDomain(UserCredentialEntity entity) {

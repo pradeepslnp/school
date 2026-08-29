@@ -70,13 +70,13 @@ class UserRepository {
     return const Success<void>(null);
   }
 
-  /// Sends a password-reset link to an active account (ADR-0012). Success carries no body.
-  Future<Result<void>> sendResetLink({
+  /// Emails a password-reset code to an active account (ADR-0012). Success carries no body.
+  Future<Result<void>> sendResetCode({
     required String userId,
     required String organizationId,
   }) async {
     final response =
-        await dataProvider.sendResetLink(userId: userId, organizationId: organizationId);
+        await dataProvider.sendResetCode(userId: userId, organizationId: organizationId);
     if (!response.isSuccess) return _toFailure<void>(response);
     return const Success<void>(null);
   }

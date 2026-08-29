@@ -35,11 +35,17 @@ class AuthRecoveryDataProvider {
     );
   }
 
-  /// `POST /auth/password-reset/confirm` — sets the new password and ends every existing session.
-  Future<ApiResponse> confirmPasswordReset({required String token, required String password}) {
+  /// `POST /auth/password-reset/confirm` — verifies the emailed code, sets the new password, and
+  /// ends every existing session. The email + code together identify the account (the 6-digit code
+  /// is not unique on its own), mirroring phone sign-in.
+  Future<ApiResponse> confirmPasswordReset({
+    required String email,
+    required String otp,
+    required String password,
+  }) {
     return client.post(
       '/auth/password-reset/confirm',
-      body: {'token': token, 'password': password},
+      body: {'email': email, 'otp': otp, 'password': password},
       authenticated: false,
     );
   }

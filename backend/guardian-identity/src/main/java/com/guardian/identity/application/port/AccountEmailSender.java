@@ -25,8 +25,15 @@ public interface AccountEmailSender {
    */
   void sendInvitation(String email, String firstName, String rawToken, Duration validFor);
 
-  /** Sends a password-reset link to an existing account. */
-  void sendPasswordReset(String email, String firstName, String rawToken, Duration validFor);
+  /**
+   * Sends a password-reset one-time code to an existing account (ADR-0012). The reset flow uses a
+   * short numeric code the person types back, not a link — it works across devices and email
+   * clients and fits an OTP-familiar market.
+   *
+   * @param code the 6-digit code — the only place it leaves the server
+   * @param validFor how long the code stays usable, so the message can say so
+   */
+  void sendPasswordResetCode(String email, String firstName, String code, Duration validFor);
 
   /**
    * Tells a person their password has just changed — the out-of-band signal that catches an

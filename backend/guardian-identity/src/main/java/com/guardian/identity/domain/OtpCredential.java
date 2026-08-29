@@ -74,8 +74,20 @@ public final class OtpCredential {
 
   /** Issues a new code for {@code userId}, valid for {@link #LIFETIME} from {@code now}. */
   public static OtpCredential issue(UserId userId, String secretHash, Instant now) {
+    return issue(userId, secretHash, now, LIFETIME);
+  }
+
+  /**
+   * Issues a new code with a caller-chosen lifetime — the phone sign-in code lives {@link #LIFETIME}
+   * (5 minutes), while the emailed password-reset code lives longer (10 minutes, ADR-0012) because
+   * email can lag and resetting a password is not a same-second action. Everything else about the
+   * credential — single use, the attempt limit, the lock — is identical, which is the whole reason
+   * the reset flow reuses this type rather than inventing a parallel one.
+   */
+  public static OtpCredential issue(
+      UserId userId, String secretHash, Instant now, Duration lifetime) {
     return new OtpCredential(
-        UUID.randomUUID(), userId, secretHash, now.plus(LIFETIME), null, 0, null, 0);
+        UUID.randomUUID(), userId, secretHash, now.plus(lifetime), null, 0, null, 0);
   }
 
   /** Rebuilds a credential from storage. */

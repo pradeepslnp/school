@@ -31,9 +31,9 @@ Envelope format: [`API_STANDARDS.md`](API_STANDARDS.md).
 | `AUTH_ACCOUNT_LOCKED` | 401 | BR-IAM-011 | Too many failed attempts |
 | `AUTH_OTP_EXPIRED` | 401 | | OTP no longer valid |
 | `AUTH_OTP_ALREADY_USED` | 401 | | OTP is single-use |
-| `AUTH_LINK_INVALID` | 400 | ADR-0012 | Invitation / reset link is unknown or malformed |
-| `AUTH_LINK_EXPIRED` | 410 | ADR-0012 | Invitation / reset link has expired — request a fresh one |
-| `AUTH_LINK_ALREADY_USED` | 410 | ADR-0012 | Invitation / reset link was already used (single-use) |
+| `AUTH_LINK_INVALID` | 400 | ADR-0012 | Invitation link is unknown or malformed |
+| `AUTH_LINK_EXPIRED` | 410 | ADR-0012 | Invitation link has expired — request a fresh one |
+| `AUTH_LINK_ALREADY_USED` | 410 | ADR-0012 | Invitation link was already used (single-use) |
 | `AUTH_PERMISSION_DENIED` | 403 | BR-IAM-002 | Permission not held |
 | `AUTH_SCOPE_DENIED` | 403 | BR-IAM-005, BR-IAM-006 | Permission held, resource out of scope |
 | `AUTH_TENANT_MISMATCH` | 404 | BR-TEN-004 | Cross-tenant — returns `404`, the resource is invisible |

@@ -7,7 +7,6 @@ import '../core/session/session_manager.dart';
 import '../features/audit/ui/audit_list_route.dart';
 import '../features/auth_recovery/ui/accept_invitation_route.dart';
 import '../features/auth_recovery/ui/forgot_password_route.dart';
-import '../features/auth_recovery/ui/reset_password_route.dart';
 import '../features/login/ui/login_route.dart';
 import '../features/organizations/ui/organization_list_route.dart';
 import '../features/platform_health/ui/platform_health_route.dart';
@@ -70,7 +69,8 @@ final class AcceptInvitationPath extends RecoveryPath {
   String get location => '$path?token=${Uri.encodeQueryComponent(token)}';
 }
 
-/// `/forgot-password` — request a reset link.
+/// `/forgot-password` — the whole self-service reset (request a code, then enter it with a new
+/// password) happens here; there is no separate reset-link landing page (ADR-0012).
 final class ForgotPasswordPath extends RecoveryPath {
   const ForgotPasswordPath();
 
@@ -78,18 +78,6 @@ final class ForgotPasswordPath extends RecoveryPath {
 
   @override
   String get location => path;
-}
-
-/// `/reset-password?token=…` — set a new password from a reset link.
-final class ResetPasswordPath extends RecoveryPath {
-  const ResetPasswordPath(this.token);
-
-  static const String path = '/reset-password';
-
-  final String token;
-
-  @override
-  String get location => '$path?token=${Uri.encodeQueryComponent(token)}';
 }
 
 /// Translates between the browser address bar and [AdminRoutePath].
@@ -113,9 +101,6 @@ class ConsoleRouteInformationParser
       return AcceptInvitationPath(uri.queryParameters['token'] ?? '');
     }
     if (path == ForgotPasswordPath.path) return const ForgotPasswordPath();
-    if (path == ResetPasswordPath.path) {
-      return ResetPasswordPath(uri.queryParameters['token'] ?? '');
-    }
     return ConsolePath(path.isEmpty ? '/' : path);
   }
 
@@ -252,8 +237,6 @@ class ConsoleRouterDelegate extends RouterDelegate<AdminRoutePath>
         AcceptInvitationPath(:final token) =>
           AcceptInvitationRoute(token: token, onDone: _leaveRecovery),
         ForgotPasswordPath() => ForgotPasswordRoute(onBack: _leaveRecovery),
-        ResetPasswordPath(:final token) =>
-          ResetPasswordRoute(token: token, onDone: _leaveRecovery),
       };
 
   /// Opens the forgot-password page from the sign-in screen.

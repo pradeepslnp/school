@@ -24,7 +24,6 @@ class AcceptInvitationRoute extends StatelessWidget {
       create: (_) => SetPasswordBloc(
         repository: dependencies.authRecoveryRepository,
         token: token,
-        mode: PasswordSetMode.acceptInvitation,
       ),
       child: SetPasswordScreen(
         title: 'Set your password',

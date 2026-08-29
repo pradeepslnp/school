@@ -236,10 +236,10 @@ class UserListBloc extends Bloc<UserListEvent, UserListState> {
     emit(state.copyWith(isSubmitting: true, clearError: true, clearActionNotice: true));
 
     final result =
-        await _userRepository.sendResetLink(userId: event.userId, organizationId: organizationId);
+        await _userRepository.sendResetCode(userId: event.userId, organizationId: organizationId);
     switch (result) {
       case Success<void>():
-        emit(state.copyWith(isSubmitting: false, actionNotice: 'Password-reset link sent.'));
+        emit(state.copyWith(isSubmitting: false, actionNotice: 'Password-reset code emailed.'));
       case Failure<void>(:final code, :final messageKey):
         emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));
     }

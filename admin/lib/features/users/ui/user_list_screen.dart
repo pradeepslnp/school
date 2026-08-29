@@ -535,7 +535,7 @@ class _UserTable extends StatelessWidget {
                         value: 'reset',
                         child: ListTile(
                           leading: Icon(Icons.lock_reset_outlined),
-                          title: Text('Send reset link'),
+                          title: Text('Send reset code'),
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),

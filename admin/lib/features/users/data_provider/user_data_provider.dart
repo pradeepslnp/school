@@ -63,11 +63,11 @@ class UserDataProvider {
     );
   }
 
-  /// `POST /users/{id}/send-reset-link?organizationId=` (`PERM-USER-EDIT`) — sends a
-  /// password-reset link to an active account (ADR-0012).
-  Future<ApiResponse> sendResetLink({required String userId, required String organizationId}) {
+  /// `POST /users/{id}/send-reset-code?organizationId=` (`PERM-USER-EDIT`) — emails a
+  /// password-reset code to an active account, which the admin then enters themselves (ADR-0012).
+  Future<ApiResponse> sendResetCode({required String userId, required String organizationId}) {
     return client.post(
-      '/users/$userId/send-reset-link',
+      '/users/$userId/send-reset-code',
       query: {'organizationId': organizationId},
     );
   }

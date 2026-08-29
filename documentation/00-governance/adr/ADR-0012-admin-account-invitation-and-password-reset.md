@@ -32,18 +32,17 @@ The forces:
 
 2. **Accepting an invitation sets the password and activates the account.** A public endpoint takes the token + a new password, validates the password policy, writes the `PASSWORD` credential, consumes the token, and transitions the user `PENDING → ACTIVE`. Clicking the emailed link (which carries the token) *is* the email-verification step — no separate verify.
 
-3. **Self-service password reset, plus an operator-initiated path.**
-   - Public "forgot password": takes an email, and **always returns the same generic response** whether or not an account exists (no account enumeration — OWASP). If the account exists and is active, a `RESET` token is issued and emailed.
-   - Public "reset password": takes the token + new password, validates the policy, replaces the `PASSWORD` credential, consumes the token, and **revokes all of the user's sessions**.
-   - Operator-initiated (authenticated, `PERM-USER-EDIT`): "resend invitation" for a `PENDING` user and "send reset link" for an `ACTIVE` user, from the Users screen — the fallback when a person's email was mistyped and only an operator can act.
+3. **Self-service password reset by emailed one-time code, plus an operator-initiated path.** Reset does **not** use a link — it uses a 6-digit code the person types back. This works across devices and email clients (no clicking a link on the same device the console is open on) and fits an OTP-familiar market. It reuses the sign-in OTP machinery (`OtpCredential`: single use, 5-attempt lock, BR-IAM-011), stored under its own `credential_type` so a sign-in code and a reset code can never be swapped.
+   - Public "forgot password": takes an email, and **always returns the same generic response** whether or not an account exists (no account enumeration — OWASP). If the account exists and is active, a reset code is issued and emailed.
+   - Public "reset password": takes the email + code + new password, verifies the code (advancing the attempt counter on a wrong guess), validates the policy, replaces the `PASSWORD` credential, consumes the code, and **revokes all of the user's sessions**.
+   - Operator-initiated (authenticated, `PERM-USER-EDIT`): "resend invitation" for a `PENDING` user and "send reset code" for an `ACTIVE` user, from the Users screen — the fallback when a person's email was mistyped and only an operator can act; the admin still receives and enters the code.
 
-4. **Tokens are high-entropy, hashed at rest, single-use, and short-lived.**
-   - The link token is a cryptographically-random URL-safe string (≥ 256 bits). Because it is high-entropy (unlike a password), it is stored as a **deterministic SHA-256 hash** (`TokenHasher`), which is safe *and* allows lookup by hash. (Passwords keep their salted Argon2 hashing via `SecretHasher` — the two hashers are not interchangeable and that is deliberate.)
-   - Tokens are stored in the existing `user_credentials` table under new `credential_type`s `INVITE` and `RESET`, reusing its `secret_hash` / `expires_at` / `consumed_at` columns. Single-use is enforced by `consumed_at`, never by deletion.
-   - **Expiry:** invite = 72 hours (resendable); reset = 60 minutes.
-   - Re-issuing supersedes: the latest unconsumed token wins, matching the OTP flow.
+4. **Two credential shapes, both hashed at rest, single-use, in `user_credentials`.**
+   - **Invitation** uses a cryptographically-random URL-safe **link token** (≥ 256 bits), stored as a **deterministic SHA-256 hash** (`TokenHasher`) so it can be looked up by hash from a public endpoint that holds only the token. Type `INVITE`.
+   - **Password reset** uses a **6-digit OTP** stored as a salted **Argon2** hash (`SecretHasher`) with an attempt counter and lock — because 6 digits is low-entropy and must not be brute-forceable. It is *not* looked up by hash; the account is resolved by **email** and the code checked against that account's latest reset credential, exactly as phone sign-in checks a code against a resolved phone. Type `RESET`.
+   - **Expiry:** invite = 72 hours (resendable); reset code = **10 minutes** (single-use, 5-attempt lock). Re-issuing supersedes: the latest unconsumed credential wins.
 
-5. **Public token lookup crosses tenants through a `SECURITY DEFINER` function**, exactly as login does. The public endpoints have no tenant context, so `auth_resolve_account_token(hash, type)` (owned by `guardian_preauth`, `BYPASSRLS`, mirroring `auth_resolve_email`) returns `(user_id, tenant_id, expires_at, consumed_at)`; the use case then does all mutation inside `tenantScoped.execute(tenantId, …)` under RLS.
+5. **Invitation-token lookup crosses tenants through a `SECURITY DEFINER` function**, exactly as login does. The accept-invitation endpoint has no tenant context, so `auth_resolve_account_token(hash, type)` (owned by `guardian_preauth`, `BYPASSRLS`, mirroring `auth_resolve_email`) returns `(credential_id, user_id, tenant_id)`; the use case then does all mutation inside `tenantScoped.execute(tenantId, …)` under RLS. **Password reset needs no such function** — it is given the email, so it reuses the existing `auth_resolve_email` resolver.
 
 6. **Email delivery is a port, dev-logged until a real adapter ships.** A new `AccountEmailSender` port carries invitation / reset / password-changed messages. `LoggingAccountEmailSender` (`@Profile("!prod & !production")`) writes the link to the log — identical containment to `LoggingOtpSender`, so a production deployment with no real adapter **fails to start** rather than silently not sending. The concrete provider (SES / SendGrid / Postmark / SMTP) is per-tenant configuration under ADR-0005's `EmailChannel`, chosen at go-live, not here.
 
@@ -61,7 +60,8 @@ The forces:
 | Invite-only, remove the manual-password path | Cleaner, but brittle in the field: onboarding a principal in person, or one whose email is unreliable, needs a manual fallback. Kept both. |
 | New dedicated `account_tokens` table | `user_credentials` already has the exact shape (hashed secret, expiry, consumed_at, tenant-scoped RLS). A second table would duplicate the pattern for no gain (KISS). |
 | Salted Argon2 for link tokens (as passwords) | Argon2 is salted/non-deterministic, so it cannot be looked up by hash — and the public endpoints have only the token, not the user. High-entropy tokens are correctly stored as a single SHA-256 (OWASP), which is lookup-able. |
-| Embed `user_id` in the reset URL | Leaks a user identifier and invites enumeration. The token alone (resolved via `SECURITY DEFINER`) identifies the account. |
+| Link (not OTP) for password reset | The first draft used an emailed reset link like the invitation. Changed to a 6-digit code: it works when the email is opened on a different device than the console, matches the OTP habit of the target market, and reuses the sign-in OTP machinery wholesale. Invitations stay links — activation is a one-time set-up, not a recurring action, and a longer-lived clickable link fits it. |
+| Reuse the sign-in `OTP` credential type for reset | One type for both would let a sign-in code be replayed as a reset (or vice versa). Kept a separate `RESET` type so the two can never be confused. |
 | Wire a real email provider now | Provider is per-tenant config (ADR-0005) and unknown until go-live; dev-log now matches the OTP precedent and blocks nothing. |
 | Classic complexity + 90-day rotation policy | Contradicts current NIST guidance; pushes users to weaker, predictable passwords. Available only if a specific compliance regime demands it. |
 
