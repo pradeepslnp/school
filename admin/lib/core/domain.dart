@@ -71,6 +71,12 @@ enum ErrorCode {
   authRefreshReuseDetected,
   authAccountLocked,
 
+  /// A one-time code (phone sign-in, or the emailed password-reset code) is expired or already
+  /// used. First met by the admin password-reset flow (ADR-0012): the screen tells the person to
+  /// request a fresh code rather than retype into a dead one.
+  authOtpExpired,
+  authOtpAlreadyUsed,
+
   /// An invitation or password-reset link is unknown, expired, or already used (ADR-0012).
   /// Reported distinctly so the accept/reset pages can tell the person to request a fresh link
   /// rather than retype into a dead one — holding the link is not a secret to protect by
@@ -144,6 +150,8 @@ enum ErrorCode {
         'AUTH_SESSION_REVOKED' => authSessionRevoked,
         'AUTH_REFRESH_REUSE_DETECTED' => authRefreshReuseDetected,
         'AUTH_ACCOUNT_LOCKED' => authAccountLocked,
+        'AUTH_OTP_EXPIRED' => authOtpExpired,
+        'AUTH_OTP_ALREADY_USED' => authOtpAlreadyUsed,
         'AUTH_LINK_INVALID' => authLinkInvalid,
         'AUTH_LINK_EXPIRED' => authLinkExpired,
         'AUTH_LINK_ALREADY_USED' => authLinkAlreadyUsed,

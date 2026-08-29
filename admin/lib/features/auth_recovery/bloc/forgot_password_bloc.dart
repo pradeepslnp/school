@@ -141,7 +141,7 @@ class PasswordResetBloc extends Bloc<PasswordResetEvent, PasswordResetState> {
     final result = await _repository.confirmPasswordReset(
       email: state.email,
       otp: event.otp,
-      newPassword: event.newPassword,
+      password: event.newPassword,
     );
     switch (result) {
       case Success<void>():
