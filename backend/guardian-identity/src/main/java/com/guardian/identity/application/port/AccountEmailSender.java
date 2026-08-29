@@ -36,15 +36,6 @@ public interface AccountEmailSender {
   void sendPasswordResetCode(String email, String firstName, String code, Duration validFor);
 
   /**
-   * Sends a one-time sign-in code to an administrator who chose "email me a code" instead of a
-   * password (IAM-001, ADR-0012).
-   *
-   * @param code the 6-digit code — the only place it leaves the server
-   * @param validFor how long the code stays usable, so the message can say so
-   */
-  void sendLoginCode(String email, String firstName, String code, Duration validFor);
-
-  /**
    * Tells a person their password has just changed — the out-of-band signal that catches an
    * unauthorised reset, sent on every password change (OWASP).
    */

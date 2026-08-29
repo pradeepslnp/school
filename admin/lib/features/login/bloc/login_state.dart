@@ -21,29 +21,9 @@ class LoginState extends Equatable {
     this.error,
     this.errorMessageKey,
     this.signedOutReason,
-    this.useEmailCode = false,
-    this.codeSent = false,
-    this.codeEmail = '',
   });
 
   final bool isSubmitting;
-
-  /// Whether the operator chose "email me a code" rather than a password (IAM-001, ADR-0012).
-  /// Both methods issue the same session; neither replaces the other.
-  final bool useEmailCode;
-
-  /// Whether the code request has been accepted, so the screen shows the code field.
-  ///
-  /// True even when the address has no account: the request endpoint answers identically either
-  /// way, and a screen that advanced only for real accounts would leak exactly what the endpoint
-  /// is careful not to (OWASP anti-enumeration).
-  final bool codeSent;
-
-  /// The address the code was requested for, remembered from the request step because the
-  /// verify call needs it — six digits do not identify an account on their own.
-  ///
-  /// Not a credential, unlike the code itself, so it is safe to hold in state.
-  final String codeEmail;
 
   /// The last failure, or null. An [ErrorCode], never a raw string — the UI decides how to
   /// say it, and a server-supplied display string would be in the wrong language anyway
@@ -78,9 +58,6 @@ class LoginState extends Equatable {
     String? errorMessageKey,
     bool clearError = false,
     bool clearSignedOutReason = false,
-    bool? useEmailCode,
-    bool? codeSent,
-    String? codeEmail,
   }) {
     return LoginState(
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -88,20 +65,10 @@ class LoginState extends Equatable {
       errorMessageKey:
           clearError ? null : (errorMessageKey ?? this.errorMessageKey),
       signedOutReason: clearSignedOutReason ? null : signedOutReason,
-      useEmailCode: useEmailCode ?? this.useEmailCode,
-      codeSent: codeSent ?? this.codeSent,
-      codeEmail: codeEmail ?? this.codeEmail,
     );
   }
 
   @override
-  List<Object?> get props => [
-        isSubmitting,
-        error,
-        errorMessageKey,
-        signedOutReason,
-        useEmailCode,
-        codeSent,
-        codeEmail,
-      ];
+  List<Object?> get props =>
+      [isSubmitting, error, errorMessageKey, signedOutReason];
 }

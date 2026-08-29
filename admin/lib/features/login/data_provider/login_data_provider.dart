@@ -52,37 +52,6 @@ class LoginDataProvider {
     );
   }
 
-  /// `POST /auth/email-otp/request` — asks for a one-time sign-in code by email (IAM-001).
-  ///
-  /// Always accepted (202), whether or not the address has an account, so the response reveals
-  /// nothing (ADR-0012). Not given an idempotency key, for the same reason as [signIn].
-  Future<ApiResponse> requestEmailOtp({required String email}) {
-    return client.post(
-      '/auth/email-otp/request',
-      body: {'email': email},
-      authenticated: false,
-    );
-  }
-
-  /// `POST /auth/email-otp/verify` — exchanges the emailed code for a session (IAM-001).
-  ///
-  /// The email travels with the code because six digits do not identify an account on their own,
-  /// exactly as the phone flow pairs the code with the number.
-  Future<ApiResponse> verifyEmailOtp({
-    required String email,
-    required String otp,
-  }) {
-    return client.post(
-      '/auth/email-otp/verify',
-      body: {
-        'email': email,
-        'otp': otp,
-        'clientType': clientType,
-      },
-      authenticated: false,
-    );
-  }
-
   /// `POST /auth/refresh` — rotates the session.
   ///
   /// Deliberately never given an idempotency key: the presented refresh token is consumed

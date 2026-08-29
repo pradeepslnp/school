@@ -15,9 +15,6 @@ spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" 
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
-# Real email delivery for account codes (invitation, password reset, sign-in). Only the SMTP
-# adapter uses it; the port it implements stays framework-free (ADR-0012).
-spring-boot-starter-mail = { module = "org.springframework.boot:spring-boot-starter-mail" }
 # JdbcTemplate and spring-tx, without JPA. Used by guardian-parent, which owns no tables and
 # maps no entity (ADR-0010) — the JPA starter there would invite exactly the entity it must not
 # have.

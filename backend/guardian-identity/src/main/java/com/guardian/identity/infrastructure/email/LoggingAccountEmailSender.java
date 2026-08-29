@@ -5,7 +5,6 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +24,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Profile("!prod & !production")
-@ConditionalOnProperty(name = "guardian.mail.enabled", havingValue = "false", matchIfMissing = true)
 class LoggingAccountEmailSender implements AccountEmailSender {
 
   private static final Logger log = LoggerFactory.getLogger(LoggingAccountEmailSender.class);
@@ -53,17 +51,6 @@ class LoggingAccountEmailSender implements AccountEmailSender {
     // masked. Same containment as the OTP sign-in code (LoggingOtpSender).
     log.warn(
         "DEVELOPMENT password reset for {} — reset code is {} (valid {}m). No email was sent.",
-        maskEmail(email),
-        code,
-        validFor.toMinutes());
-  }
-
-  @Override
-  public void sendLoginCode(String email, String firstName, String code, Duration validFor) {
-    // The code is printed because reading it is the entire purpose in development; the address is
-    // masked. Same containment as LoggingOtpSender.
-    log.warn(
-        "DEVELOPMENT sign-in code for {} is {} (valid {}m). No email was sent.",
         maskEmail(email),
         code,
         validFor.toMinutes());
