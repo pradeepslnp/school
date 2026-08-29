@@ -176,17 +176,23 @@ public class RequestEmailOtpUseCase {
   }
 
   /**
-   * Whether this address gets the fixed development code rather than a generated one. False
-   * whenever no magic code is configured — which is always, in production.
+   * Whether this address gets the fixed development code rather than a generated one.
+   *
+   * <p><strong>Opt-in by address, never blanket.</strong> Both a code and a matching entry in the
+   * allow-list are required, so an empty list disables the shortcut for email sign-in entirely
+   * rather than extending it to everyone. That asymmetry with the phone flow — where a configured
+   * code applies to any number — is deliberate: a blanket rule here would mean a profile that sets
+   * {@code magic-otp} for the parent app silently gives every administrator a guessable code, and
+   * the admin console is the higher-privilege surface. Opting an address in has to be a decision
+   * someone wrote down.
+   *
+   * <p>False in production regardless, because no code is configured there.
    */
   private boolean usesMagicCode(String email) {
-    if (magicOtp == null || magicOtp.isBlank()) {
+    if (magicOtp == null || magicOtp.isBlank() || magicOtpEmails.isEmpty()) {
       return false;
     }
-    // An empty allow-list means "every account", preserving the phone flow's original behaviour
-    // for a profile that sets only the code. The demo profile sets both, so a real operator's
-    // address is on the real emailed path even there.
-    return magicOtpEmails.isEmpty() || magicOtpEmails.contains(email.toLowerCase(Locale.ROOT));
+    return magicOtpEmails.contains(email.toLowerCase(Locale.ROOT));
   }
 
   /** The code to email, carried out of the transaction. */
