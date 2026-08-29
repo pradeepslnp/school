@@ -50,6 +50,33 @@ class LoginRepository implements SessionRefresher {
     return Success<Session>(session);
   }
 
+  /// Asks for a one-time sign-in code by email (IAM-001, ADR-0012).
+  ///
+  /// Succeeds whenever the server accepted the request — which it does whether or not the address
+  /// has an account, so a `Success` means "we asked", not "an account was found". The screen says
+  /// so, because saying more would leak who has an account.
+  Future<Result<void>> requestEmailOtp({required String email}) async {
+    final response = await dataProvider.requestEmailOtp(email: email.trim());
+    if (response.isSuccess) return const Success<void>(null);
+    return _toFailure<void>(response);
+  }
+
+  /// Exchanges an emailed code for a session (IAM-001, ADR-0012).
+  Future<Result<Session>> signInWithEmailOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final response = await dataProvider.verifyEmailOtp(
+      email: email.trim(),
+      otp: otp.trim(),
+    );
+    if (!response.isSuccess) return _toFailure<Session>(response);
+
+    final session = _parseSession(response.data);
+    if (session == null) return const Failure<Session>(ErrorCode.internalError);
+    return Success<Session>(session);
+  }
+
   @override
   Future<Result<Session>> refreshSession(String refreshToken) async {
     final response = await dataProvider.refresh(refreshToken: refreshToken);

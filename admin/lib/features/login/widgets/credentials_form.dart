@@ -53,20 +53,9 @@ class _CredentialsFormState extends State<CredentialsForm> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Sign in', style: theme.textTheme.titleLarge),
-        const SizedBox(height: AdminSpacing.xs),
-        Text(
-          'Guardian administration console',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.lg),
         TextField(
           key: const Key('admin_login_email_field'),
           controller: _email,

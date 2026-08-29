@@ -22,6 +22,20 @@ guardian:
     # exist outside this profile.
     magic-otp: ${GUARDIAN_MAGIC_OTP:123123}
 
+    # The seeded demo accounts (V900, V901) — the only addresses for which the fixed code above
+    # is accepted on the email sign-in path. Any address NOT listed here gets a freshly generated
+    # code, delivered by whichever AccountEmailSender is active: logged by default, actually
+    # emailed once guardian.mail.enabled=true. That is what lets a real address be exercised
+    # end-to-end on this profile without giving every account a guessable code.
+    magic-otp-emails: >-
+      ${GUARDIAN_MAGIC_OTP_EMAILS:superadmin@guardian-platform.example,
+      priya@guardian-platform.example,
+      orgadmin@demo-trust.example,
+      schooladmin@demo-trust.example,
+      principal@demo-trust.example,
+      transportmanager@demo-trust.example,
+      anil@demo-trust.example}
+
 logging:
   level:
     # The demo OTP sender writes the code it would have sent; at INFO it is invisible.

@@ -50,6 +50,21 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+  # SMTP, used only when guardian.mail.enabled is true (SmtpAccountEmailSender). Credentials come
+  # from the environment, never from source (CLAUDE.md §7). For Gmail this is smtp.gmail.com:587
+  # with an App Password — a normal account password will not authenticate.
+  mail:
+    host: ${GUARDIAN_MAIL_HOST:smtp.gmail.com}
+    port: ${GUARDIAN_MAIL_PORT:587}
+    username: ${GUARDIAN_MAIL_USERNAME:}
+    password: ${GUARDIAN_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 server:
   port: ${GUARDIAN_PORT:8080}
   error:
@@ -59,6 +74,23 @@ server:
 guardian:
   auth:
     magic-otp: ${GUARDIAN_MAGIC_OTP:}
+    # Restricts the fixed development code to these addresses (comma-separated). Empty means the
+    # magic code — when one is set at all — applies to every account, which is the phone flow's
+    # original behaviour. The demo profile lists its seeded accounts here so that any *other*
+    # address, such as a real operator's, still receives a freshly generated code by email.
+    magic-otp-emails: ${GUARDIAN_MAGIC_OTP_EMAILS:}
+
+  mail:
+    # false → account codes are written to the log (LoggingAccountEmailSender), the default for
+    # local development. true → they are sent over SMTP (SmtpAccountEmailSender). Exactly one of
+    # the two beans is registered, so this flag is the whole switch.
+    enabled: ${GUARDIAN_MAIL_ENABLED:false}
+    from: ${GUARDIAN_MAIL_FROM:no-reply@guardian.local}
+    product-name: ${GUARDIAN_MAIL_PRODUCT_NAME:Guardian}
+
+  admin:
+    # Where the admin console is served from — used to build the invitation link in emails.
+    base-url: ${GUARDIAN_ADMIN_BASE_URL:http://localhost:8081}
 
   web:
     # Origins permitted to call this API from a browser — the admin console (ADR-0003) only;

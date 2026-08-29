@@ -21,6 +21,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         _sessionManager = sessionManager,
         super(LoginState(signedOutReason: signedOutReason)) {
     on<LoginSubmitted>(_onSubmitted);
+    on<LoginMethodChanged>(_onMethodChanged);
+    on<EmailOtpRequested>(_onEmailOtpRequested);
+    on<EmailOtpSubmitted>(_onEmailOtpSubmitted);
+    on<EmailOtpRestarted>(_onEmailOtpRestarted);
   }
 
   final LoginRepository _repository;
@@ -76,5 +80,96 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           errorMessageKey: messageKey,
         ));
     }
+  }
+
+  /// Switching method resets the code step: a half-finished code entry from a previous attempt
+  /// must not survive into a fresh one.
+  void _onMethodChanged(LoginMethodChanged event, Emitter<LoginState> emit) {
+    emit(state.copyWith(
+      useEmailCode: event.useEmailCode,
+      codeSent: false,
+      codeEmail: '',
+      clearError: true,
+      clearSignedOutReason: true,
+    ));
+  }
+
+  Future<void> _onEmailOtpRequested(
+    EmailOtpRequested event,
+    Emitter<LoginState> emit,
+  ) async {
+    final email = event.email.trim();
+    if (email.isEmpty) {
+      emit(state.copyWith(
+        error: ErrorCode.validationRequiredFieldMissing,
+        clearSignedOutReason: true,
+      ));
+      return;
+    }
+
+    emit(state.copyWith(
+      isSubmitting: true,
+      clearError: true,
+      clearSignedOutReason: true,
+    ));
+
+    final result = await _repository.requestEmailOtp(email: email);
+
+    switch (result) {
+      case Success<void>():
+        // Advances whether or not the address has an account — the server answers identically
+        // either way, and advancing only for real accounts would leak which ones exist.
+        emit(state.copyWith(
+          isSubmitting: false,
+          clearError: true,
+          codeSent: true,
+          codeEmail: email,
+        ));
+
+      case Failure(:final code, :final messageKey):
+        // In practice only a transport failure or throttling: the endpoint reports nothing
+        // account-specific.
+        emit(state.copyWith(
+          isSubmitting: false,
+          error: code,
+          errorMessageKey: messageKey,
+        ));
+    }
+  }
+
+  Future<void> _onEmailOtpSubmitted(
+    EmailOtpSubmitted event,
+    Emitter<LoginState> emit,
+  ) async {
+    final otp = event.otp.trim();
+    if (otp.isEmpty || state.codeEmail.isEmpty) {
+      emit(state.copyWith(error: ErrorCode.validationRequiredFieldMissing));
+      return;
+    }
+
+    emit(state.copyWith(isSubmitting: true, clearError: true));
+
+    final result = await _repository.signInWithEmailOtp(
+      email: state.codeEmail,
+      otp: otp,
+    );
+
+    switch (result) {
+      case Success<Session>(:final value):
+        // Adopt first, then settle — see _onSubmitted for why.
+        await _sessionManager.adopt(value);
+        emit(state.copyWith(isSubmitting: false, clearError: true));
+
+      case Failure(:final code, :final messageKey):
+        emit(state.copyWith(
+          isSubmitting: false,
+          error: code,
+          errorMessageKey: messageKey,
+        ));
+    }
+  }
+
+  void _onEmailOtpRestarted(EmailOtpRestarted event, Emitter<LoginState> emit) {
+    emit(state.copyWith(codeSent: false, codeEmail: '', clearError: true));
   }
 }

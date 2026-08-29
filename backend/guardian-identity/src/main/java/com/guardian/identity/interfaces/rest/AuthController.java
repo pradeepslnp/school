@@ -3,17 +3,22 @@ package com.guardian.identity.interfaces.rest;
 import com.guardian.common.security.PublicEndpoint;
 import com.guardian.identity.application.command.RequestOtpCommand;
 import com.guardian.identity.application.command.StaffLoginCommand;
+import com.guardian.identity.application.command.VerifyEmailOtpCommand;
 import com.guardian.identity.application.command.VerifyOtpCommand;
 import com.guardian.identity.application.result.IssuedSession;
 import com.guardian.identity.application.usecase.AcceptInvitationUseCase;
 import com.guardian.identity.application.usecase.RefreshSessionUseCase;
+import com.guardian.identity.application.usecase.RequestEmailOtpUseCase;
 import com.guardian.identity.application.usecase.RequestOtpUseCase;
 import com.guardian.identity.application.usecase.RequestPasswordResetUseCase;
 import com.guardian.identity.application.usecase.ResetPasswordUseCase;
 import com.guardian.identity.application.usecase.StaffLoginUseCase;
+import com.guardian.identity.application.usecase.VerifyEmailOtpUseCase;
 import com.guardian.identity.application.usecase.VerifyOtpUseCase;
 import com.guardian.identity.domain.OtpCredential;
 import com.guardian.identity.interfaces.rest.dto.AcceptInvitationRequest;
+import com.guardian.identity.interfaces.rest.dto.EmailOtpRequestRequest;
+import com.guardian.identity.interfaces.rest.dto.EmailOtpVerifyRequest;
 import com.guardian.identity.interfaces.rest.dto.OtpRequestRequest;
 import com.guardian.identity.interfaces.rest.dto.OtpRequestedResponse;
 import com.guardian.identity.interfaces.rest.dto.OtpVerifyRequest;
@@ -60,6 +65,8 @@ public class AuthController {
   private final AcceptInvitationUseCase acceptInvitation;
   private final RequestPasswordResetUseCase requestPasswordReset;
   private final ResetPasswordUseCase resetPassword;
+  private final RequestEmailOtpUseCase requestEmailOtp;
+  private final VerifyEmailOtpUseCase verifyEmailOtp;
 
   public AuthController(
       StaffLoginUseCase staffLogin,
@@ -68,7 +75,9 @@ public class AuthController {
       RefreshSessionUseCase refreshSession,
       AcceptInvitationUseCase acceptInvitation,
       RequestPasswordResetUseCase requestPasswordReset,
-      ResetPasswordUseCase resetPassword) {
+      ResetPasswordUseCase resetPassword,
+      RequestEmailOtpUseCase requestEmailOtp,
+      VerifyEmailOtpUseCase verifyEmailOtp) {
     this.staffLogin = staffLogin;
     this.requestOtp = requestOtp;
     this.verifyOtp = verifyOtp;
@@ -76,6 +85,8 @@ public class AuthController {
     this.acceptInvitation = acceptInvitation;
     this.requestPasswordReset = requestPasswordReset;
     this.resetPassword = resetPassword;
+    this.requestEmailOtp = requestEmailOtp;
+    this.verifyEmailOtp = verifyEmailOtp;
   }
 
   /**
@@ -127,6 +138,43 @@ public class AuthController {
         verifyOtp.execute(
             new VerifyOtpCommand(
                 request.phone(),
+                request.otp(),
+                request.clientType(),
+                request.deviceIdentifier(),
+                sourceIp(httpRequest)));
+
+    return SessionResponse.from(issued);
+  }
+
+  /**
+   * Emails a one-time sign-in code to an administrator (IAM-001) — the console's passwordless
+   * option, alongside {@link #login}.
+   *
+   * <p><strong>Always {@code 202}</strong>, whether the address is registered, inactive, or unknown,
+   * for the same reason {@code /otp/request} always accepts: a response that varies would let this
+   * endpoint enumerate who has an account (ADR-0012).
+   */
+  @PostMapping("/email-otp/request")
+  @PublicEndpoint(reason = "how an administrator with no session obtains a sign-in code (IAM-001)")
+  public ResponseEntity<OtpRequestedResponse> requestEmailOtp(
+      @Valid @RequestBody EmailOtpRequestRequest request) {
+
+    requestEmailOtp.execute(request.email());
+
+    return ResponseEntity.accepted()
+        .body(OtpRequestedResponse.of(RequestEmailOtpUseCase.CODE_LIFETIME.toSeconds()));
+  }
+
+  /** Exchanges an emailed code for a session (IAM-001). */
+  @PostMapping("/email-otp/verify")
+  @PublicEndpoint(reason = "exchanges an emailed one-time code for a session (IAM-001)")
+  public SessionResponse verifyEmailOtp(
+      @Valid @RequestBody EmailOtpVerifyRequest request, HttpServletRequest httpRequest) {
+
+    IssuedSession issued =
+        verifyEmailOtp.execute(
+            new VerifyEmailOtpCommand(
+                request.email(),
                 request.otp(),
                 request.clientType(),
                 request.deviceIdentifier(),
