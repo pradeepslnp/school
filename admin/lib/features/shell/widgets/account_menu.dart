@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/session/session.dart';
+import '../../../l10n/app_localizations_extension.dart';
 
 /// The signed-in operator, and the way out.
 ///
@@ -59,7 +60,7 @@ class AccountMenu extends StatelessWidget {
           key: const Key('admin_shell_sign_out_button'),
           onPressed: isSigningOut ? null : onSignOut,
           icon: const Icon(Icons.logout_outlined, size: 18),
-          label: Text(isSigningOut ? 'Signing out…' : 'Sign out'),
+          label: Text(isSigningOut ? context.l10n.accountMenuSigningOut : context.l10n.accountMenuSignOut),
           style: TextButton.styleFrom(
             minimumSize: const Size(kAdminTouchTarget, kAdminTouchTarget),
           ),

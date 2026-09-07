@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
+import '../../../core/l10n_extensions.dart';
 import '../bloc/login_bloc.dart';
 import 'login_error_text.dart';
 
@@ -37,10 +38,10 @@ class _OtpEntryFormState extends State<OtpEntryForm> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Enter the code', style: theme.textTheme.titleLarge),
+            Text(context.l10n.otpHeading, style: theme.textTheme.titleLarge),
             const SizedBox(height: GuardianSpacing.sm),
             Text(
-              'We sent a code to ${state.phone}.',
+              context.l10n.otpSentTo(state.phone),
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: GuardianSpacing.lg),
@@ -54,10 +55,10 @@ class _OtpEntryFormState extends State<OtpEntryForm> {
               // Lets the platform fill the code straight from the SMS, removing the
               // most error-prone step of the flow.
               autofillHints: const [AutofillHints.oneTimeCode],
-              decoration: const InputDecoration(
-                labelText: 'Code',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.sms_outlined),
+              decoration: InputDecoration(
+                labelText: context.l10n.otpCodeLabel,
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.sms_outlined),
               ),
               onChanged: (value) =>
                   context.read<LoginBloc>().add(LoginOtpChanged(value)),
@@ -78,7 +79,7 @@ class _OtpEntryFormState extends State<OtpEntryForm> {
                       width: AppSizeConstants.inlineSpinnerSize,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Verify'),
+                  : Text(context.l10n.otpVerifyButton),
             ),
             const SizedBox(height: GuardianSpacing.sm),
             Row(
@@ -90,7 +91,7 @@ class _OtpEntryFormState extends State<OtpEntryForm> {
                       : () => context
                           .read<LoginBloc>()
                           .add(const LoginPhoneEditRequested()),
-                  child: const Text('Change number'),
+                  child: Text(context.l10n.otpEntryChangeNumberButton),
                 ),
                 TextButton(
                   key: const Key('login_resend_button'),
@@ -100,7 +101,7 @@ class _OtpEntryFormState extends State<OtpEntryForm> {
                           : () => context
                               .read<LoginBloc>()
                               .add(const LoginOtpResendRequested()),
-                  child: const Text('Send a new code'),
+                  child: Text(context.l10n.otpEntrySendNewCodeButton),
                 ),
               ],
             ),

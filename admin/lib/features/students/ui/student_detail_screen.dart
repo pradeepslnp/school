@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../guardians/bloc/student_guardians_bloc.dart';
 import '../../guardians/bloc/student_guardians_event.dart';
 import '../../guardians/bloc/student_guardians_state.dart';
@@ -151,7 +152,7 @@ class StudentDetailScreen extends StatelessWidget {
                     if (state.error != null) ...[
                       const SizedBox(height: AdminSpacing.md),
                       Text(
-                        _assignErrorText(state.error!),
+                        _assignErrorText(context, state.error!),
                         style: Theme.of(context)
                             .textTheme
                             .bodySmall
@@ -214,15 +215,15 @@ class StudentDetailScreen extends StatelessWidget {
     );
   }
 
-  static String _assignErrorText(ErrorCode code) => switch (code) {
-        ErrorCode.studentHasNoActiveGuardian =>
-          'Add a parent who can collect this child (turn on "Can collect the child") before '
-              'assigning a bus.',
-        ErrorCode.studentAlreadyAssignedForDirection =>
-          'This child already has that assignment — remove the current one first.',
-        ErrorCode.dependencyUnavailable => 'The service is unreachable right now. Try again.',
-        _ => 'That could not be saved right now. Try again.',
-      };
+  static String _assignErrorText(BuildContext context, ErrorCode code) {
+    final l10n = context.l10n;
+    return switch (code) {
+      ErrorCode.studentHasNoActiveGuardian => l10n.studentAssignErrorNoActiveGuardian,
+      ErrorCode.studentAlreadyAssignedForDirection => l10n.studentAssignErrorAlreadyAssigned,
+      ErrorCode.dependencyUnavailable => l10n.studentAssignErrorApiUnreachable,
+      _ => l10n.studentAssignErrorGeneric,
+    };
+  }
 }
 
 class _StudentHeader extends StatelessWidget {
@@ -257,17 +258,17 @@ class _StudentHeader extends StatelessWidget {
                   Text(student.displayName, style: theme.textTheme.headlineSmall),
                   const SizedBox(height: AdminSpacing.xs),
                   Text(
-                    'Admission ${student.admissionNo}',
+                    context.l10n.studentDetailAdmissionLine(student.admissionNo),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: AdminSpacing.sm),
-                  Text(_statusLine(), style: theme.textTheme.bodyMedium),
+                  Text(_statusLine(context), style: theme.textTheme.bodyMedium),
                   if (student.dateOfBirth != null) ...[
                     const SizedBox(height: AdminSpacing.xs),
                     Text(
-                      'Date of birth ${_formatDate(student.dateOfBirth!)}',
+                      context.l10n.studentDetailDobLine(_formatDate(student.dateOfBirth!)),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -282,10 +283,10 @@ class _StudentHeader extends StatelessWidget {
     );
   }
 
-  String _statusLine() {
-    if (student.isWithdrawn) return 'Withdrawn';
-    if (!student.transportEligible) return 'On roll · not using transport';
-    return 'On roll · using transport';
+  String _statusLine(BuildContext context) {
+    if (student.isWithdrawn) return context.l10n.studentStatusWithdrawn;
+    if (!student.transportEligible) return context.l10n.studentStatusOnRollNoTransport;
+    return context.l10n.studentDetailStatusOnRollTransport;
   }
 
   static String _formatDate(DateTime date) {
@@ -312,14 +313,14 @@ class _ParentsPanel extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text('Parents', style: theme.textTheme.titleLarge),
+              child: Text(context.l10n.studentDetailParentsTitle, style: theme.textTheme.titleLarge),
             ),
             if (canEdit)
               FilledButton.icon(
                 key: const Key('student_detail_add_parent_button'),
                 onPressed: onAddParent,
                 icon: const Icon(Icons.person_add_alt_1),
-                label: const Text('Add parent'),
+                label: Text(context.l10n.addGuardianFormTitle),
               ),
           ],
         ),
@@ -327,25 +328,26 @@ class _ParentsPanel extends StatelessWidget {
         BlocBuilder<StudentGuardiansBloc, StudentGuardiansState>(
           builder: (context, state) {
             if (state.isLoading && state.guardians.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(AdminSpacing.lg),
+              return Padding(
+                padding: const EdgeInsets.all(AdminSpacing.lg),
                 child: Center(
-                  child: CircularProgressIndicator(semanticsLabel: 'Loading parents'),
+                  child: CircularProgressIndicator(
+                    semanticsLabel: context.l10n.studentDetailLoadingParentsLabel,
+                  ),
                 ),
               );
             }
 
             if (state.error != null && state.guardians.isEmpty) {
               return Text(
-                'That could not be loaded right now. Try again.',
+                context.l10n.errorGenericLoadRetry,
                 style: theme.textTheme.bodyMedium?.copyWith(color: context.status.critical),
               );
             }
 
             if (state.guardians.isEmpty) {
               return Text(
-                'No parents yet. Add one so they can see this child and be reached — and so '
-                'the child can be assigned to a bus.',
+                context.l10n.studentDetailNoParentsEmptyState,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -359,8 +361,7 @@ class _ParentsPanel extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: AdminSpacing.sm),
                     child: Text(
-                      'No parent here can collect the child yet — turn on "Can collect the '
-                      'child" for at least one before assigning a bus.',
+                      context.l10n.studentDetailNoHandoverGuardianWarning,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: context.status.warning,
                       ),
@@ -390,15 +391,17 @@ class _PickupDropPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Pickup & drop', style: theme.textTheme.titleLarge),
+        Text(context.l10n.studentDetailPickupDropTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.md),
         BlocBuilder<StudentAssignmentsBloc, StudentAssignmentsState>(
           builder: (context, state) {
             if (state.isLoading && state.assignments.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(AdminSpacing.lg),
+              return Padding(
+                padding: const EdgeInsets.all(AdminSpacing.lg),
                 child: Center(
-                  child: CircularProgressIndicator(semanticsLabel: 'Loading assignments'),
+                  child: CircularProgressIndicator(
+                    semanticsLabel: context.l10n.studentDetailLoadingAssignmentsLabel,
+                  ),
                 ),
               );
             }
@@ -407,7 +410,7 @@ class _PickupDropPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _DirectionRow(
-                  label: 'Pickup',
+                  label: context.l10n.studentDetailDirectionPickup,
                   direction: 'PICKUP',
                   assignment: state.pickup,
                   canEdit: canEdit,
@@ -424,7 +427,7 @@ class _PickupDropPanel extends StatelessWidget {
                 ),
                 const Divider(),
                 _DirectionRow(
-                  label: 'Drop',
+                  label: context.l10n.studentDetailDirectionDrop,
                   direction: 'DROP',
                   assignment: state.drop,
                   canEdit: canEdit,
@@ -443,7 +446,7 @@ class _PickupDropPanel extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: AdminSpacing.sm),
                     child: Text(
-                      StudentDetailScreen._assignErrorText(state.error!),
+                      StudentDetailScreen._assignErrorText(context, state.error!),
                       style: theme.textTheme.bodySmall?.copyWith(color: context.status.critical),
                     ),
                   ),
@@ -496,8 +499,12 @@ class _DirectionRow extends StatelessWidget {
                 Text(label, style: theme.textTheme.titleSmall),
                 Text(
                   set
-                      ? '${assignment!.routeName} · ${assignment!.routeCode} → ${assignment!.stopName}'
-                      : 'Not set',
+                      ? context.l10n.studentDetailAssignmentSummary(
+                          assignment!.routeName,
+                          assignment!.routeCode,
+                          assignment!.stopName,
+                        )
+                      : context.l10n.studentDetailAssignmentNotSet,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: set ? null : theme.colorScheme.onSurfaceVariant,
                   ),
@@ -510,13 +517,13 @@ class _DirectionRow extends StatelessWidget {
               IconButton(
                 key: Key('assignment_remove_$direction'),
                 icon: const Icon(Icons.delete_outline),
-                tooltip: 'Remove $label',
+                tooltip: context.l10n.studentDetailRemoveAssignment(label),
                 onPressed: isBusy ? null : onRemove,
               ),
             TextButton(
               key: Key('assignment_set_$direction'),
               onPressed: isBusy ? null : onSet,
-              child: Text(set ? 'Change' : 'Set'),
+              child: Text(set ? context.l10n.studentDetailChangeButton : context.l10n.studentDetailSetButton),
             ),
           ],
         ],

@@ -57,6 +57,20 @@ dependencies:
   # Path joining for the database file.
   path: ^1.9.0
 
+  # --- ADR-0013: interim client-bundled localisation (English/Kannada) -------------------
+
+  # Standard Flutter delegates (date/time/material/cupertino/widgets localisation) plus the
+  # generated AppLocalizations. `generate: true` below drives `flutter gen-l10n` from
+  # l10n.yaml / lib/l10n/app_en.arb.
+  flutter_localizations:
+    sdk: flutter
+  intl: 0.20.2
+
+  # Persists the driver's chosen language across restarts (LocaleController). Not secret, so
+  # this is the one place in the app that legitimately uses shared_preferences instead of the
+  # keychain-backed SecretStore.
+  shared_preferences: ^2.5.5
+
   # Deliberately absent: connectivity_plus.
   #
   # The OS connectivity flag answers "is there a network interface", not "can this app reach
@@ -71,3 +85,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # ADR-0013: generates lib/l10n/app_localizations.dart from l10n.yaml + lib/l10n/app_en.arb.
+  generate: true

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../app/app_size_constants.dart';
 import '../app/theme.dart';
+import '../core/l10n_extensions.dart';
+import '../l10n/generated/app_localizations.dart';
 
 /// Shows how current live data is.
 ///
@@ -39,7 +41,7 @@ class FreshnessIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (icon, color, label) = _describe(context.status);
+    final (icon, color, label) = _describe(context.status, context.l10n);
 
     return Semantics(
       // Polite, not assertive: freshness ticking over must not interrupt a screen reader
@@ -64,14 +66,16 @@ class FreshnessIndicator extends StatelessWidget {
     );
   }
 
-  (IconData, Color, String) _describe(GuardianStatusColors status) {
+  (IconData, Color, String) _describe(GuardianStatusColors status, AppLocalizations l10n) {
     final current = age;
 
     if (current == null || current > lostThreshold) {
       return (
         Icons.circle_outlined,
         status.neutral,
-        current == null ? 'No signal' : 'No signal for ${_humanise(current)}',
+        current == null
+            ? l10n.freshnessNoSignal
+            : l10n.freshnessNoSignalFor(_humanise(current, l10n)),
       );
     }
 
@@ -79,20 +83,20 @@ class FreshnessIndicator extends StatelessWidget {
       return (
         Icons.access_time,
         status.warning,
-        'Last seen ${_humanise(current)} ago',
+        l10n.freshnessLastSeen(_humanise(current, l10n)),
       );
     }
 
     return (
       Icons.circle,
       status.safe,
-      'Live · updated ${_humanise(current)} ago',
+      l10n.freshnessLive(_humanise(current, l10n)),
     );
   }
 
-  static String _humanise(Duration duration) {
-    if (duration.inMinutes < 1) return '${duration.inSeconds}s';
-    if (duration.inHours < 1) return '${duration.inMinutes} min';
-    return '${duration.inHours} h';
+  static String _humanise(Duration duration, AppLocalizations l10n) {
+    if (duration.inMinutes < 1) return l10n.durationSeconds(duration.inSeconds);
+    if (duration.inHours < 1) return l10n.durationMinutes(duration.inMinutes);
+    return l10n.durationHours(duration.inHours);
   }
 }

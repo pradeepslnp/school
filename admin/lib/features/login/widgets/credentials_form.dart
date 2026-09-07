@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import 'button_spinner.dart';
 
 /// Email and password entry.
@@ -58,10 +59,10 @@ class _CredentialsFormState extends State<CredentialsForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Sign in', style: theme.textTheme.titleLarge),
+        Text(context.l10n.loginSignInLabel, style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.xs),
         Text(
-          'Guardian administration console',
+          context.l10n.loginFormSubtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -77,10 +78,10 @@ class _CredentialsFormState extends State<CredentialsForm> {
           autofillHints: const [AutofillHints.username],
           // Enter moves to the password rather than submitting a half-filled form.
           onSubmitted: (_) => _passwordFocus.requestFocus(),
-          decoration: const InputDecoration(
-            labelText: 'Email address',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.emailAddressLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -94,7 +95,7 @@ class _CredentialsFormState extends State<CredentialsForm> {
           autofillHints: const [AutofillHints.password],
           onSubmitted: (_) => _submit(),
           decoration: InputDecoration(
-            labelText: 'Password',
+            labelText: context.l10n.loginPasswordLabel,
             border: const OutlineInputBorder(),
             constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
             // A reveal control, because a password typed wrongly three times locks the
@@ -108,7 +109,9 @@ class _CredentialsFormState extends State<CredentialsForm> {
               ),
               // Describes the action, not the current state: a screen reader user needs to
               // know what activating it will do.
-              tooltip: _passwordVisible ? 'Hide password' : 'Show password',
+              tooltip: _passwordVisible
+                  ? context.l10n.passwordVisibilityHideTooltip
+                  : context.l10n.passwordVisibilityShowTooltip,
               onPressed: widget.isSubmitting
                   ? null
                   : () => setState(() => _passwordVisible = !_passwordVisible),
@@ -123,8 +126,8 @@ class _CredentialsFormState extends State<CredentialsForm> {
           // (ACCESSIBILITY.md §Operable).
           onPressed: widget.isSubmitting ? null : _submit,
           child: widget.isSubmitting
-              ? const ButtonSpinner(semanticsLabel: 'Signing in')
-              : const Text('Sign in'),
+              ? ButtonSpinner(semanticsLabel: context.l10n.loginSubmittingSpinnerLabel)
+              : Text(context.l10n.loginSignInLabel),
         ),
         if (widget.onForgotPassword != null)
           Align(
@@ -132,7 +135,7 @@ class _CredentialsFormState extends State<CredentialsForm> {
             child: TextButton(
               key: const Key('admin_login_forgot_password'),
               onPressed: widget.isSubmitting ? null : widget.onForgotPassword,
-              child: const Text('Forgot password?'),
+              child: Text(context.l10n.loginForgotPasswordLink),
             ),
           ),
       ],

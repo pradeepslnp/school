@@ -53,7 +53,7 @@ class ConsoleNavigation extends StatelessWidget {
             // the label. Not the icon: the rail swaps icon for selectedIcon, so a key there
             // would disappear on the one destination that is currently selected.
             label: Text(
-              destination.label,
+              destination.label(context),
               key: Key('admin_nav_${destination.id}'),
             ),
           ),

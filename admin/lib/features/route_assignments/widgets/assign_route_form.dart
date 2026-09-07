@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_button_spinner.dart';
 import '../../routes/domain/route_models.dart';
 import '../../routes/domain/stop_models.dart';
@@ -85,12 +86,13 @@ class _AssignRouteFormState extends State<AssignRouteForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(_isPickup ? 'Set pickup' : 'Set drop', style: theme.textTheme.titleLarge),
+        Text(
+          _isPickup ? context.l10n.assignRouteTitlePickup : context.l10n.assignRouteTitleDrop,
+          style: theme.textTheme.titleLarge,
+        ),
         const SizedBox(height: AdminSpacing.xs),
         Text(
-          _isPickup
-              ? 'Where this child is picked up in the morning.'
-              : 'Where this child is dropped in the afternoon.',
+          _isPickup ? context.l10n.assignRoutePickupSubtitle : context.l10n.assignRouteDropSubtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -100,15 +102,22 @@ class _AssignRouteFormState extends State<AssignRouteForm> {
           key: const Key('assign_route_field'),
           initialValue: _routeId,
           isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'Route',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.assignRouteFieldLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
-          hint: Text(widget.routes.isEmpty ? 'No routes on this school yet' : 'Select a route'),
+          hint: Text(
+            widget.routes.isEmpty
+                ? context.l10n.assignRouteNoRoutesHint
+                : context.l10n.assignRouteSelectRouteHint,
+          ),
           items: [
             for (final route in widget.routes)
-              DropdownMenuItem(value: route.id, child: Text('${route.name} · ${route.code}')),
+              DropdownMenuItem(
+                value: route.id,
+                child: Text(context.l10n.assignRouteNameAndCode(route.name, route.code)),
+              ),
           ],
           onChanged: widget.isSubmitting || widget.routes.isEmpty ? null : _onRouteChanged,
         ),
@@ -117,12 +126,12 @@ class _AssignRouteFormState extends State<AssignRouteForm> {
           key: const Key('assign_stop_field'),
           initialValue: _stopId,
           isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'Stop',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.assignStopFieldLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
-          hint: Text(_stopHint()),
+          hint: Text(_stopHint(context)),
           items: [
             for (final stop in _stops)
               DropdownMenuItem(value: stop.id, child: Text(stop.name)),
@@ -134,7 +143,7 @@ class _AssignRouteFormState extends State<AssignRouteForm> {
         if (_stopsFailed) ...[
           const SizedBox(height: AdminSpacing.sm),
           Text(
-            'Could not load this route\'s stops. Try again.',
+            context.l10n.assignRouteStopsLoadError,
             style: theme.textTheme.bodySmall?.copyWith(color: context.status.critical),
           ),
         ],
@@ -145,7 +154,7 @@ class _AssignRouteFormState extends State<AssignRouteForm> {
               child: OutlinedButton(
                 key: const Key('assign_route_cancel_button'),
                 onPressed: widget.isSubmitting ? null : widget.onCancel,
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancelButton),
               ),
             ),
             const SizedBox(width: AdminSpacing.md),
@@ -155,8 +164,8 @@ class _AssignRouteFormState extends State<AssignRouteForm> {
                 onPressed:
                     widget.isSubmitting || _routeId == null || _stopId == null ? null : _submit,
                 child: widget.isSubmitting
-                    ? const OnboardingButtonSpinner(semanticsLabel: 'Saving')
-                    : const Text('Save'),
+                    ? OnboardingButtonSpinner(semanticsLabel: context.l10n.assignRouteSavingSpinnerLabel)
+                    : Text(context.l10n.commonSaveButton),
               ),
             ),
           ],
@@ -165,10 +174,10 @@ class _AssignRouteFormState extends State<AssignRouteForm> {
     );
   }
 
-  String _stopHint() {
-    if (_routeId == null) return 'Select a route first';
-    if (_isLoadingStops) return 'Loading stops…';
-    if (_stops.isEmpty) return 'This route has no stops yet';
-    return 'Select a stop';
+  String _stopHint(BuildContext context) {
+    if (_routeId == null) return context.l10n.assignRouteStopHintSelectRouteFirst;
+    if (_isLoadingStops) return context.l10n.assignRouteStopHintLoading;
+    if (_stops.isEmpty) return context.l10n.assignRouteStopHintNoStops;
+    return context.l10n.assignRouteStopHintSelectStop;
   }
 }

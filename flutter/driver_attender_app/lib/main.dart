@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'app/app_config.dart';
 import 'app/dependencies.dart';
+import 'app/language_switcher_button.dart';
 import 'app/theme.dart';
 import 'core/session/session_manager.dart';
 import 'features/login/ui/login_route.dart';
 import 'features/sync/widgets/live_sync_status_banner.dart';
+import 'l10n/app_localizations.dart';
+import 'l10n/l10n_extensions.dart';
 
 Future<void> main() async {
   // Required before touching the keychain or the database: both are platform channels.
@@ -17,22 +20,38 @@ Future<void> main() async {
   runApp(GuardianDriverApp(dependencies: dependencies));
 }
 
-class GuardianDriverApp extends StatelessWidget {
+/// Stateful only so it can rebuild `MaterialApp` when [AppDependencies.localeController]
+/// changes (ADR-0013) — everything else about this widget is as static as it was before.
+class GuardianDriverApp extends StatefulWidget {
   const GuardianDriverApp({super.key, required this.dependencies});
 
   final AppDependencies dependencies;
 
   @override
+  State<GuardianDriverApp> createState() => _GuardianDriverAppState();
+}
+
+class _GuardianDriverAppState extends State<GuardianDriverApp> {
+  @override
   Widget build(BuildContext context) {
     // Above MaterialApp so every route can reach the dependencies without them being passed
     // through constructors, and without a global.
     return DependencyScope(
-      dependencies: dependencies,
-      child: MaterialApp(
-        title: 'Guardian Driver',
-        theme: buildDriverTheme(Brightness.light),
-        darkTheme: buildDriverTheme(Brightness.dark),
-        home: const _AuthGate(),
+      dependencies: widget.dependencies,
+      child: ValueListenableBuilder<Locale?>(
+        valueListenable: widget.dependencies.localeController,
+        builder: (context, locale, _) => MaterialApp(
+          // The product name, not description copy — a brand name is invariant across
+          // locales (ADR-0013 does not bring the OS-level task-switcher title into scope;
+          // see the driver_attender_app localisation report for this call).
+          title: 'Guardian Driver',
+          theme: buildDriverTheme(Brightness.light),
+          darkTheme: buildDriverTheme(Brightness.dark),
+          locale: locale,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: const _AuthGate(),
+        ),
       ),
     );
   }
@@ -76,7 +95,7 @@ class _LaunchScreen extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: Semantics(
-          label: 'Starting',
+          label: context.l10n.launchScreenStartingLabel,
           child: const CircularProgressIndicator(),
         ),
       ),
@@ -99,6 +118,7 @@ class _DutyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final dependencies = DependencyScope.of(context);
     final user = switch (dependencies.sessionManager.status) {
       AuthSignedIn(:final session) => session.user,
@@ -107,10 +127,11 @@ class _DutyScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Today'),
+        title: Text(l10n.dutyScreenTitle),
         actions: [
+          LanguageSwitcherButton(controller: dependencies.localeController),
           IconButton(
-            tooltip: 'Sign out',
+            tooltip: l10n.signOut,
             iconSize: 28,
             // Signing out on a shared handset wipes this device's local records, so the
             // control is deliberately not adjacent to anything used during a route.
@@ -140,15 +161,15 @@ class _DutyScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: DriverSpacing.md),
                     Text(
-                      'No trip loaded',
+                      l10n.dutyScreenNoTripLoaded,
                       style: theme.textTheme.titleLarge,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: DriverSpacing.sm),
                     Text(
                       user == null
-                          ? 'Signed in.'
-                          : 'Signed in as ${user.displayName}.',
+                          ? l10n.dutyScreenSignedInGeneric
+                          : l10n.dutyScreenSignedInAs(user.displayName),
                       style: theme.textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
@@ -169,27 +190,26 @@ class _DutyScreen extends StatelessWidget {
     BuildContext context,
     AppDependencies dependencies,
   ) async {
+    final l10n = context.l10n;
     final pending = dependencies.syncEngine.status.pendingCount;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Sign out?'),
+        title: Text(l10n.signOutDialogTitle),
         content: Text(
           pending == 0
-              ? 'Records on this device will be erased.'
-              : '$pending ${pending == 1 ? 'record has' : 'records have'} not '
-                  'been sent yet. Signing out sends what it can, then erases '
-                  'everything on this device.',
+              ? l10n.signOutDialogBodyNoPending
+              : l10n.signOutDialogBodyPending(pending),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Sign out'),
+            child: Text(l10n.signOut),
           ),
         ],
       ),

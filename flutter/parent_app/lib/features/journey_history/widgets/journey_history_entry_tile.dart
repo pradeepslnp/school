@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../widgets/journey_status_chip.dart';
 import '../repository/models/journey_history_entry.dart';
 
@@ -22,7 +23,9 @@ class JourneyHistoryEntryTile extends StatelessWidget {
           SizedBox(
             width: AppSizeConstants.timestampColumnWidth,
             child: Text(
-              entry.direction == JourneyDirection.morning ? 'Morning' : 'Afternoon',
+              entry.direction == JourneyDirection.morning
+                  ? context.l10n.legDirectionMorning
+                  : context.l10n.legDirectionAfternoon,
               style: context.texts.titleMedium,
             ),
           ),
@@ -35,7 +38,7 @@ class JourneyHistoryEntryTile extends StatelessWidget {
                   child: JourneyStatusChip(state: entry.state),
                 ),
                 const SizedBox(height: GuardianSpacing.xs),
-                Text(_detail(), style: context.texts.bodyMedium),
+                Text(_detail(context), style: context.texts.bodyMedium),
               ],
             ),
           ),
@@ -44,7 +47,8 @@ class JourneyHistoryEntryTile extends StatelessWidget {
     );
   }
 
-  String _detail() {
+  String _detail(BuildContext context) {
+    final l10n = context.l10n;
     final where = [
       if (entry.vehicleDisplayName != null) entry.vehicleDisplayName!,
       if (entry.stopName != null) entry.stopName!,
@@ -53,10 +57,12 @@ class JourneyHistoryEntryTile extends StatelessWidget {
 
     final parts = [
       if (where.isNotEmpty) where,
-      if (at != null) 'at $at',
+      if (at != null) l10n.atTimeFragment(at),
     ];
     if (parts.isEmpty) {
-      return entry.state == JourneyState.absent ? 'Marked absent' : 'No record for this leg';
+      return entry.state == JourneyState.absent
+          ? l10n.legMarkedAbsent
+          : l10n.legNoRecordForLeg;
     }
     return parts.join(' · ');
   }

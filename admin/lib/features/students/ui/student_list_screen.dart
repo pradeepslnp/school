@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../school_scope/widgets/school_picker_field.dart';
 import '../bloc/student_list_bloc.dart';
 import '../bloc/student_list_event.dart';
@@ -179,22 +180,20 @@ class _StudentListScreenState extends State<StudentListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Withdraw student?'),
+        title: Text(context.l10n.studentWithdrawConfirmTitle),
         content: Text(
-          '${student.displayName} (${student.admissionNo}) will be taken off the roll and '
-          'removed from transport.\n\n'
-          'Their record is kept — safety records reference it — and can still be read.',
+          context.l10n.studentWithdrawConfirmBody(student.displayName, student.admissionNo),
         ),
         actions: [
           TextButton(
             key: const Key('student_withdraw_cancel_button'),
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancelButton),
           ),
           FilledButton(
             key: const Key('student_withdraw_confirm_button'),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Withdraw'),
+            child: Text(context.l10n.studentWithdrawConfirmButton),
           ),
         ],
       ),
@@ -241,7 +240,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Text('Students', style: theme.textTheme.headlineSmall),
+                  child: Text(context.l10n.studentListTitle, style: theme.textTheme.headlineSmall),
                 ),
                 if (canEdit) _EnrolButton(
                   // Disabled until a school is chosen below — enrolling with no school
@@ -265,15 +264,15 @@ class _StudentListScreenState extends State<StudentListScreen> {
               controller: _search,
               onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
-                labelText: 'Search',
-                hintText: 'Filter loaded students by name or admission number',
+                labelText: context.l10n.commonSearchLabel,
+                hintText: context.l10n.studentListSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isEmpty
                     ? null
                     : IconButton(
                         key: const Key('student_list_search_clear_button'),
                         icon: const Icon(Icons.close),
-                        tooltip: 'Clear search',
+                        tooltip: context.l10n.commonClearSearchTooltip,
                         onPressed: () => setState(() {
                           _search.clear();
                           _searchQuery = '';
@@ -302,8 +301,8 @@ class _StudentListScreenState extends State<StudentListScreen> {
     bool canEdit,
   ) {
     if (state.isLoading && state.students.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(semanticsLabel: 'Loading register'),
+      return Center(
+        child: CircularProgressIndicator(semanticsLabel: context.l10n.studentListLoadingLabel),
       );
     }
 
@@ -316,7 +315,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
     if (state.students.isEmpty) {
       return Center(
         child: Text(
-          'No register loaded. Pick a school above, or enrol the first student.',
+          context.l10n.studentListEmptyState,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -330,9 +329,8 @@ class _StudentListScreenState extends State<StudentListScreen> {
       return Center(
         child: Text(
           state.hasMore
-              ? 'No loaded student matches that. Scroll to load more of the register, then '
-                  'search again.'
-              : 'No student matches that.',
+              ? context.l10n.studentListNoMatchWithMore
+              : context.l10n.studentListNoMatch,
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
@@ -354,11 +352,11 @@ class _StudentListScreenState extends State<StudentListScreen> {
             itemCount: students.length + (state.isLoadingMore ? 1 : 0),
             itemBuilder: (context, index) {
               if (index >= students.length) {
-                return const Padding(
-                  padding: EdgeInsets.all(AdminSpacing.lg),
+                return Padding(
+                  padding: const EdgeInsets.all(AdminSpacing.lg),
                   child: Center(
                     child: CircularProgressIndicator(
-                      semanticsLabel: 'Loading more students',
+                      semanticsLabel: context.l10n.studentListLoadingMoreLabel,
                     ),
                   ),
                 );
@@ -377,7 +375,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
           Padding(
             padding: const EdgeInsets.only(top: AdminSpacing.sm),
             child: Text(
-              '${state.students.length} students',
+              context.l10n.studentListCount(state.students.length),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -402,11 +400,11 @@ class _EnrolButton extends StatelessWidget {
       key: const Key('student_list_add_button'),
       onPressed: enabled ? onPressed : null,
       icon: const Icon(Icons.person_add_alt_1),
-      label: const Text('Enrol student'),
+      label: Text(context.l10n.studentListEnrolButton),
     );
 
     if (enabled) return button;
-    return Tooltip(message: 'Pick a school first', child: button);
+    return Tooltip(message: context.l10n.pickSchoolFirstTooltip, child: button);
   }
 }
 
@@ -437,7 +435,9 @@ class _StudentRow extends StatelessWidget {
         child: Icon(student.hasPhoto ? Icons.face : Icons.person_outline),
       ),
       title: Text(student.displayName),
-      subtitle: Text('${student.admissionNo} · ${_statusLabel()}'),
+      subtitle: Text(
+        context.l10n.studentListRowSubtitle(student.admissionNo, _statusLabel(context)),
+      ),
       trailing: canEdit
           ? Row(
               mainAxisSize: MainAxisSize.min,
@@ -445,14 +445,14 @@ class _StudentRow extends StatelessWidget {
                 IconButton(
                   key: Key('student_list_edit_${student.id}'),
                   icon: const Icon(Icons.edit_outlined),
-                  tooltip: 'Edit ${student.displayName}',
+                  tooltip: context.l10n.studentListEditTooltip(student.displayName),
                   onPressed: onEdit,
                 ),
                 if (!student.isWithdrawn)
                   IconButton(
                     key: Key('student_list_withdraw_${student.id}'),
                     icon: const Icon(Icons.person_remove_outlined),
-                    tooltip: 'Withdraw ${student.displayName}',
+                    tooltip: context.l10n.studentListWithdrawTooltip(student.displayName),
                     onPressed: onWithdraw,
                   ),
               ],
@@ -464,9 +464,9 @@ class _StudentRow extends StatelessWidget {
     );
   }
 
-  String _statusLabel() {
-    if (student.isWithdrawn) return 'Withdrawn';
-    if (!student.transportEligible) return 'On roll · not using transport';
-    return 'On roll · transport';
+  String _statusLabel(BuildContext context) {
+    if (student.isWithdrawn) return context.l10n.studentStatusWithdrawn;
+    if (!student.transportEligible) return context.l10n.studentStatusOnRollNoTransport;
+    return context.l10n.studentStatusOnRollTransport;
   }
 }

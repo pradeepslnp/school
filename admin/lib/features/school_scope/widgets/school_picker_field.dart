@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../bloc/school_scope_bloc.dart';
 import '../bloc/school_scope_event.dart';
 import '../bloc/school_scope_state.dart';
@@ -84,12 +85,16 @@ class _OrganizationDropdown extends StatelessWidget {
       key: const Key('school_scope_organization_field'),
       initialValue: state.selectedOrganizationId,
       isExpanded: true,
-      decoration: const InputDecoration(
-        labelText: 'Organization',
-        border: OutlineInputBorder(),
-        constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+      decoration: InputDecoration(
+        labelText: context.l10n.schoolScopeOrganizationLabel,
+        border: const OutlineInputBorder(),
+        constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
       ),
-      hint: Text(state.isLoadingOrganizations ? 'Loading…' : 'Select an organization'),
+      hint: Text(
+        state.isLoadingOrganizations
+            ? context.l10n.schoolScopeLoadingHint
+            : context.l10n.schoolScopeSelectOrganizationHint,
+      ),
       items: [
         for (final organization in state.organizations)
           DropdownMenuItem(value: organization.id, child: Text(organization.name)),
@@ -120,17 +125,17 @@ class _SchoolDropdown extends StatelessWidget {
       key: const Key('school_scope_school_field'),
       initialValue: state.selectedSchoolId,
       isExpanded: true,
-      decoration: const InputDecoration(
-        labelText: 'School',
-        border: OutlineInputBorder(),
-        constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+      decoration: InputDecoration(
+        labelText: context.l10n.schoolScopeLabel,
+        border: const OutlineInputBorder(),
+        constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
       ),
       hint: Text(
         waitingOnOrganization
-            ? 'Select an organization first'
+            ? context.l10n.schoolScopeSelectOrganizationFirstHint
             : state.isLoadingSchools
-                ? 'Loading…'
-                : 'Select a school',
+                ? context.l10n.schoolScopeLoadingHint
+                : context.l10n.schoolScopeSelectSchoolHint,
       ),
       items: [
         for (final school in state.schools)
@@ -159,14 +164,14 @@ class _PickerError extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            'Could not load your organizations or schools.',
+            context.l10n.schoolScopeLoadError,
             style: theme.textTheme.bodyMedium?.copyWith(color: context.status.critical),
           ),
         ),
         TextButton(
           key: const Key('school_scope_retry_button'),
           onPressed: onRetry,
-          child: const Text('Retry'),
+          child: Text(context.l10n.commonRetryButton),
         ),
       ],
     );

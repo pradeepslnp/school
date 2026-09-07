@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../utils/utils.dart';
 import '../../../widgets/freshness_indicator.dart';
 import '../repository/models/live_trip.dart';
@@ -33,7 +34,7 @@ class LiveTripScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Live trip')),
+      appBar: AppBar(title: Text(context.l10n.liveTripAppBarTitle)),
       body: SafeArea(child: _body(context)),
     );
   }
@@ -48,29 +49,27 @@ class LiveTripScreen extends StatelessWidget {
     }
 
     if (isOutsideTrip) {
-      return const _Explanation(
+      return _Explanation(
         icon: Icons.map_outlined,
-        title: 'Tracking is not available right now',
-        detail: 'Live tracking only runs while the bus is on a trip '
-            '(docs/05-ui/PARENT_APP.md, BR-TRACK-001). '
-            'Check back once the trip has started.',
+        title: context.l10n.liveTripUnavailableTitle,
+        detail: context.l10n.liveTripUnavailableDetail,
       );
     }
 
     if (loadFailure != null && trip == null) {
       return _Explanation(
         icon: Icons.cloud_off,
-        title: 'Cannot load this trip right now',
+        title: context.l10n.liveTripCannotLoadTitle,
         detail: loadFailure!,
         onRetry: onRefresh,
       );
     }
 
     if (trip == null) {
-      return const _Explanation(
+      return _Explanation(
         icon: Icons.map_outlined,
-        title: 'No trip to show',
-        detail: 'This child has no active trip right now.',
+        title: context.l10n.liveTripNoTripTitle,
+        detail: context.l10n.liveTripNoTripDetail,
       );
     }
 
@@ -83,7 +82,7 @@ class LiveTripScreen extends StatelessWidget {
           children: [
             // The text summary, always present and always understandable without the map
             // below it (docs/05-ui/PARENT_APP.md, docs/05-ui/ACCESSIBILITY.md).
-            Text(_summary(trip), style: context.texts.titleLarge),
+            Text(_summary(context, trip), style: context.texts.titleLarge),
             const SizedBox(height: GuardianSpacing.xs),
             FreshnessIndicator(
               age: trip.positionFreshness,
@@ -93,7 +92,7 @@ class LiveTripScreen extends StatelessWidget {
             VehicleMapSurface(headingDeg: trip.headingDeg),
             const SizedBox(height: GuardianSpacing.md),
             Text(
-              _etaCaption(trip),
+              _etaCaption(context, trip),
               style: context.texts.bodyMedium
                   ?.copyWith(color: context.colors.onSurfaceVariant),
             ),
@@ -106,32 +105,34 @@ class LiveTripScreen extends StatelessWidget {
     return RefreshIndicator(onRefresh: onRefresh!, child: content);
   }
 
-  String _summary(LiveTrip trip) {
+  String _summary(BuildContext context, LiveTrip trip) {
+    final l10n = context.l10n;
     final stops = trip.stopsAway;
     final eta = trip.etaInMinutes;
     return [
       trip.vehicleDisplayName,
-      if (stops != null) '$stops stop${stops == 1 ? '' : 's'} away',
-      if (eta != null) '~$eta min to ${trip.stopName}',
+      if (stops != null) l10n.liveTripSummaryStopsAway(stops),
+      if (eta != null) l10n.liveTripSummaryEtaToStop(eta, trip.stopName),
     ].join(' · ');
   }
 
-  String _etaCaption(LiveTrip trip) {
+  String _etaCaption(BuildContext context, LiveTrip trip) {
+    final l10n = context.l10n;
     final confidence = switch (trip.confidence) {
       EtaConfidence.high => null,
-      EtaConfidence.medium => ' · moderate confidence',
-      EtaConfidence.low => ' · low confidence — routing unavailable',
+      EtaConfidence.medium => l10n.liveTripEtaConfidenceModerate,
+      EtaConfidence.low => l10n.liveTripEtaConfidenceLow,
       EtaConfidence.unknown => null,
     };
     final agoSeconds = trip.etaCalculatedAgo?.inSeconds;
     final ago = agoSeconds == null
-        ? 'just now'
+        ? l10n.liveTripEtaJustNow
         : agoSeconds < 60
-            ? '${agoSeconds}s ago'
-            : '${trip.etaCalculatedAgo!.inMinutes} min ago';
+            ? l10n.liveTripEtaSecondsAgo(agoSeconds)
+            : l10n.liveTripEtaMinutesAgo(trip.etaCalculatedAgo!.inMinutes);
     // Always states when the estimate was made, never just the estimate itself
     // (BR-TRACK-006).
-    return 'Estimate calculated $ago${confidence ?? ''}.';
+    return l10n.liveTripEstimateCalculated(ago, confidence ?? '');
   }
 }
 
@@ -170,7 +171,7 @@ class _Explanation extends StatelessWidget {
               const SizedBox(height: GuardianSpacing.lg),
               FilledButton.tonal(
                 onPressed: () => onRetry!(),
-                child: const Text('Try again'),
+                child: Text(context.l10n.tryAgainButton),
               ),
             ],
           ],

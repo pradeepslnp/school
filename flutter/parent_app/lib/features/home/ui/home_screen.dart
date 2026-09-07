@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/app_size_constants.dart';
+import '../../../app/locale_controller.dart';
 import '../../../app/theme.dart';
 import '../../../app/theme_controller.dart';
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../utils/utils.dart';
 import '../repository/models/child_status.dart';
 import '../widgets/child_status_card.dart';
@@ -84,14 +86,15 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My children'),
+        title: Text(context.l10n.homeAppBarTitle),
         actions: [
+          const _LanguageSwitcherButton(),
           const _ThemeModeButton(),
           if (onRefresh != null)
             IconButton(
               onPressed: () => onRefresh!(),
               icon: const Icon(Icons.refresh),
-              tooltip: 'Refresh',
+              tooltip: context.l10n.refreshTooltip,
             ),
         ],
       ),
@@ -107,18 +110,17 @@ class HomeScreen extends StatelessWidget {
     if (loadFailure != null && children.isEmpty) {
       return _Message(
         icon: Icons.cloud_off,
-        title: 'Cannot reach the school right now',
+        title: context.l10n.homeLoadFailureTitle,
         detail: loadFailure!,
         onRetry: onRefresh,
       );
     }
 
     if (children.isEmpty) {
-      return const _Message(
+      return _Message(
         icon: Icons.family_restroom,
-        title: 'No children linked yet',
-        detail: 'Your school links your children to your account. '
-            'Contact the school office if you expect to see someone here.',
+        title: context.l10n.noChildrenLinkedTitle,
+        detail: context.l10n.homeNoChildrenDetail,
       );
     }
 
@@ -262,8 +264,39 @@ class _ThemeModeButton extends StatelessWidget {
       icon: Icon(mode.icon),
       // Both state and action, because an icon alone tells a screen-reader user neither
       // which theme is active nor what the button will do.
-      tooltip: 'Appearance: ${mode.label}',
+      tooltip: context.l10n.themeToggleTooltip(mode.label(context.l10n)),
       isSelected: mode != ThemeMode.system,
+    );
+  }
+}
+
+/// Switches between English and Kannada (ADR-0013).
+///
+/// Sits beside the appearance toggle for the same reason that one lives in the app bar
+/// rather than behind a settings screen: this app currently has no settings surface at all
+/// (P-02 is the whole product, docs/05-ui/SCREEN_INVENTORY.md), and a language a parent
+/// cannot read is at least as urgent to fix from wherever they are as a screen they cannot
+/// see.
+class _LanguageSwitcherButton extends StatelessWidget {
+  const _LanguageSwitcherButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = LocaleScope.maybeOf(context);
+    if (controller == null) return const SizedBox.shrink();
+
+    return PopupMenuButton<Locale>(
+      icon: const Icon(Icons.translate_outlined),
+      tooltip: context.l10n.languageSwitcherTooltip,
+      initialValue: controller.value,
+      onSelected: controller.set,
+      itemBuilder: (context) => const [
+        PopupMenuItem(value: Locale('en'), child: Text('English')),
+        // Shown in its own script regardless of the active language, the same way a
+        // language picker's option always names itself — a parent whose current language is
+        // wrong needs to find their own language without first being able to read the menu.
+        PopupMenuItem(value: Locale('kn'), child: Text('ಕನ್ನಡ')),
+      ],
     );
   }
 }
@@ -307,7 +340,7 @@ class _Message extends StatelessWidget {
               const SizedBox(height: GuardianSpacing.lg),
               FilledButton.tonal(
                 onPressed: () => onRetry!(),
-                child: const Text('Try again'),
+                child: Text(context.l10n.tryAgainButton),
               ),
             ],
           ],

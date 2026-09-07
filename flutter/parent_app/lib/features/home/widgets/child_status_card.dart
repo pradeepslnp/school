@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../widgets/freshness_indicator.dart';
 import '../../../widgets/journey_status_chip.dart';
 import '../repository/models/child_status.dart';
@@ -98,10 +99,10 @@ class ChildStatusCard extends StatelessWidget {
               ),
               const SizedBox(height: GuardianSpacing.sm),
               _DetailLine(status: status),
-              if (_arrivalEstimate != null) ...[
+              if (_arrivalEstimate(context) != null) ...[
                 const SizedBox(height: GuardianSpacing.xs),
                 Text(
-                  _arrivalEstimate!,
+                  _arrivalEstimate(context)!,
                   style: context.texts.bodyMedium
                       ?.copyWith(color: context.colors.onSurfaceVariant),
                 ),
@@ -120,7 +121,7 @@ class ChildStatusCard extends StatelessWidget {
                   child: FilledButton.tonalIcon(
                     onPressed: onTrackPressed,
                     icon: const Icon(Icons.map_outlined),
-                    label: const Text('Track bus'),
+                    label: Text(context.l10n.trackBusButton),
                   ),
                 ),
               ],
@@ -136,20 +137,22 @@ class ChildStatusCard extends StatelessWidget {
   /// Always framed as an estimate and carrying the age of the data it was computed from
   /// (BR-TRACK-006). An unqualified "Arriving 08:15" is a promise the platform cannot keep,
   /// and a parent who plans around it and is wrong blames the app — correctly.
-  String? get _arrivalEstimate {
+  String? _arrivalEstimate(BuildContext context) {
     if (status.journeyState != JourneyState.onBoard) return null;
     final eta = status.estimatedArrival?.timeOfDay;
     if (eta == null) return null;
 
     final age = status.positionFreshness;
-    if (age == null) return 'Arriving at school about $eta · estimate';
-    return 'Arriving at school about $eta · estimated ${_age(age)} ago';
+    final l10n = context.l10n;
+    if (age == null) return l10n.arrivalEstimateNoAge(eta);
+    return l10n.arrivalEstimateWithAge(eta, _age(context, age));
   }
 
-  static String _age(Duration duration) {
-    if (duration.inMinutes < 1) return '${duration.inSeconds}s';
-    if (duration.inHours < 1) return '${duration.inMinutes} min';
-    return '${duration.inHours} h';
+  static String _age(BuildContext context, Duration duration) {
+    final l10n = context.l10n;
+    if (duration.inMinutes < 1) return l10n.durationSeconds(duration.inSeconds);
+    if (duration.inHours < 1) return l10n.durationMinutes(duration.inMinutes);
+    return l10n.durationHours(duration.inHours);
   }
 }
 
@@ -164,13 +167,21 @@ class _DetailLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = _compose();
+    final text = _compose(context);
     if (text == null) return const SizedBox.shrink();
 
     return Text(text, style: context.texts.bodyMedium);
   }
 
-  String? _compose() {
+  /// Each fragment below is its own resource key (ADR-0013) with the conditional assembly
+  /// — which pieces this journey state has — staying in Dart, the same way it did before
+  /// localisation. This is a deliberate, scoped choice, not an oversight: turning every
+  /// combination into its own whole-sentence ICU template would multiply the key count
+  /// combinatorially for state that already varies per trip. It does mean a fragment-joined
+  /// sentence may not read as fluent Kannada word order — flagged in TRANSLATION_STATUS.md
+  /// for whoever does the native-speaker pass.
+  String? _compose(BuildContext context) {
+    final l10n = context.l10n;
     final vehicle = status.vehicleDisplayName;
     final stop = status.stopName;
     final at = status.lastEventAt?.timeOfDay;
@@ -181,52 +192,47 @@ class _DetailLine extends StatelessWidget {
       // Calm, not empty. Absence of news is itself communicated
       // (docs/05-ui/PARENT_APP.md) — a blank card reads as a failed load.
       JourneyState.atRest => next != null
-          ? 'At school. Next bus at $next.'
-          : 'At school. No bus scheduled for the rest of today.',
-      JourneyState.absent =>
-        'You marked ${status.displayName} as not travelling today.',
+          ? l10n.detailAtRestNextBus(next)
+          : l10n.detailAtRestNoBus,
+      JourneyState.absent => l10n.detailAbsent(status.displayName),
       JourneyState.scheduled => [
-          if (vehicle != null) '$vehicle is scheduled',
-          if (stop != null) 'from $stop',
-          if (eta != null) 'at about $eta',
+          if (vehicle != null) l10n.detailScheduledVehicle(vehicle),
+          if (stop != null) l10n.detailFromStop(stop),
+          if (eta != null) l10n.detailAtEta(eta),
         ].join(' ').trim(),
       JourneyState.awaitingBoarding => [
-          if (vehicle != null) '$vehicle is on the way',
-          if (stop != null) 'to $stop',
+          if (vehicle != null) l10n.detailVehicleOnWay(vehicle),
+          if (stop != null) l10n.detailToStop(stop),
           // Always framed as an estimate, with no false precision (BR-TRACK-006).
-          if (eta != null) '· arriving about $eta',
+          if (eta != null) l10n.detailArrivingAbout(eta),
         ].join(' ').trim(),
       JourneyState.onBoard => [
-          'Boarded',
+          l10n.detailBoardedWord,
           ?vehicle,
-          if (stop != null) 'at $stop',
-          if (at != null) 'at $at',
+          if (stop != null) l10n.detailAtStop(stop),
+          if (at != null) l10n.atTimeFragment(at),
         ].join(' ').trim(),
       JourneyState.arrivedAtSchool =>
-        at != null ? 'Arrived at school at $at.' : 'Arrived at school.',
+        at != null ? l10n.detailArrivedAtTime(at) : l10n.detailArrivedNoTime,
       JourneyState.handedOver => [
-          'Handed over',
-          if (stop != null) 'at $stop',
-          if (at != null) 'at $at',
+          l10n.detailHandedOverWord,
+          if (stop != null) l10n.detailAtStop(stop),
+          if (at != null) l10n.atTimeFragment(at),
         ].join(' ').trim(),
       // Factual, not accusatory. The bus may have been early, or the child may be with
       // the other parent — the app does not know which.
       JourneyState.noShow => [
-          'Did not board',
+          l10n.detailDidNotBoardWord,
           ?vehicle,
-          if (stop != null) 'at $stop',
-          if (at != null) '· bus departed $at',
+          if (stop != null) l10n.detailAtStop(stop),
+          if (at != null) l10n.detailBusDepartedAt(at),
         ].join(' ').trim(),
       // The school is already acting on this before the parent opens the app
       // (BR-SAFE-001); saying so is what makes the message bearable.
-      JourneyState.unaccounted =>
-        'No record of ${status.displayName} getting off the bus. '
-            'The school has been alerted and is checking now.',
+      JourneyState.unaccounted => l10n.detailUnaccounted(status.displayName),
       // Names the app as the limitation, and routes the parent to someone who does know.
       // "Something went wrong" would leave them deciding whether to drive to the school.
-      JourneyState.unknown =>
-        "This version of the app cannot read ${status.displayName}'s current status. "
-            'Update the app, or contact the school office to check.',
+      JourneyState.unknown => l10n.detailUnknown(status.displayName),
     };
   }
 }

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../app/app_size_constants.dart';
 import '../app/theme.dart';
 import '../core/domain.dart';
+import '../core/l10n_extensions.dart';
+import '../l10n/generated/app_localizations.dart';
 
 /// How a journey state is spoken and shown: icon, color, label.
 ///
@@ -44,7 +46,7 @@ class JourneyStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final presentation = describe(state, context.status);
+    final presentation = describe(state, context.status, context.l10n);
 
     return Semantics(
       label: presentation.label,
@@ -87,61 +89,62 @@ class JourneyStatusChip extends StatelessWidget {
   static JourneyStatusPresentation describe(
     JourneyState state,
     GuardianStatusColors status,
+    AppLocalizations l10n,
   ) {
     return switch (state) {
       JourneyState.atRest => JourneyStatusPresentation(
         icon: Icons.remove,
         color: status.neutral,
         surface: status.neutralSurface,
-        label: 'At school',
+        label: l10n.journeyStateAtSchool,
       ),
       JourneyState.scheduled => JourneyStatusPresentation(
         icon: Icons.schedule,
         color: status.info,
         surface: status.infoSurface,
-        label: 'Bus scheduled',
+        label: l10n.journeyStateBusScheduled,
       ),
       JourneyState.awaitingBoarding => JourneyStatusPresentation(
         icon: Icons.directions_bus,
         color: status.info,
         surface: status.infoSurface,
-        label: 'Bus on the way',
+        label: l10n.journeyStateBusOnWay,
       ),
       JourneyState.onBoard => JourneyStatusPresentation(
         icon: Icons.check_circle,
         color: status.safe,
         surface: status.safeSurface,
-        label: 'On the bus',
+        label: l10n.journeyStateOnBus,
       ),
       JourneyState.arrivedAtSchool => JourneyStatusPresentation(
         icon: Icons.school,
         color: status.safe,
         surface: status.safeSurface,
-        label: 'Arrived at school',
+        label: l10n.journeyStateArrivedAtSchool,
       ),
       JourneyState.handedOver => JourneyStatusPresentation(
         icon: Icons.done_all,
         color: status.safe,
         surface: status.safeSurface,
-        label: 'Handed over',
+        label: l10n.journeyStateHandedOver,
       ),
       JourneyState.noShow => JourneyStatusPresentation(
         icon: Icons.error_outline,
         color: status.warning,
         surface: status.warningSurface,
-        label: 'Did not board',
+        label: l10n.journeyStateDidNotBoard,
       ),
       JourneyState.absent => JourneyStatusPresentation(
         icon: Icons.event_busy,
         color: status.neutral,
         surface: status.neutralSurface,
-        label: 'Not travelling today',
+        label: l10n.journeyStateNotTravelling,
       ),
       JourneyState.unaccounted => JourneyStatusPresentation(
         icon: Icons.warning_amber_rounded,
         color: status.critical,
         surface: status.criticalSurface,
-        label: 'Not yet accounted for',
+        label: l10n.journeyStateNotAccountedFor,
       ),
       // Neutral, and says so. DESIGN_SYSTEM.md assigns `statusNeutral` to "not started,
       // absent, unknown" — an unreadable status is reported, not dressed up as a calm one.
@@ -149,7 +152,7 @@ class JourneyStatusChip extends StatelessWidget {
         icon: Icons.help_outline,
         color: status.neutral,
         surface: status.neutralSurface,
-        label: 'Status unavailable',
+        label: l10n.journeyStateUnavailable,
       ),
     };
   }

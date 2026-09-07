@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../core/network/rest_client.dart';
 import '../../handover/ui/handover_route.dart';
 import '../bloc/child_detail_bloc.dart';
@@ -100,7 +101,7 @@ class _ChildDetailView extends StatelessWidget {
           detail: detail,
           isLoading: state.isLoading,
           loadFailure: state.showsFailureInsteadOfContent
-              ? _failureText(state)
+              ? _failureText(context, state)
               : null,
           onRefresh: () async =>
               context.read<ChildDetailBloc>().add(const ChildDetailRefreshed()),
@@ -121,18 +122,15 @@ class _ChildDetailView extends StatelessWidget {
   }
 
   /// Plain language describing the situation, never a code (docs/05-ui/ACCESSIBILITY.md).
-  static String _failureText(ChildDetailState state) {
+  static String _failureText(BuildContext context, ChildDetailState state) {
+    final l10n = context.l10n;
     return switch (state.failure?.code) {
       // The server refuses a child this account is not linked to. Phrased as a school-office
       // matter rather than an error, because for a parent it is one — a link that was removed,
       // or a child moved between guardians.
-      ErrorCode.authScopeDenied =>
-        'This child is no longer linked to your account. '
-            'Contact the school office if you think that is wrong.',
-      ErrorCode.dependencyUnavailable =>
-        'Your device cannot reach the school right now. '
-            'Check your connection and try again.',
-      _ => "Something went wrong loading this child's detail. Please try again.",
+      ErrorCode.authScopeDenied => l10n.childDetailScopeDenied,
+      ErrorCode.dependencyUnavailable => l10n.errorDependencyUnavailable,
+      _ => l10n.childDetailGenericFailure,
     };
   }
 }

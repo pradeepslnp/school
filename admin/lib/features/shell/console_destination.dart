@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations_extension.dart';
+import '../../l10n/generated/app_localizations.dart';
+
 /// One entry in the console's navigation.
 ///
 /// A plain description, not a screen: the shell renders these and knows nothing about what
@@ -9,7 +12,7 @@ import 'package:flutter/material.dart';
 class ConsoleDestination {
   const ConsoleDestination({
     required this.id,
-    required this.label,
+    required this.labelBuilder,
     required this.icon,
     required this.selectedIcon,
     required this.location,
@@ -22,7 +25,17 @@ class ConsoleDestination {
   /// Used for keys and analytics, never displayed.
   final String id;
 
-  final String label;
+  /// Resolves the displayed label from [AppLocalizations] rather than storing a literal.
+  ///
+  /// [ConsoleDestinations.all] is a `const` list built once at compile time, before any
+  /// `BuildContext` exists — so a label here cannot be a plain `String`. A tear-off of a
+  /// `static` function is itself a compile-time constant in Dart, which is what keeps this
+  /// list `const` while still deferring string resolution to render time; see [label].
+  final String Function(AppLocalizations l10n) labelBuilder;
+
+  /// The localised label for the active [context]'s locale.
+  String label(BuildContext context) => labelBuilder(context.l10n);
+
   final IconData icon;
   final IconData selectedIcon;
 
@@ -74,7 +87,7 @@ class ConsoleDestinations {
   static const List<ConsoleDestination> all = <ConsoleDestination>[
     ConsoleDestination(
       id: 'A-40',
-      label: 'Organizations',
+      labelBuilder: _organizationsLabel,
       icon: Icons.apartment_outlined,
       selectedIcon: Icons.apartment,
       location: '/organizations',
@@ -86,7 +99,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-41',
-      label: 'School',
+      labelBuilder: _schoolLabel,
       icon: Icons.school_outlined,
       selectedIcon: Icons.school,
       location: '/school',
@@ -101,7 +114,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-10',
-      label: 'Students',
+      labelBuilder: _studentsLabel,
       icon: Icons.school_outlined,
       selectedIcon: Icons.school,
       location: '/students',
@@ -123,7 +136,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-23',
-      label: 'Drivers',
+      labelBuilder: _driversLabel,
       icon: Icons.badge_outlined,
       selectedIcon: Icons.badge,
       location: '/staff',
@@ -136,7 +149,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-20',
-      label: 'Vehicles',
+      labelBuilder: _vehiclesLabel,
       icon: Icons.directions_bus_outlined,
       selectedIcon: Icons.directions_bus,
       location: '/vehicles',
@@ -146,7 +159,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-30',
-      label: 'Routes',
+      labelBuilder: _routesLabel,
       icon: Icons.alt_route_outlined,
       selectedIcon: Icons.alt_route,
       location: '/routes',
@@ -156,7 +169,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-43',
-      label: 'Users',
+      labelBuilder: _usersLabel,
       icon: Icons.manage_accounts_outlined,
       selectedIcon: Icons.manage_accounts,
       location: '/users',
@@ -169,7 +182,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-44',
-      label: 'Roles',
+      labelBuilder: _rolesLabel,
       icon: Icons.rule_folder_outlined,
       selectedIcon: Icons.rule_folder,
       location: '/roles',
@@ -181,7 +194,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-62',
-      label: 'Platform health',
+      labelBuilder: _platformHealthLabel,
       icon: Icons.monitor_heart_outlined,
       selectedIcon: Icons.monitor_heart,
       location: '/platform-health',
@@ -193,7 +206,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-54',
-      label: 'Audit trail',
+      labelBuilder: _auditTrailLabel,
       icon: Icons.fact_check_outlined,
       selectedIcon: Icons.fact_check,
       location: '/audit',
@@ -216,4 +229,17 @@ class ConsoleDestinations {
   /// [ConsoleDestination.requiredAnyRole].
   static List<ConsoleDestination> visibleTo(List<String> roles) =>
       all.where((destination) => destination.visibleTo(roles)).toList(growable: false);
+
+  // Static tear-offs, not closures — see [ConsoleDestination.labelBuilder] for why that is
+  // what keeps [all] a compile-time constant.
+  static String _organizationsLabel(AppLocalizations l10n) => l10n.consoleDestinationOrganizations;
+  static String _schoolLabel(AppLocalizations l10n) => l10n.consoleDestinationSchool;
+  static String _studentsLabel(AppLocalizations l10n) => l10n.consoleDestinationStudents;
+  static String _driversLabel(AppLocalizations l10n) => l10n.consoleDestinationDrivers;
+  static String _vehiclesLabel(AppLocalizations l10n) => l10n.consoleDestinationVehicles;
+  static String _routesLabel(AppLocalizations l10n) => l10n.consoleDestinationRoutes;
+  static String _usersLabel(AppLocalizations l10n) => l10n.consoleDestinationUsers;
+  static String _rolesLabel(AppLocalizations l10n) => l10n.consoleDestinationRoles;
+  static String _platformHealthLabel(AppLocalizations l10n) => l10n.consoleDestinationPlatformHealth;
+  static String _auditTrailLabel(AppLocalizations l10n) => l10n.consoleDestinationAuditTrail;
 }

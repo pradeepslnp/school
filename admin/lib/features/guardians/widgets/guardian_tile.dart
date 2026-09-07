@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../domain/guardian_models.dart';
 
 /// One parent as the student-detail panel shows them: who they are, how the school reaches
@@ -11,21 +12,10 @@ class GuardianTile extends StatelessWidget {
 
   final StudentGuardian guardian;
 
-  static const _relationshipLabels = <String, String>{
-    'MOTHER': 'Mother',
-    'FATHER': 'Father',
-    'GUARDIAN': 'Guardian',
-    'GRANDPARENT': 'Grandparent',
-    'AUNT_UNCLE': 'Aunt / Uncle',
-    'OTHER': 'Other',
-  };
-
-  String get _relationshipLabel =>
-      _relationshipLabels[guardian.relationshipType] ?? guardian.relationshipType;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final relationshipLabel = guardianRelationshipLabel(context.l10n, guardian.relationshipType);
 
     return ListTile(
       key: Key('guardian_tile_${guardian.linkId}'),
@@ -38,7 +28,7 @@ class GuardianTile extends StatelessWidget {
           Flexible(child: Text(guardian.displayName)),
           if (guardian.isPrimary) ...[
             const SizedBox(width: AdminSpacing.sm),
-            _Chip(label: 'Primary', color: theme.colorScheme.primary),
+            _Chip(label: context.l10n.guardianTilePrimaryChip, color: theme.colorScheme.primary),
           ],
         ],
       ),
@@ -46,22 +36,33 @@ class GuardianTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: AdminSpacing.xs),
-          Text('$_relationshipLabel · ${guardian.phone}'),
+          Text(context.l10n.guardianTileRelationshipAndPhone(relationshipLabel, guardian.phone)),
           const SizedBox(height: AdminSpacing.sm),
           Wrap(
             spacing: AdminSpacing.sm,
             runSpacing: AdminSpacing.xs,
             children: [
               if (guardian.canAuthoriseHandover)
-                _Chip(label: 'Can collect', color: context.status.safe)
+                _Chip(label: context.l10n.guardianTileCanCollectChip, color: context.status.safe)
               else
-                _Chip(label: 'Cannot collect', color: context.status.warning),
+                _Chip(
+                  label: context.l10n.guardianTileCannotCollectChip,
+                  color: context.status.warning,
+                ),
               if (guardian.canReceiveNotifications)
-                _Chip(label: 'Notified', color: theme.colorScheme.onSurfaceVariant),
+                _Chip(
+                  label: context.l10n.guardianTileNotifiedChip,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               if (guardian.canDeclareAbsence)
-                _Chip(label: 'Can report absence', color: theme.colorScheme.onSurfaceVariant),
+                _Chip(
+                  label: context.l10n.guardianTileCanReportAbsenceChip,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               _Chip(
-                label: guardian.hasLogin ? 'Can sign in' : 'No sign-in yet',
+                label: guardian.hasLogin
+                    ? context.l10n.guardianTileCanSignInChip
+                    : context.l10n.guardianTileNoSignInYetChip,
                 color: guardian.hasLogin
                     ? context.status.safe
                     : theme.colorScheme.onSurfaceVariant,

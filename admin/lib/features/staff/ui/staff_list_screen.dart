@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
 import '../../school_scope/widgets/school_picker_field.dart';
 import '../bloc/staff_list_bloc.dart';
@@ -204,7 +205,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Text('Drivers', style: theme.textTheme.headlineSmall),
+                  child: Text(context.l10n.staffListTitle, style: theme.textTheme.headlineSmall),
                 ),
 _AddDriverButton(
                   enabled: _selectedSchoolId != null,
@@ -224,15 +225,15 @@ _AddDriverButton(
               controller: _search,
               onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
-                labelText: 'Search',
-                hintText: 'Filter by name, phone, or employee code',
+                labelText: context.l10n.commonSearchLabel,
+                hintText: context.l10n.staffListSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isEmpty
                     ? null
                     : IconButton(
                         key: const Key('staff_list_search_clear_button'),
                         icon: const Icon(Icons.close),
-                        tooltip: 'Clear search',
+                        tooltip: context.l10n.commonClearSearchTooltip,
                         onPressed: () => setState(() {
                           _search.clear();
                           _searchQuery = '';
@@ -247,8 +248,10 @@ _AddDriverButton(
               child: BlocBuilder<StaffListBloc, StaffListState>(
                 builder: (context, state) {
                   if (state.isLoading && state.staff.isEmpty) {
-                    return const Center(
-                      child: CircularProgressIndicator(semanticsLabel: 'Loading roster'),
+                    return Center(
+                      child: CircularProgressIndicator(
+                        semanticsLabel: context.l10n.staffListLoadingLabel,
+                      ),
                     );
                   }
 
@@ -256,7 +259,7 @@ _AddDriverButton(
                     final color = context.status.critical;
                     return Center(
                       child: Text(
-                        'That could not be loaded right now. Try again.',
+                        context.l10n.errorGenericLoadRetry,
                         style: theme.textTheme.bodyMedium?.copyWith(color: color),
                       ),
                     );
@@ -265,7 +268,7 @@ _AddDriverButton(
                   if (state.staff.isEmpty) {
                     return Center(
                       child: Text(
-                        'No roster loaded. Pick a school above, or add the first driver.',
+                        context.l10n.staffListEmptyState,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -277,7 +280,7 @@ _AddDriverButton(
                   if (filtered.isEmpty) {
                     return Center(
                       child: Text(
-                        'No one on this roster matches "$_searchQuery".',
+                        context.l10n.staffListSearchNoMatches(_searchQuery),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -328,12 +331,12 @@ class _StaffTable extends StatelessWidget {
             key: Key('staff_list_row_${person.id}'),
             minVerticalPadding: AdminSpacing.md,
             title: Text(person.displayName),
-            subtitle: Text('${person.staffType} · ${person.phone}'),
+            subtitle: Text(context.l10n.staffListRowSubtitle(person.staffType, person.phone)),
             onTap: () => onTapStaff(person),
             trailing: Tooltip(
               message: person.hasLogin
-                  ? 'Can sign in to the driver app'
-                  : 'No driver-app sign-in yet',
+                  ? context.l10n.staffListHasLoginTooltip
+                  : context.l10n.staffListNoLoginTooltip,
               child: Icon(
                 person.hasLogin ? Icons.check_circle_outline : Icons.error_outline,
                 color: loginColor,
@@ -362,10 +365,10 @@ class _AddDriverButton extends StatelessWidget {
       key: const Key('staff_list_add_button'),
       onPressed: enabled ? onPressed : null,
       icon: const Icon(Icons.add),
-      label: const Text('Add driver'),
+      label: Text(context.l10n.staffListAddButton),
     );
 
     if (enabled) return button;
-    return Tooltip(message: 'Pick a school first', child: button);
+    return Tooltip(message: context.l10n.pickSchoolFirstTooltip, child: button);
   }
 }

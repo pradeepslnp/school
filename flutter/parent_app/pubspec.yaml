@@ -11,6 +11,16 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
 
+  # Localisation (ADR-0013 — interim client-bundled English/Kannada). Bundled ARB + gen-l10n
+  # rather than the backend-driven CFG-006 design, which does not exist yet.
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  # Persists the chosen locale across restarts — the same role it plays nowhere else yet in
+  # this app; ThemeController stays memory-only (that constraint is about secure storage for
+  # auth tokens, not about a non-secret UI preference like locale).
+  shared_preferences: ^2.5.3
+
   # Shared domain, errors, and time handling. Pure Dart by design (ADR-0003) — this app
   # supplies the widgets; guardian_core supplies the meaning.
   # guardian_core removed for local dev; re-add as a package or path when available
@@ -51,3 +61,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true

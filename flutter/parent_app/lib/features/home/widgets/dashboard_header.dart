@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 
 /// The greeting, and the one place the screen states which clock it is using.
 ///
@@ -45,13 +46,16 @@ class DashboardHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${_greeting((now?.value ?? DateTime.now()).hour)}, $guardianName',
+            context.l10n.dashboardGreeting(
+              _greeting(context, (now?.value ?? DateTime.now()).hour),
+              guardianName,
+            ),
             style: context.texts.headlineSmall,
           ),
           if (now != null) ...[
             const SizedBox(height: GuardianSpacing.xs),
             Semantics(
-              label: 'All times are shown in school time, ${now.timezoneId}.',
+              label: context.l10n.schoolTimeZoneSemanticLabel(now.timezoneId),
               excludeSemantics: true,
               child: Row(
                 children: [
@@ -63,7 +67,7 @@ class DashboardHeader extends StatelessWidget {
                   const SizedBox(width: GuardianSpacing.xs),
                   Flexible(
                     child: Text(
-                      'School time · ${now.timezoneId}',
+                      context.l10n.schoolTimeLabel(now.timezoneId),
                       style: context.texts.labelMedium
                           ?.copyWith(color: context.colors.onSurfaceVariant),
                     ),
@@ -77,9 +81,10 @@ class DashboardHeader extends StatelessWidget {
     );
   }
 
-  static String _greeting(int hourOfDay) {
-    if (hourOfDay < 12) return 'Good morning';
-    if (hourOfDay < 17) return 'Good afternoon';
-    return 'Good evening';
+  static String _greeting(BuildContext context, int hourOfDay) {
+    final l10n = context.l10n;
+    if (hourOfDay < 12) return l10n.greetingMorning;
+    if (hourOfDay < 17) return l10n.greetingAfternoon;
+    return l10n.greetingEvening;
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/dependencies.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../bloc/set_password_bloc.dart';
 import 'set_password_screen.dart';
 
@@ -26,11 +27,11 @@ class AcceptInvitationRoute extends StatelessWidget {
         token: token,
       ),
       child: SetPasswordScreen(
-        title: 'Set your password',
-        intro: 'Choose a password to activate your account and sign in.',
-        submitLabel: 'Activate account',
-        doneTitle: 'Account activated',
-        doneBody: 'You can now sign in with your email address and new password.',
+        title: context.l10n.acceptInvitationTitle,
+        intro: context.l10n.acceptInvitationIntro,
+        submitLabel: context.l10n.acceptInvitationSubmitLabel,
+        doneTitle: context.l10n.acceptInvitationDoneTitle,
+        doneBody: context.l10n.acceptInvitationDoneBody,
         onDone: onDone,
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/session/session_manager.dart';
+import '../../../l10n/app_localizations_extension.dart';
 
 /// Explains a sign-in screen the operator did not ask for.
 ///
@@ -40,21 +41,21 @@ class SessionEndedNotice extends StatelessWidget {
           children: [
             Icon(Icons.info_outline, size: 20, color: color),
             const SizedBox(width: AdminSpacing.sm),
-            Expanded(child: Text(_message, style: theme.textTheme.bodyMedium)),
+            Expanded(child: Text(_message(context), style: theme.textTheme.bodyMedium)),
           ],
         ),
       ),
     );
   }
 
-  String get _message => switch (reason) {
+  String _message(BuildContext context) {
+    final l10n = context.l10n;
     // Names the two real causes rather than saying "for security reasons", which tells
     // an operator nothing and makes a deactivated account look like a bug.
-    SignOutReason.revokedByServer =>
-      'Your session was ended by the platform. This happens when an account is '
-          'deactivated or a session is revoked.',
-    SignOutReason.refreshFailed =>
-      'Your session expired and could not be renewed. Sign in to continue.',
-    SignOutReason.userRequested => '',
-  };
+    return switch (reason) {
+      SignOutReason.revokedByServer => l10n.loginSessionEndedRevoked,
+      SignOutReason.refreshFailed => l10n.loginSessionEndedRefreshFailed,
+      SignOutReason.userRequested => '',
+    };
+  }
 }

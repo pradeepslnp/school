@@ -36,9 +36,14 @@ final class AbsenceState extends Equatable {
   final bool isSubmitting;
   final Failure<void>? submitFailure;
 
-  /// Plain-language statement of effect, shown after a successful declaration —
-  /// *"Aarav will not be expected on Bus 12 tomorrow morning."* (docs/05-ui/PARENT_APP.md).
-  final String? confirmation;
+  /// The facts behind the plain-language statement of effect shown after a successful
+  /// declaration — *"Aarav will not be expected on Bus 12 tomorrow morning."*
+  /// (docs/05-ui/PARENT_APP.md).
+  ///
+  /// Held as data rather than a pre-formatted [String] so the UI layer — which has a
+  /// [BuildContext] and this bloc does not — is the one that renders it through
+  /// `context.l10n` (ADR-0013, CODING_STANDARDS_FLUTTER.md's Localisation section).
+  final AbsenceConfirmation? confirmation;
 
   /// Today, tomorrow, or the picked range, resolved to concrete calendar dates. Null when a
   /// date range was chosen but not yet fully picked.
@@ -78,7 +83,7 @@ final class AbsenceState extends Equatable {
     bool? isSubmitting,
     Failure<void>? submitFailure,
     bool clearSubmitFailure = false,
-    String? confirmation,
+    AbsenceConfirmation? confirmation,
     bool clearConfirmation = false,
   }) {
     return AbsenceState(
@@ -114,4 +119,24 @@ final class AbsenceState extends Equatable {
         submitFailure?.code,
         confirmation,
       ];
+}
+
+/// The facts of a just-declared absence, in the shape [_ConfirmationBanner] needs to render
+/// *"Aarav will not be expected tomorrow morning."* through `context.l10n` — see
+/// [AbsenceState.confirmation].
+final class AbsenceConfirmation extends Equatable {
+  const AbsenceConfirmation({
+    required this.childName,
+    required this.direction,
+    required this.fromDate,
+    required this.toDate,
+  });
+
+  final String childName;
+  final AbsenceDirection direction;
+  final DateTime fromDate;
+  final DateTime toDate;
+
+  @override
+  List<Object?> get props => [childName, direction, fromDate, toDate];
 }

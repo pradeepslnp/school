@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../bloc/platform_health_bloc.dart';
 import '../bloc/platform_health_event.dart';
 import '../bloc/platform_health_state.dart';
@@ -31,7 +32,7 @@ class PlatformHealthScreen extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text('Platform health', style: theme.textTheme.headlineSmall),
+                child: Text(context.l10n.platformHealthTitle, style: theme.textTheme.headlineSmall),
               ),
               BlocBuilder<PlatformHealthBloc, PlatformHealthState>(
                 builder: (context, state) => OutlinedButton.icon(
@@ -42,15 +43,14 @@ class PlatformHealthScreen extends StatelessWidget {
                           .read<PlatformHealthBloc>()
                           .add(const PlatformHealthRequested()),
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh'),
+                  label: Text(context.l10n.platformHealthRefreshButton),
                 ),
               ),
             ],
           ),
           const SizedBox(height: AdminSpacing.xs),
           Text(
-            'A quick pulse check — whether the platform is reachable, and how many '
-            'organizations are on it. Not a full monitoring dashboard.',
+            context.l10n.platformHealthIntro,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -62,8 +62,10 @@ class PlatformHealthScreen extends StatelessWidget {
                 final health = state.health;
 
                 if (state.isLoading && health == null) {
-                  return const Center(
-                    child: CircularProgressIndicator(semanticsLabel: 'Checking platform health'),
+                  return Center(
+                    child: CircularProgressIndicator(
+                      semanticsLabel: context.l10n.platformHealthCheckingLabel,
+                    ),
                   );
                 }
 
@@ -81,12 +83,15 @@ class PlatformHealthScreen extends StatelessWidget {
                     children: [
                       _StatusCard(health: health),
                       const SizedBox(height: AdminSpacing.lg),
-                      Text('Organizations on the platform', style: theme.textTheme.titleMedium),
+                      Text(
+                        context.l10n.platformHealthOrganizationsHeading,
+                        style: theme.textTheme.titleMedium,
+                      ),
                       const SizedBox(height: AdminSpacing.md),
                       _OrganizationCounts(health: health),
                       const SizedBox(height: AdminSpacing.md),
                       Text(
-                        'Checked ${_relativeTime(health.checkedAt)}',
+                        context.l10n.platformHealthCheckedAt(_relativeTime(context, health.checkedAt)),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -104,18 +109,15 @@ class PlatformHealthScreen extends StatelessWidget {
 }
 
 /// A friendly relative timestamp — "just now", "3 minutes ago" — rather than a raw ISO
-/// string. No `intl` dependency in this console yet (pubspec.yaml), so hand-rolled rather
-/// than pulled in for one label.
-String _relativeTime(DateTime checkedAt) {
+/// string, using the generated plural rules (`AppLocalizations`) rather than a hand-rolled
+/// singular/plural check (ADR-0013).
+String _relativeTime(BuildContext context, DateTime checkedAt) {
+  final l10n = context.l10n;
   final difference = DateTime.now().toUtc().difference(checkedAt.toUtc());
-  if (difference.inSeconds < 5) return 'just now';
-  if (difference.inMinutes < 1) return '${difference.inSeconds} seconds ago';
-  if (difference.inMinutes < 60) {
-    final minutes = difference.inMinutes;
-    return '$minutes ${minutes == 1 ? 'minute' : 'minutes'} ago';
-  }
-  final hours = difference.inHours;
-  return '$hours ${hours == 1 ? 'hour' : 'hours'} ago';
+  if (difference.inSeconds < 5) return l10n.platformHealthJustNow;
+  if (difference.inMinutes < 1) return l10n.platformHealthSecondsAgo(difference.inSeconds);
+  if (difference.inMinutes < 60) return l10n.platformHealthMinutesAgo(difference.inMinutes);
+  return l10n.platformHealthHoursAgo(difference.inHours);
 }
 
 class _StatusCard extends StatelessWidget {
@@ -152,16 +154,16 @@ class _StatusCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    reachable ? 'Platform is reachable' : 'Could not confirm platform health',
+                    reachable
+                        ? context.l10n.platformHealthReachableTitle
+                        : context.l10n.platformHealthDegradedTitle,
                     style: theme.textTheme.titleMedium?.copyWith(color: color),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     reachable
-                        ? 'The last check reached the database without issue.'
-                        : 'The last check could not read organization data. This can be '
-                            'transient — try refreshing in a moment. If it keeps failing, '
-                            "that's worth escalating.",
+                        ? context.l10n.platformHealthReachableBody
+                        : context.l10n.platformHealthDegradedBody,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -188,7 +190,7 @@ class _OrganizationCounts extends StatelessWidget {
         Expanded(
           child: _CountTile(
             key: const Key('platform_health_total_tile'),
-            label: 'Total',
+            label: context.l10n.platformHealthCountTotal,
             count: health.totalOrganizations,
             color: Theme.of(context).colorScheme.onSurface,
           ),
@@ -197,7 +199,7 @@ class _OrganizationCounts extends StatelessWidget {
         Expanded(
           child: _CountTile(
             key: const Key('platform_health_active_tile'),
-            label: 'Active',
+            label: context.l10n.platformHealthCountActive,
             count: health.activeOrganizations,
             color: context.status.safe,
           ),
@@ -206,7 +208,7 @@ class _OrganizationCounts extends StatelessWidget {
         Expanded(
           child: _CountTile(
             key: const Key('platform_health_suspended_tile'),
-            label: 'Suspended',
+            label: context.l10n.platformHealthCountSuspended,
             count: health.suspendedOrganizations,
             color: health.suspendedOrganizations > 0
                 ? context.status.critical
@@ -217,7 +219,7 @@ class _OrganizationCounts extends StatelessWidget {
         Expanded(
           child: _CountTile(
             key: const Key('platform_health_closed_tile'),
-            label: 'Closed',
+            label: context.l10n.platformHealthCountClosed,
             count: health.closedOrganizations,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -291,14 +293,14 @@ class _HealthError extends StatelessWidget {
           Icon(Icons.error_outline, color: color, size: 32),
           const SizedBox(height: AdminSpacing.sm),
           Text(
-            'That could not be loaded right now. Try again shortly.',
+            context.l10n.errorGenericRetryShortly,
             style: theme.textTheme.bodyMedium?.copyWith(color: color),
           ),
           const SizedBox(height: AdminSpacing.md),
           OutlinedButton(
             key: const Key('platform_health_retry_button'),
             onPressed: onRetry,
-            child: const Text('Retry'),
+            child: Text(context.l10n.commonRetryButton),
           ),
         ],
       ),

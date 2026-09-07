@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../utils/utils.dart';
 import '../bloc/pickup_persons_bloc.dart';
 import '../repository/models/pickup_person.dart';
@@ -40,13 +41,13 @@ class PickupPersonsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pickup persons')),
+      appBar: AppBar(title: Text(context.l10n.pickupPersonsAppBarTitle)),
       floatingActionButton: state.children.isEmpty || state.showAddForm
           ? null
           : FloatingActionButton.extended(
               onPressed: () => onAddFormToggled(true),
               icon: const Icon(Icons.person_add_alt),
-              label: const Text('Add pickup person'),
+              label: Text(context.l10n.pickupPersonsAddButton),
             ),
       body: SafeArea(
         child: state.children.isEmpty
@@ -56,7 +57,7 @@ class PickupPersonsScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(GuardianSpacing.md),
                   children: [
                     if (state.children.length > 1) ...[
-                      Text('Which child?', style: context.texts.titleMedium),
+                      Text(context.l10n.whichChildLabel, style: context.texts.titleMedium),
                       const SizedBox(height: GuardianSpacing.sm),
                       DropdownButtonFormField<ChildOption>(
                         value: state.selectedChild,
@@ -98,7 +99,7 @@ class PickupPersonsScreen extends StatelessWidget {
                       _ErrorBanner(failure: state.listFailure!)
                     else if (state.people.isEmpty)
                       Text(
-                        'No pickup persons authorised for this child.',
+                        context.l10n.pickupPersonsNoneAuthorised,
                         style: context.texts.bodyMedium
                             ?.copyWith(color: context.colors.onSurfaceVariant),
                       )
@@ -148,8 +149,11 @@ class _PickupPersonCard extends StatelessWidget {
                   // The window is always shown, and prominently — nominations always
                   // expire (BR-GRD-005).
                   Text(
-                    'Valid ${_format(person.validFrom)} – ${_format(person.validUntil)}'
-                    '${expired ? ' · expired' : ''}',
+                    context.l10n.pickupPersonsValidRange(
+                          _format(person.validFrom),
+                          _format(person.validUntil),
+                        ) +
+                        (expired ? context.l10n.pickupPersonsExpiredSuffix : ''),
                     style: context.texts.bodyMedium?.copyWith(
                       color: expired ? context.status.warning : context.colors.onSurfaceVariant,
                       fontWeight: expired ? FontWeight.w600 : null,
@@ -158,7 +162,7 @@ class _PickupPersonCard extends StatelessWidget {
                 ],
               ),
             ),
-            TextButton(onPressed: onRevoke, child: const Text('Revoke')),
+            TextButton(onPressed: onRevoke, child: Text(context.l10n.pickupPersonsRevokeButton)),
           ],
         ),
       ),
@@ -195,13 +199,13 @@ class _AddForm extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('New pickup person', style: context.texts.titleMedium),
+            Text(context.l10n.pickupPersonsNewPersonTitle, style: context.texts.titleMedium),
             const SizedBox(height: GuardianSpacing.md),
             TextFormField(
               key: const ValueKey('pickup_full_name'),
               initialValue: state.fullName,
               onChanged: onFullNameChanged,
-              decoration: const InputDecoration(labelText: 'Full name'),
+              decoration: InputDecoration(labelText: context.l10n.pickupPersonsFullNameLabel),
             ),
             const SizedBox(height: GuardianSpacing.md),
             TextFormField(
@@ -209,16 +213,16 @@ class _AddForm extends StatelessWidget {
               initialValue: state.phone,
               keyboardType: TextInputType.phone,
               onChanged: onPhoneChanged,
-              decoration: const InputDecoration(labelText: 'Phone number'),
+              decoration: InputDecoration(labelText: context.l10n.pickupPersonsPhoneLabel),
             ),
             const SizedBox(height: GuardianSpacing.md),
             TextFormField(
               key: const ValueKey('pickup_relationship'),
               initialValue: state.relationshipNote,
               onChanged: onRelationshipChanged,
-              decoration: const InputDecoration(
-                labelText: 'Relationship (optional)',
-                hintText: 'e.g. Uncle',
+              decoration: InputDecoration(
+                labelText: context.l10n.pickupPersonsRelationshipLabel,
+                hintText: context.l10n.pickupPersonsRelationshipHint,
               ),
             ),
             const SizedBox(height: GuardianSpacing.md),
@@ -238,15 +242,21 @@ class _AddForm extends StatelessWidget {
               icon: const Icon(Icons.date_range_outlined),
               label: Text(
                 (state.validFrom != null && state.validUntil != null)
-                    ? 'Valid ${_format(state.validFrom!)} – ${_format(state.validUntil!)}'
-                    : 'Choose validity window',
+                    ? context.l10n.pickupPersonsValidRange(
+                        _format(state.validFrom!),
+                        _format(state.validUntil!),
+                      )
+                    : context.l10n.pickupPersonsValidityChoose,
               ),
             ),
             const SizedBox(height: GuardianSpacing.lg),
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(onPressed: onCancel, child: const Text('Cancel')),
+                  child: OutlinedButton(
+                    onPressed: onCancel,
+                    child: Text(context.l10n.cancelButton),
+                  ),
                 ),
                 const SizedBox(width: GuardianSpacing.sm),
                 Expanded(
@@ -258,7 +268,7 @@ class _AddForm extends StatelessWidget {
                             width: AppSizeConstants.inlineSpinnerSize,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Nominate'),
+                        : Text(context.l10n.pickupPersonsNominateButton),
                   ),
                 ),
               ],
@@ -279,14 +289,12 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final text = switch (failure.code) {
-      ErrorCode.guardianNotAuthorisedToNominate =>
-        'You do not hold the right to authorise pickups for this child '
-            '(BR-GRD-006). Contact another guardian who does, or the school office.',
-      ErrorCode.pickupPersonOutsideValidity => 'That validity window has already passed.',
-      ErrorCode.dependencyUnavailable =>
-        'Your device cannot reach the school right now. Check your connection and try again.',
-      _ => 'Something went wrong. Please try again.',
+      ErrorCode.guardianNotAuthorisedToNominate => l10n.pickupPersonsErrorNotAuthorised,
+      ErrorCode.pickupPersonOutsideValidity => l10n.pickupPersonsErrorOutsideValidity,
+      ErrorCode.dependencyUnavailable => l10n.errorDependencyUnavailable,
+      _ => l10n.errorGenericTryAgain,
     };
     return Container(
       padding: const EdgeInsets.all(GuardianSpacing.md),
@@ -314,8 +322,7 @@ class _NoChildren extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(GuardianSpacing.xl),
         child: Text(
-          'Your school links your children to your account before you can manage pickup '
-          'persons.',
+          context.l10n.pickupPersonsNoChildrenLinked,
           textAlign: TextAlign.center,
           style: context.texts.bodyMedium,
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
 import '../../organizations/widgets/school_edit_form.dart';
 import '../bloc/school_settings_bloc.dart';
@@ -44,7 +45,7 @@ class _SchoolSettingsScreenState extends State<SchoolSettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('School', style: theme.textTheme.headlineSmall),
+          Text(context.l10n.schoolSettingsScreenTitle, style: theme.textTheme.headlineSmall),
           const SizedBox(height: AdminSpacing.lg),
           Expanded(
             child: SingleChildScrollView(

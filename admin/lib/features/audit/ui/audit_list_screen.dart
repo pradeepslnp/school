@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../bloc/audit_list_bloc.dart';
 import '../bloc/audit_list_event.dart';
 import '../bloc/audit_list_state.dart';
@@ -31,7 +32,9 @@ class AuditListScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text('Audit trail', style: theme.textTheme.headlineSmall)),
+              Expanded(
+                child: Text(context.l10n.auditTrailTitle, style: theme.textTheme.headlineSmall),
+              ),
               BlocBuilder<AuditListBloc, AuditListState>(
                 buildWhen: (previous, current) =>
                     previous.overridesOnly != current.overridesOnly ||
@@ -39,16 +42,16 @@ class AuditListScreen extends StatelessWidget {
                 builder: (context, state) {
                   return SegmentedButton<bool>(
                     key: const Key('audit_scope_toggle'),
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                         value: false,
-                        label: Text('All activity'),
-                        icon: Icon(Icons.list_alt_outlined),
+                        label: Text(context.l10n.auditScopeAllActivity),
+                        icon: const Icon(Icons.list_alt_outlined),
                       ),
                       ButtonSegment(
                         value: true,
-                        label: Text('Overrides'),
-                        icon: Icon(Icons.gpp_maybe_outlined),
+                        label: Text(context.l10n.auditScopeOverrides),
+                        icon: const Icon(Icons.gpp_maybe_outlined),
                       ),
                     ],
                     selected: {state.overridesOnly},
@@ -72,8 +75,8 @@ class AuditListScreen extends StatelessWidget {
             builder: (context, state) {
               return Text(
                 state.overridesOnly
-                    ? 'Actions taken with an override reason — a person overrode a safety check and said why.'
-                    : 'Every safety-relevant action, most recent first. Records cannot be edited or removed.',
+                    ? context.l10n.auditOverridesDescription
+                    : context.l10n.auditAllActivityDescription,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -85,8 +88,10 @@ class AuditListScreen extends StatelessWidget {
             child: BlocBuilder<AuditListBloc, AuditListState>(
               builder: (context, state) {
                 if (state.isLoading && state.records.isEmpty) {
-                  return const Center(
-                    child: CircularProgressIndicator(semanticsLabel: 'Loading audit trail'),
+                  return Center(
+                    child: CircularProgressIndicator(
+                      semanticsLabel: context.l10n.auditLoadingLabel,
+                    ),
                   );
                 }
 
@@ -94,7 +99,7 @@ class AuditListScreen extends StatelessWidget {
                   final color = context.status.critical;
                   return Center(
                     child: Text(
-                      'The audit trail could not be loaded right now. Try again.',
+                      context.l10n.auditLoadError,
                       style: theme.textTheme.bodyMedium?.copyWith(color: color),
                     ),
                   );
@@ -104,8 +109,8 @@ class AuditListScreen extends StatelessWidget {
                   return Center(
                     child: Text(
                       state.overridesOnly
-                          ? 'No overrides recorded. That is the healthy state.'
-                          : 'No activity recorded yet.',
+                          ? context.l10n.auditNoOverridesEmptyState
+                          : context.l10n.auditNoActivityEmptyState,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -181,7 +186,7 @@ class _AuditRow extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Text(
-                'Reason: ${record.reason}',
+                context.l10n.auditReasonPrefix(record.reason ?? ''),
                 style: theme.textTheme.bodySmall?.copyWith(color: context.status.warning),
               ),
             ),
@@ -195,7 +200,7 @@ class _AuditRow extends StatelessWidget {
                 border: Border.all(color: context.status.warning),
               ),
               child: Text(
-                'Override',
+                context.l10n.auditOverrideBadge,
                 style: theme.textTheme.labelSmall?.copyWith(color: context.status.warning),
               ),
             )

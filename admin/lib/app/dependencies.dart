@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/widgets.dart';
 
 import '../core/network/rest_client.dart';
@@ -31,6 +33,7 @@ import '../features/users/repository/user_repository.dart';
 import '../features/vehicles/data_provider/vehicle_data_provider.dart';
 import '../features/vehicles/repository/vehicle_repository.dart';
 import 'app_config.dart';
+import 'locale_controller.dart';
 import 'workspace_context.dart';
 
 /// The console's composition root.
@@ -60,6 +63,7 @@ class AppDependencies {
     required this.auditRepository,
     required this.authRecoveryRepository,
     required this.workspaceContext,
+    required this.localeController,
   });
 
   final AppConfig config;
@@ -126,6 +130,10 @@ class AppDependencies {
   /// The school id remembered across the Drivers, Vehicles, and Routes screens for this
   /// session — see `WorkspaceContext`.
   final WorkspaceContext workspaceContext;
+
+  /// The operator's chosen console language, persisted across sessions (ADR-0013). See
+  /// `LocaleController`.
+  final LocaleController localeController;
 
   /// Builds everything and restores any existing session.
   ///
@@ -204,6 +212,13 @@ class AppDependencies {
 
     final workspaceContext = WorkspaceContext();
 
+    // Read once at bootstrap, before the first frame — the same reasoning as
+    // `SessionManager.restore()` below: the console's starting language must be known before
+    // anything renders, not applied a frame later as a visible relanguaging.
+    final localeController = await LocaleController.bootstrap(
+      platformLocale: PlatformDispatcher.instance.locale,
+    );
+
     sessionManager = SessionManager(
       store: InMemorySessionStore(),
       refresher: loginRepository,
@@ -228,6 +243,7 @@ class AppDependencies {
       auditRepository: auditRepository,
       authRecoveryRepository: authRecoveryRepository,
       workspaceContext: workspaceContext,
+      localeController: localeController,
     );
 
     await sessionManager.restore();
@@ -250,6 +266,7 @@ class AppDependencies {
   Future<void> dispose() async {
     await sessionManager.dispose();
     restClient.close();
+    localeController.dispose();
   }
 }
 

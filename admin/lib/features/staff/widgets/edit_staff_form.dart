@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_button_spinner.dart';
 import '../domain/staff_models.dart';
 
@@ -72,10 +73,15 @@ class _EditStaffFormState extends State<EditStaffForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Edit ${widget.staff.displayName}', style: theme.textTheme.titleLarge),
+        Text(
+          context.l10n.editStaffTitle(widget.staff.displayName),
+          style: theme.textTheme.titleLarge,
+        ),
         const SizedBox(height: AdminSpacing.xs),
         Text(
-          widget.staff.staffType == 'DRIVER' ? 'Driver' : 'Attendant',
+          widget.staff.staffType == 'DRIVER'
+              ? context.l10n.staffTypeDriver
+              : context.l10n.staffTypeAttendant,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -86,10 +92,10 @@ class _EditStaffFormState extends State<EditStaffForm> {
           controller: _firstName,
           autofocus: true,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'First name',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.firstNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -97,10 +103,10 @@ class _EditStaffFormState extends State<EditStaffForm> {
           key: const Key('staff_edit_last_name_field'),
           controller: _lastName,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'Last name',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.lastNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -109,10 +115,10 @@ class _EditStaffFormState extends State<EditStaffForm> {
           controller: _phone,
           enabled: !widget.isSubmitting,
           keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(
-            labelText: 'Phone (driver-app sign-in)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.staffPhoneLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -120,10 +126,10 @@ class _EditStaffFormState extends State<EditStaffForm> {
           key: const Key('staff_edit_employee_code_field'),
           controller: _employeeCode,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'Employee code (optional)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.staffEmployeeCodeLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -133,10 +139,10 @@ class _EditStaffFormState extends State<EditStaffForm> {
           enabled: !widget.isSubmitting,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
-          decoration: const InputDecoration(
-            labelText: 'Vendor name (optional, for contracted staff)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.staffVendorNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.lg),
@@ -146,7 +152,7 @@ class _EditStaffFormState extends State<EditStaffForm> {
               child: OutlinedButton(
                 key: const Key('staff_edit_cancel_button'),
                 onPressed: widget.isSubmitting ? null : widget.onCancel,
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancelButton),
               ),
             ),
             const SizedBox(width: AdminSpacing.md),
@@ -155,8 +161,8 @@ class _EditStaffFormState extends State<EditStaffForm> {
                 key: const Key('staff_edit_submit_button'),
                 onPressed: widget.isSubmitting ? null : _submit,
                 child: widget.isSubmitting
-                    ? const OnboardingButtonSpinner(semanticsLabel: 'Saving')
-                    : const Text('Save changes'),
+                    ? OnboardingButtonSpinner(semanticsLabel: context.l10n.commonSavingSpinnerLabel)
+                    : Text(context.l10n.commonSaveChangesButton),
               ),
             ),
           ],

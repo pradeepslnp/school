@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/l10n_extensions.dart';
 import 'button_spinner.dart';
 
 /// Mobile-number entry.
@@ -47,14 +48,15 @@ class _PhoneEntryFormState extends State<PhoneEntryForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Driver sign in', style: theme.textTheme.titleLarge),
+        Text(l10n.phoneEntryTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: DriverSpacing.sm),
         Text(
-          'Enter your mobile number to receive a one-time code.',
+          l10n.phoneEntrySubtitle,
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: DriverSpacing.lg),
@@ -68,13 +70,13 @@ class _PhoneEntryFormState extends State<PhoneEntryForm> {
           autofillHints: const [AutofillHints.telephoneNumber],
           onSubmitted: (_) => _submit(),
           style: theme.textTheme.bodyLarge,
-          decoration: const InputDecoration(
-            labelText: 'Mobile number',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.phone_outlined),
+          decoration: InputDecoration(
+            labelText: l10n.phoneFieldLabel,
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.phone_outlined),
             // Comfortably past the 64 px floor: this is the first thing a driver touches at
             // the start of a shift, often in daylight glare (DRIVER_ATTENDANT_APP.md).
-            constraints: BoxConstraints(minHeight: kDriverTouchTarget),
+            constraints: const BoxConstraints(minHeight: kDriverTouchTarget),
           ),
         ),
         const SizedBox(height: DriverSpacing.lg),
@@ -83,7 +85,7 @@ class _PhoneEntryFormState extends State<PhoneEntryForm> {
           onPressed: widget.isSubmitting ? null : _submit,
           child: widget.isSubmitting
               ? const ButtonSpinner()
-              : const Text('Send code'),
+              : Text(l10n.sendCodeButton),
         ),
       ],
     );

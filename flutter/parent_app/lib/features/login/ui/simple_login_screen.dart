@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../utils/utils.dart';
 import 'otp_screen.dart';
 
@@ -46,7 +47,7 @@ class _SimpleLoginScreenState extends State<SimpleLoginScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign in')),
+      appBar: AppBar(title: Text(context.l10n.loginHeading)),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -59,19 +60,19 @@ class _SimpleLoginScreenState extends State<SimpleLoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Parent sign in', style: theme.textTheme.titleLarge),
+                  Text(context.l10n.simpleLoginParentHeading, style: theme.textTheme.titleLarge),
                   const SizedBox(height: GuardianSpacing.sm),
                   Text(
-                    'Enter the mobile number registered with your school.',
+                    context.l10n.loginInstructions,
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: GuardianSpacing.lg),
                   TextField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Mobile number',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.loginMobileNumberLabel,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: GuardianSpacing.lg),
@@ -83,7 +84,7 @@ class _SimpleLoginScreenState extends State<SimpleLoginScreen> {
                             width: AppSizeConstants.inlineSpinnerSize,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Send code'),
+                        : Text(context.l10n.loginSendCodeButton),
                   ),
                 ],
               ),

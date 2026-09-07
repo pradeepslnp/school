@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../l10n/app_localizations_extension.dart';
 
 /// Renders a sign-in failure.
 ///
@@ -9,13 +10,11 @@ import '../../../core/domain.dart';
 /// layer because it is a presentation decision — *what happened* was settled in the
 /// repository; this is only *how to say it*.
 ///
-/// **Known gap:** these are string literals, which BR-CFG-005 forbids and
-/// CODING_STANDARDS_FLUTTER.md §Localisation enforces with a lint. This project has no
-/// `flutter_localizations` setup, and neither does the driver or parent app — introducing a
-/// one-off mechanism here would create a fourth pattern to migrate later. Every string in
-/// this file is written to be replaced by [messageKey], which the API already supplies and
-/// this widget already receives. The same note stands in the driver app's
-/// `login_error_text.dart`; the two should be resolved together when localisation lands.
+/// Copy is now bundled and localised (ADR-0013), resolved through [context]'s
+/// `AppLocalizations` rather than a literal. [messageKey] — the API's own localisation key —
+/// is still carried through unused: it targets the backend-driven `CFG-006` resource this ADR
+/// is an interim step ahead of, not this console's bundled ARB. The two are expected to
+/// converge when `CFG-006` ships (see ADR-0013's Reversal Cost).
 class LoginErrorText extends StatelessWidget {
   const LoginErrorText({super.key, required this.code, this.messageKey});
 
@@ -48,7 +47,7 @@ class LoginErrorText extends StatelessWidget {
             const SizedBox(width: AdminSpacing.sm),
             Expanded(
               child: Text(
-                _message,
+                _message(context),
                 style: theme.textTheme.bodyMedium?.copyWith(color: color),
               ),
             ),
@@ -58,32 +57,27 @@ class LoginErrorText extends StatelessWidget {
     );
   }
 
-  String get _message => switch (code) {
-    // Deliberately identical for an unknown address and a wrong password. The API does
-    // not distinguish them, because distinguishing them would let anyone enumerate the
-    // staff of a named school (AUTHENTICATION_API.md).
-    ErrorCode.authCredentialsInvalid =>
-      'Those details were not recognised. Check the email address and password.',
-    ErrorCode.authAccountLocked =>
-      'This account is locked after too many failed attempts. Contact your platform '
-          'administrator to unlock it.',
-    // Says what to do and roughly when, because the alternative is an operator retrying
-    // immediately and extending their own lockout window (BR-IAM-011).
-    ErrorCode.rateLimitExceeded =>
-      'Too many sign-in attempts. Wait a minute, then try again.',
-    ErrorCode.validationRequiredFieldMissing =>
-      'Enter both your email address and your password.',
-    ErrorCode.validationInvalidFormat ||
-    ErrorCode.validationFailed => 'Check the details you entered.',
-    // Named as a connection problem, not a failure, and it distinguishes the two things
-    // an operator can actually check.
-    ErrorCode.dependencyUnavailable =>
-      'The Guardian API could not be reached. Check your connection, then try again.',
-    ErrorCode.authSessionRevoked || ErrorCode.authRefreshReuseDetected =>
-      'That session has ended. Sign in again.',
-    // Everything else, including a code this build predates. Says plainly that the
-    // problem is not the operator's to fix, and who can fix it.
-    _ =>
-      'Sign-in is not working right now. Contact your platform administrator.',
-  };
+  String _message(BuildContext context) {
+    final l10n = context.l10n;
+    return switch (code) {
+      // Deliberately identical for an unknown address and a wrong password. The API does
+      // not distinguish them, because distinguishing them would let anyone enumerate the
+      // staff of a named school (AUTHENTICATION_API.md).
+      ErrorCode.authCredentialsInvalid => l10n.loginErrorCredentialsInvalid,
+      ErrorCode.authAccountLocked => l10n.loginErrorAccountLocked,
+      // Says what to do and roughly when, because the alternative is an operator retrying
+      // immediately and extending their own lockout window (BR-IAM-011).
+      ErrorCode.rateLimitExceeded => l10n.loginErrorRateLimitExceeded,
+      ErrorCode.validationRequiredFieldMissing => l10n.loginErrorValidationRequiredField,
+      ErrorCode.validationInvalidFormat ||
+      ErrorCode.validationFailed => l10n.errorValidationCheckDetails,
+      // Named as a connection problem, not a failure, and it distinguishes the two things
+      // an operator can actually check.
+      ErrorCode.dependencyUnavailable => l10n.errorApiUnreachable,
+      ErrorCode.authSessionRevoked || ErrorCode.authRefreshReuseDetected => l10n.errorSessionEnded,
+      // Everything else, including a code this build predates. Says plainly that the
+      // problem is not the operator's to fix, and who can fix it.
+      _ => l10n.loginErrorGenericFailure,
+    };
+  }
 }

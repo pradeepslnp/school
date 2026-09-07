@@ -1,0 +1,12 @@
+# ADR-0013: interim client-bundled Flutter localisation (English/Kannada).
+#
+# Drives `flutter gen-l10n` (run automatically by `flutter pub get` /
+# `flutter run` / `flutter build` because pubspec.yaml sets `flutter: generate: true`).
+# The generated AppLocalizations lives at lib/l10n/app_localizations.dart and is not
+# checked in — see the standard .gitignore entry for lib/l10n/app_localizations*.dart /
+# lib/l10n/app_localizations_*.dart.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false

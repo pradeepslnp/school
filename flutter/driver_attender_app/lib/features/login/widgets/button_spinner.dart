@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/l10n_extensions.dart';
+
 /// A spinner sized to sit inside a button without changing its height.
 ///
 /// Keeping the button the same size while it works matters more here than elsewhere: a
@@ -11,7 +13,7 @@ class ButtonSpinner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Working',
+      label: context.l10n.workingLabel,
       child: const SizedBox(
         height: 20,
         width: 20,

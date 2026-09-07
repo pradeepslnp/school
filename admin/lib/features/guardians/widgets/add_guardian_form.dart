@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_button_spinner.dart';
+import '../domain/guardian_models.dart';
 
 /// Adds a parent to a student (GRD-001, screen A-11).
 ///
@@ -42,14 +44,16 @@ class AddGuardianForm extends StatefulWidget {
 }
 
 class _AddGuardianFormState extends State<AddGuardianForm> {
-  static const _relationships = <String, String>{
-    'MOTHER': 'Mother',
-    'FATHER': 'Father',
-    'GUARDIAN': 'Guardian',
-    'GRANDPARENT': 'Grandparent',
-    'AUNT_UNCLE': 'Aunt / Uncle',
-    'OTHER': 'Other',
-  };
+  // Codes only — display labels come from `guardianRelationshipLabel` (shared with
+  // `GuardianTile`), resolved per build against the active locale.
+  static const _relationshipCodes = <String>[
+    'MOTHER',
+    'FATHER',
+    'GUARDIAN',
+    'GRANDPARENT',
+    'AUNT_UNCLE',
+    'OTHER',
+  ];
 
   final _firstName = TextEditingController();
   final _lastName = TextEditingController();
@@ -96,11 +100,10 @@ class _AddGuardianFormState extends State<AddGuardianForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Add parent', style: theme.textTheme.titleLarge),
+        Text(context.l10n.addGuardianFormTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.xs),
         Text(
-          'The phone number becomes their sign-in straight away — they open the parent app, '
-          'enter their number, and get a one-time code. Enter it carefully.',
+          context.l10n.addGuardianFormIntro,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -110,14 +113,17 @@ class _AddGuardianFormState extends State<AddGuardianForm> {
           key: const Key('guardian_form_relationship_field'),
           initialValue: _relationshipType,
           isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'Relationship',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.addGuardianRelationshipLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
           items: [
-            for (final entry in _relationships.entries)
-              DropdownMenuItem(value: entry.key, child: Text(entry.value)),
+            for (final code in _relationshipCodes)
+              DropdownMenuItem(
+                value: code,
+                child: Text(guardianRelationshipLabel(context.l10n, code)),
+              ),
           ],
           onChanged: widget.isSubmitting
               ? null
@@ -129,10 +135,10 @@ class _AddGuardianFormState extends State<AddGuardianForm> {
           controller: _firstName,
           autofocus: true,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'First name',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.addGuardianFirstNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -140,10 +146,10 @@ class _AddGuardianFormState extends State<AddGuardianForm> {
           key: const Key('guardian_form_last_name_field'),
           controller: _lastName,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'Last name',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.addGuardianLastNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -152,11 +158,11 @@ class _AddGuardianFormState extends State<AddGuardianForm> {
           controller: _phone,
           enabled: !widget.isSubmitting,
           keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(
-            labelText: 'Phone (parent-app sign-in)',
-            hintText: 'e.g. 9990000001',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.addGuardianPhoneLabel,
+            hintText: context.l10n.addGuardianPhoneHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -165,17 +171,17 @@ class _AddGuardianFormState extends State<AddGuardianForm> {
           controller: _email,
           enabled: !widget.isSubmitting,
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
-            labelText: 'Email (optional)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.addGuardianEmailLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
         _RightSwitch(
           fieldKey: const Key('guardian_form_can_view'),
-          title: 'Can see this child',
-          subtitle: 'View the child and their journey in the app',
+          title: context.l10n.addGuardianCanViewTitle,
+          subtitle: context.l10n.addGuardianCanViewSubtitle,
           value: _canView,
           onChanged: widget.isSubmitting
               ? null
@@ -183,8 +189,8 @@ class _AddGuardianFormState extends State<AddGuardianForm> {
         ),
         _RightSwitch(
           fieldKey: const Key('guardian_form_can_notify'),
-          title: 'Receives notifications',
-          subtitle: 'Boarding, arrival, and alert messages',
+          title: context.l10n.addGuardianCanNotifyTitle,
+          subtitle: context.l10n.addGuardianCanNotifySubtitle,
           value: _canReceiveNotifications,
           onChanged: widget.isSubmitting
               ? null
@@ -192,9 +198,8 @@ class _AddGuardianFormState extends State<AddGuardianForm> {
         ),
         _RightSwitch(
           fieldKey: const Key('guardian_form_can_handover'),
-          title: 'Can collect the child',
-          subtitle: 'Authorised to receive the child at the stop — needed before the '
-              'child can be put on a bus',
+          title: context.l10n.addGuardianCanHandoverTitle,
+          subtitle: context.l10n.addGuardianCanHandoverSubtitle,
           value: _canAuthoriseHandover,
           onChanged: widget.isSubmitting
               ? null
@@ -202,8 +207,8 @@ class _AddGuardianFormState extends State<AddGuardianForm> {
         ),
         _RightSwitch(
           fieldKey: const Key('guardian_form_can_absence'),
-          title: 'Can report an absence',
-          subtitle: 'Tell the school the child will not travel',
+          title: context.l10n.addGuardianCanAbsenceTitle,
+          subtitle: context.l10n.addGuardianCanAbsenceSubtitle,
           value: _canDeclareAbsence,
           onChanged: widget.isSubmitting
               ? null
@@ -211,8 +216,8 @@ class _AddGuardianFormState extends State<AddGuardianForm> {
         ),
         _RightSwitch(
           fieldKey: const Key('guardian_form_is_primary'),
-          title: 'Primary contact',
-          subtitle: 'The first person the school reaches',
+          title: context.l10n.addGuardianPrimaryTitle,
+          subtitle: context.l10n.addGuardianPrimarySubtitle,
           value: _isPrimary,
           onChanged: widget.isSubmitting
               ? null
@@ -225,7 +230,7 @@ class _AddGuardianFormState extends State<AddGuardianForm> {
               child: OutlinedButton(
                 key: const Key('guardian_form_cancel_button'),
                 onPressed: widget.isSubmitting ? null : widget.onCancel,
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancelButton),
               ),
             ),
             const SizedBox(width: AdminSpacing.md),
@@ -234,8 +239,10 @@ class _AddGuardianFormState extends State<AddGuardianForm> {
                 key: const Key('guardian_form_submit_button'),
                 onPressed: widget.isSubmitting ? null : _submit,
                 child: widget.isSubmitting
-                    ? const OnboardingButtonSpinner(semanticsLabel: 'Adding')
-                    : const Text('Add parent'),
+                    ? OnboardingButtonSpinner(
+                        semanticsLabel: context.l10n.addGuardianSubmitSpinnerLabel,
+                      )
+                    : Text(context.l10n.addGuardianFormTitle),
               ),
             ),
           ],

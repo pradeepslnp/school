@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/l10n_extensions.dart';
 
 /// The secondary screens a parent reaches from the dashboard.
 ///
@@ -46,7 +47,7 @@ class DashboardQuickActions extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Quick actions',
+            context.l10n.quickActionsTitle,
             style: context.texts.titleMedium
                 ?.copyWith(color: context.colors.onSurfaceVariant),
           ),
@@ -60,13 +61,13 @@ class DashboardQuickActions extends StatelessWidget {
               if (onDeclareAbsence != null)
                 _QuickAction(
                   icon: Icons.event_busy_outlined,
-                  label: 'Declare absence',
+                  label: context.l10n.quickActionDeclareAbsence,
                   onPressed: onDeclareAbsence!,
                 ),
               if (onManagePickupPersons != null)
                 _QuickAction(
                   icon: Icons.how_to_reg_outlined,
-                  label: 'Pickup persons',
+                  label: context.l10n.quickActionPickupPersons,
                   onPressed: onManagePickupPersons!,
                 ),
             ],

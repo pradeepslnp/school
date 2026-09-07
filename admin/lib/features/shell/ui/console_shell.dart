@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/session/session.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../console_destination.dart';
 import '../widgets/account_menu.dart';
 import '../widgets/console_navigation.dart';
+import '../widgets/language_switcher.dart';
 import '../widgets/no_modules_notice.dart';
 
 /// The authenticated console frame: header, navigation, content.
@@ -163,10 +165,12 @@ class _ConsoleHeader extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
           const SizedBox(width: AdminSpacing.sm),
-          Text('Guardian', style: theme.textTheme.titleLarge),
+          Text(context.l10n.consoleHeaderBrand, style: theme.textTheme.titleLarge),
         ],
       ),
       actions: [
+        const LanguageSwitcher(),
+        const SizedBox(width: AdminSpacing.sm),
         AccountMenu(
           user: user,
           onSignOut: onSignOut,
@@ -208,7 +212,7 @@ class _ConsoleDrawer extends StatelessWidget {
             key: Key('admin_drawer_${destination.id}'),
             icon: Icon(destination.icon),
             selectedIcon: Icon(destination.selectedIcon),
-            label: Text(destination.label),
+            label: Text(destination.label(context)),
           ),
       ],
     );

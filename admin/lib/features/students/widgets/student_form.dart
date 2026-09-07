@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../domain/student_models.dart';
 
 /// Enrol or correct a student (STU-001) — one form for both, because the fields are the same
@@ -100,7 +101,7 @@ class _StudentFormState extends State<StudentForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            _isEditing ? 'Edit student' : 'Enrol student',
+            _isEditing ? context.l10n.studentFormEditTitle : context.l10n.studentListEnrolButton,
             style: theme.textTheme.titleLarge,
           ),
           const SizedBox(height: AdminSpacing.lg),
@@ -110,60 +111,65 @@ class _StudentFormState extends State<StudentForm> {
             enabled: !_isEditing,
             textInputAction: TextInputAction.next,
             decoration: InputDecoration(
-              labelText: 'Admission number',
+              labelText: context.l10n.studentFormAdmissionNoLabel,
               helperText: _isEditing
-                  ? 'Cannot be changed — safety records reference it'
-                  : 'The number the school already uses for this student',
+                  ? context.l10n.studentFormAdmissionNoHelperEditing
+                  : context.l10n.studentFormAdmissionNoHelperNew,
               border: const OutlineInputBorder(),
               constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
             ),
-            validator: (value) =>
-                (value == null || value.trim().isEmpty) ? 'Enter an admission number' : null,
+            validator: (value) => (value == null || value.trim().isEmpty)
+                ? context.l10n.studentFormAdmissionNoRequired
+                : null,
           ),
           const SizedBox(height: AdminSpacing.md),
           TextFormField(
             key: const Key('student_form_first_name_field'),
             controller: _firstName,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'First name',
-              border: OutlineInputBorder(),
-              constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+            decoration: InputDecoration(
+              labelText: context.l10n.firstNameLabel,
+              border: const OutlineInputBorder(),
+              constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
             ),
-            validator: (value) =>
-                (value == null || value.trim().isEmpty) ? 'Enter a first name' : null,
+            validator: (value) => (value == null || value.trim().isEmpty)
+                ? context.l10n.studentFormFirstNameRequired
+                : null,
           ),
           const SizedBox(height: AdminSpacing.md),
           TextFormField(
             key: const Key('student_form_last_name_field'),
             controller: _lastName,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'Last name',
-              border: OutlineInputBorder(),
-              constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+            decoration: InputDecoration(
+              labelText: context.l10n.lastNameLabel,
+              border: const OutlineInputBorder(),
+              constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
             ),
-            validator: (value) =>
-                (value == null || value.trim().isEmpty) ? 'Enter a last name' : null,
+            validator: (value) => (value == null || value.trim().isEmpty)
+                ? context.l10n.studentFormLastNameRequired
+                : null,
           ),
           const SizedBox(height: AdminSpacing.md),
           TextFormField(
             key: const Key('student_form_date_of_birth_field'),
             controller: _dateOfBirth,
-            decoration: const InputDecoration(
-              labelText: 'Date of birth',
+            decoration: InputDecoration(
+              labelText: context.l10n.studentFormDateOfBirthLabel,
               // Not decoration: self-release eligibility is decided from it (BR-HAND-005), so
               // the operator should know it is load-bearing before leaving it blank.
-              helperText: 'YYYY-MM-DD — used to decide self-release eligibility',
-              border: OutlineInputBorder(),
-              constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+              helperText: context.l10n.studentFormDateOfBirthHelper,
+              border: const OutlineInputBorder(),
+              constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
             ),
             validator: (value) {
               final text = value?.trim() ?? '';
               if (text.isEmpty) return null;
               final parsed = DateTime.tryParse(text);
-              if (parsed == null) return 'Use the format YYYY-MM-DD';
-              if (!parsed.isBefore(DateTime.now())) return 'Date of birth must be in the past';
+              if (parsed == null) return context.l10n.studentFormDateOfBirthFormatError;
+              if (!parsed.isBefore(DateTime.now())) {
+                return context.l10n.studentFormDateOfBirthPastError;
+              }
               return null;
             },
           ),
@@ -172,10 +178,8 @@ class _StudentFormState extends State<StudentForm> {
             key: const Key('student_form_transport_eligible_switch'),
             value: _transportEligible,
             onChanged: (value) => setState(() => _transportEligible = value),
-            title: const Text('Eligible for transport'),
-            subtitle: const Text(
-              'A student on the roll whose family has opted out stays enrolled but off the bus',
-            ),
+            title: Text(context.l10n.studentFormTransportEligibleTitle),
+            subtitle: Text(context.l10n.studentFormTransportEligibleSubtitle),
             contentPadding: EdgeInsets.zero,
           ),
           const SizedBox(height: AdminSpacing.lg),
@@ -185,13 +189,17 @@ class _StudentFormState extends State<StudentForm> {
               TextButton(
                 key: const Key('student_form_cancel_button'),
                 onPressed: widget.isSubmitting ? null : widget.onCancel,
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancelButton),
               ),
               const SizedBox(width: AdminSpacing.sm),
               FilledButton(
                 key: const Key('student_form_submit_button'),
                 onPressed: widget.isSubmitting ? null : _submit,
-                child: Text(_isEditing ? 'Save changes' : 'Enrol student'),
+                child: Text(
+                  _isEditing
+                      ? context.l10n.commonSaveChangesButton
+                      : context.l10n.studentListEnrolButton,
+                ),
               ),
             ],
           ),

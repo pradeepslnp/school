@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/session/session_manager.dart';
+import '../../../l10n/l10n_extensions.dart';
 
 /// Explains a sign-in screen the driver did not ask for.
 ///
@@ -23,13 +24,12 @@ class SessionEndedNotice extends StatelessWidget {
     final theme = Theme.of(context);
     final palette = context.status;
     final color = palette.warning;
+    final l10n = context.l10n;
 
     final message = switch (reason) {
-      SignOutReason.revokedByServer =>
-        'Your session was ended by the school. Sign in again, or call the '
-            'transport office if this keeps happening.',
-      SignOutReason.refreshFailed =>
-        'Your session expired. Sign in again to keep recording this trip.',
+      SignOutReason.revokedByServer => l10n.sessionEndedRevoked,
+      SignOutReason.refreshFailed => l10n.sessionEndedRefreshFailed,
+      // Unreachable: the early return above handles userRequested before this switch runs.
       SignOutReason.userRequested => '',
     };
 

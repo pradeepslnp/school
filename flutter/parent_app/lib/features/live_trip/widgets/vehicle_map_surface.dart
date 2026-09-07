@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
+import '../../../core/l10n_extensions.dart';
 
 /// Reserves the space P-04's map occupies, without drawing one.
 ///
@@ -47,7 +48,7 @@ class VehicleMapSurface extends StatelessWidget {
                 ),
                 const SizedBox(height: GuardianSpacing.sm),
                 Text(
-                  'Map view',
+                  context.l10n.mapViewLabel,
                   style: context.texts.labelMedium
                       ?.copyWith(color: context.colors.onSurfaceVariant),
                 ),

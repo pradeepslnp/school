@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../login/widgets/sign_in_scaffold.dart';
 import '../bloc/forgot_password_bloc.dart';
 import '../widgets/new_password_form.dart';
@@ -62,10 +63,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Reset your password', style: theme.textTheme.headlineSmall),
+            Text(context.l10n.forgotPasswordTitle, style: theme.textTheme.headlineSmall),
             const SizedBox(height: AdminSpacing.xs),
             Text(
-              'Enter your email and we will send you a 6-digit code to reset your password.',
+              context.l10n.forgotPasswordIntro,
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
@@ -77,15 +78,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               keyboardType: TextInputType.emailAddress,
               autofillHints: const [AutofillHints.email],
               onFieldSubmitted: (_) => _requestCode(context, state.isSubmitting),
-              decoration: const InputDecoration(
-                labelText: 'Email address',
-                border: OutlineInputBorder(),
-                constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+              decoration: InputDecoration(
+                labelText: context.l10n.emailAddressLabel,
+                border: const OutlineInputBorder(),
+                constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
               ),
               validator: (value) {
                 final text = (value ?? '').trim();
                 if (text.isEmpty || !text.contains('@')) {
-                  return 'Enter a valid email address.';
+                  return context.l10n.forgotPasswordEmailValidationError;
                 }
                 return null;
               },
@@ -98,13 +99,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               child: state.isSubmitting
                   ? const SizedBox(
                       height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Send code'),
+                  : Text(context.l10n.forgotPasswordSendCodeButton),
             ),
             if (state.error != null)
               Padding(
                 padding: const EdgeInsets.only(top: AdminSpacing.md),
                 child: Text(
-                  'We could not reach the server. Check your connection and try again.',
+                  context.l10n.authRecoveryErrorApiUnreachable,
                   key: const Key('forgot_password_error'),
                   style: theme.textTheme.bodyMedium?.copyWith(color: context.status.critical),
                 ),
@@ -113,7 +114,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             TextButton(
               key: const Key('forgot_password_back_link'),
               onPressed: widget.onBack,
-              child: const Text('Back to sign in'),
+              child: Text(context.l10n.forgotPasswordBackToSignIn),
             ),
           ],
         ),
@@ -129,11 +130,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Enter your code', style: theme.textTheme.headlineSmall),
+          Text(context.l10n.forgotPasswordEnterCodeTitle, style: theme.textTheme.headlineSmall),
           const SizedBox(height: AdminSpacing.xs),
           Text(
-            'If an account exists for ${state.email}, we’ve emailed a 6-digit code. '
-            'It is valid for 10 minutes. Enter it and choose a new password.',
+            context.l10n.forgotPasswordCodeIntro(state.email),
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: AdminSpacing.lg),
@@ -146,7 +146,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             Padding(
               padding: const EdgeInsets.only(top: AdminSpacing.md),
               child: Text(
-                _codeErrorText(state.error!),
+                _codeErrorText(context, state.error!),
                 key: const Key('reset_error'),
                 style: theme.textTheme.bodyMedium?.copyWith(color: context.status.critical),
               ),
@@ -155,7 +155,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           TextButton(
             key: const Key('reset_back_link'),
             onPressed: widget.onBack,
-            child: const Text('Back to sign in'),
+            child: Text(context.l10n.forgotPasswordBackToSignIn),
           ),
         ],
       ),
@@ -174,41 +174,38 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             children: [
               Icon(Icons.check_circle_outline, color: context.status.safe),
               const SizedBox(width: AdminSpacing.sm),
-              Expanded(child: Text('Password changed', style: theme.textTheme.titleLarge)),
+              Expanded(
+                child: Text(context.l10n.forgotPasswordDoneTitle, style: theme.textTheme.titleLarge),
+              ),
             ],
           ),
           const SizedBox(height: AdminSpacing.sm),
           Text(
-            'Your password has been reset and you’ve been signed out everywhere else. '
-            'Sign in with your new password.',
+            context.l10n.forgotPasswordDoneBody,
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: AdminSpacing.lg),
           FilledButton(
             key: const Key('reset_done_button'),
             onPressed: widget.onBack,
-            child: const Text('Go to sign in'),
+            child: Text(context.l10n.goToSignInButton),
           ),
         ],
       ),
     );
   }
 
-  static String _codeErrorText(ErrorCode code) {
+  static String _codeErrorText(BuildContext context, ErrorCode code) {
+    final l10n = context.l10n;
     return switch (code) {
-      ErrorCode.authOtpExpired =>
-        'That code has expired. Go back and request a new one.',
-      ErrorCode.authOtpAlreadyUsed =>
-        'That code has already been used. Request a new one if you still need to reset.',
-      ErrorCode.authAccountLocked =>
-        'Too many incorrect codes. Please wait 15 minutes and try again.',
-      ErrorCode.authCredentialsInvalid =>
-        'That code is not correct. Check the latest email and try again.',
+      ErrorCode.authOtpExpired => l10n.forgotPasswordErrorOtpExpired,
+      ErrorCode.authOtpAlreadyUsed => l10n.forgotPasswordErrorOtpAlreadyUsed,
+      ErrorCode.authAccountLocked => l10n.forgotPasswordErrorAccountLocked,
+      ErrorCode.authCredentialsInvalid => l10n.forgotPasswordErrorCredentialsInvalid,
       ErrorCode.passwordTooWeak =>
-        'That password is too weak. Use at least $kMinPasswordLength characters and avoid common passwords.',
-      ErrorCode.dependencyUnavailable =>
-        'We could not reach the server. Check your connection and try again.',
-      _ => 'That could not be completed right now. Please try again.',
+        l10n.authRecoveryErrorPasswordTooWeak(kMinPasswordLength),
+      ErrorCode.dependencyUnavailable => l10n.authRecoveryErrorApiUnreachable,
+      _ => l10n.authRecoveryErrorGeneric,
     };
   }
 }
@@ -262,14 +259,14 @@ class _ResetCodeAndPasswordFormState extends State<_ResetCodeAndPasswordForm> {
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(6),
             ],
-            decoration: const InputDecoration(
-              labelText: '6-digit code',
-              border: OutlineInputBorder(),
-              constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+            decoration: InputDecoration(
+              labelText: context.l10n.forgotPasswordCodeFieldLabel,
+              border: const OutlineInputBorder(),
+              constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
             ),
             validator: (value) {
               final text = (value ?? '').trim();
-              if (text.length != 6) return 'Enter the 6-digit code from your email.';
+              if (text.length != 6) return context.l10n.forgotPasswordCodeValidationError;
               return null;
             },
           ),
@@ -281,20 +278,22 @@ class _ResetCodeAndPasswordFormState extends State<_ResetCodeAndPasswordForm> {
             enabled: !widget.isSubmitting,
             autofillHints: const [AutofillHints.newPassword],
             decoration: InputDecoration(
-              labelText: 'New password',
-              helperText: 'At least $kMinPasswordLength characters.',
+              labelText: context.l10n.newPasswordFieldLabel,
+              helperText: context.l10n.newPasswordHelperText(kMinPasswordLength),
               border: const OutlineInputBorder(),
               constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
               suffixIcon: IconButton(
                 key: const Key('reset_password_visibility'),
-                tooltip: _obscure ? 'Show password' : 'Hide password',
+                tooltip: _obscure
+                    ? context.l10n.passwordVisibilityShowTooltip
+                    : context.l10n.passwordVisibilityHideTooltip,
                 icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
             validator: (value) {
               if ((value ?? '').length < kMinPasswordLength) {
-                return 'Use at least $kMinPasswordLength characters.';
+                return context.l10n.passwordValidationTooShort(kMinPasswordLength);
               }
               return null;
             },
@@ -307,13 +306,13 @@ class _ResetCodeAndPasswordFormState extends State<_ResetCodeAndPasswordForm> {
             enabled: !widget.isSubmitting,
             autofillHints: const [AutofillHints.newPassword],
             onFieldSubmitted: (_) => _submit(),
-            decoration: const InputDecoration(
-              labelText: 'Confirm password',
-              border: OutlineInputBorder(),
-              constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+            decoration: InputDecoration(
+              labelText: context.l10n.confirmPasswordFieldLabel,
+              border: const OutlineInputBorder(),
+              constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
             ),
             validator: (value) {
-              if ((value ?? '') != _password.text) return 'The two passwords do not match.';
+              if ((value ?? '') != _password.text) return context.l10n.passwordMismatchError;
               return null;
             },
           ),
@@ -324,7 +323,7 @@ class _ResetCodeAndPasswordFormState extends State<_ResetCodeAndPasswordForm> {
             child: widget.isSubmitting
                 ? const SizedBox(
                     height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Reset password'),
+                : Text(context.l10n.resetPasswordSubmitButton),
           ),
         ],
       ),

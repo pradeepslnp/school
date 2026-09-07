@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 
 /// The minimum password length, mirroring the server's {@code PasswordPolicy} (BR-IAM-013). An
 /// affordance only — the server is what enforces it, and it also screens common passwords the
@@ -61,13 +62,15 @@ class _NewPasswordFormState extends State<NewPasswordForm> {
             enabled: !widget.isSubmitting,
             autofillHints: const [AutofillHints.newPassword],
             decoration: InputDecoration(
-              labelText: 'New password',
-              helperText: 'At least $kMinPasswordLength characters.',
+              labelText: context.l10n.newPasswordFieldLabel,
+              helperText: context.l10n.newPasswordHelperText(kMinPasswordLength),
               border: const OutlineInputBorder(),
               constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
               suffixIcon: IconButton(
                 key: const Key('new_password_visibility'),
-                tooltip: _obscure ? 'Show password' : 'Hide password',
+                tooltip: _obscure
+                    ? context.l10n.passwordVisibilityShowTooltip
+                    : context.l10n.passwordVisibilityHideTooltip,
                 icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
@@ -75,7 +78,7 @@ class _NewPasswordFormState extends State<NewPasswordForm> {
             validator: (value) {
               final text = value ?? '';
               if (text.length < kMinPasswordLength) {
-                return 'Use at least $kMinPasswordLength characters.';
+                return context.l10n.passwordValidationTooShort(kMinPasswordLength);
               }
               return null;
             },
@@ -88,14 +91,14 @@ class _NewPasswordFormState extends State<NewPasswordForm> {
             enabled: !widget.isSubmitting,
             autofillHints: const [AutofillHints.newPassword],
             onFieldSubmitted: (_) => _submit(),
-            decoration: const InputDecoration(
-              labelText: 'Confirm password',
-              border: OutlineInputBorder(),
-              constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+            decoration: InputDecoration(
+              labelText: context.l10n.confirmPasswordFieldLabel,
+              border: const OutlineInputBorder(),
+              constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
             ),
             validator: (value) {
               if ((value ?? '') != _password.text) {
-                return 'The two passwords do not match.';
+                return context.l10n.passwordMismatchError;
               }
               return null;
             },

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../core/network/rest_client.dart';
 import '../bloc/notifications_bloc.dart';
 import '../data_provider/notifications_data_provider.dart';
@@ -59,7 +60,7 @@ class _NotificationsView extends StatelessWidget {
           items: state.items,
           isLoading: state.isLoading,
           loadFailure: state.showsFailureInsteadOfContent
-              ? _failureText(state)
+              ? _failureText(context, state)
               : null,
           onRefresh: () async =>
               context.read<NotificationsBloc>().add(const NotificationsRefreshed()),
@@ -71,14 +72,12 @@ class _NotificationsView extends StatelessWidget {
   }
 
   /// Plain language describing the situation, never a code (docs/05-ui/ACCESSIBILITY.md).
-  static String _failureText(NotificationsState state) {
+  static String _failureText(BuildContext context, NotificationsState state) {
+    final l10n = context.l10n;
     return switch (state.failure?.code) {
-      ErrorCode.dependencyUnavailable =>
-        'Your device cannot reach the school right now. '
-            'Check your connection and try again.',
-      ErrorCode.rateLimitExceeded =>
-        'Too many attempts just now. Wait a moment and try again.',
-      _ => 'Something went wrong loading your notifications. Please try again.',
+      ErrorCode.dependencyUnavailable => l10n.errorDependencyUnavailable,
+      ErrorCode.rateLimitExceeded => l10n.errorRateLimited,
+      _ => l10n.notificationsGenericFailure,
     };
   }
 }

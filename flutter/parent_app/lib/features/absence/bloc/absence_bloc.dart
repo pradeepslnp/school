@@ -92,7 +92,7 @@ class AbsenceBloc extends Bloc<AbsenceEvent, AbsenceState> {
           state.copyWith(
             isSubmitting: false,
             reason: '',
-            confirmation: _confirmationText(child, value),
+            confirmation: _buildConfirmation(child, value),
             upcoming: [...state.upcoming, value]..sort(
                 (a, b) => a.fromDate.compareTo(b.fromDate),
               ),
@@ -156,28 +156,14 @@ class AbsenceBloc extends Bloc<AbsenceEvent, AbsenceState> {
     }
   }
 
-  static String _confirmationText(ChildOption child, Absence absence) {
-    final journey = switch (absence.direction) {
-      AbsenceDirection.both => '',
-      AbsenceDirection.morningOnly => ' in the morning',
-      AbsenceDirection.afternoonOnly => ' in the afternoon',
-    };
-    final sameDay = absence.fromDate.year == absence.toDate.year &&
-        absence.fromDate.month == absence.toDate.month &&
-        absence.fromDate.day == absence.toDate.day;
-    final when = sameDay
-        ? _relativeDay(absence.fromDate)
-        : 'from ${_relativeDay(absence.fromDate)} to ${_relativeDay(absence.toDate)}';
-
-    return '${child.displayName} will not be expected $when$journey.';
-  }
-
-  static String _relativeDay(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final diff = DateTime(date.year, date.month, date.day).difference(today).inDays;
-    if (diff == 0) return 'today';
-    if (diff == 1) return 'tomorrow';
-    return '${date.day}/${date.month}/${date.year}';
+  /// Carries the facts of the declaration; [_ConfirmationBanner] renders them through
+  /// `context.l10n` (ADR-0013) — this bloc has no [BuildContext] to do that itself.
+  static AbsenceConfirmation _buildConfirmation(ChildOption child, Absence absence) {
+    return AbsenceConfirmation(
+      childName: child.displayName,
+      direction: absence.direction,
+      fromDate: absence.fromDate,
+      toDate: absence.toDate,
+    );
   }
 }

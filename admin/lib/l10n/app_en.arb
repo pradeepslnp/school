@@ -1,0 +1,512 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Guardian Admin",
+  "@appTitle": {
+    "description": "Browser tab / window title for the console (MaterialApp.title)."
+  },
+
+  "consoleHeaderBrand": "Guardian",
+  "@consoleHeaderBrand": {
+    "description": "Product mark text in the console header, next to the shield icon."
+  },
+
+  "consoleDestinationOrganizations": "Organizations",
+  "consoleDestinationSchool": "School",
+  "consoleDestinationStudents": "Students",
+  "consoleDestinationDrivers": "Drivers",
+  "consoleDestinationVehicles": "Vehicles",
+  "consoleDestinationRoutes": "Routes",
+  "consoleDestinationUsers": "Users",
+  "consoleDestinationRoles": "Roles",
+  "consoleDestinationPlatformHealth": "Platform health",
+  "consoleDestinationAuditTrail": "Audit trail",
+  "@consoleDestinationAuditTrail": {
+    "description": "Nav labels for ConsoleDestinations.all (side rail / drawer / narrow-layout menu)."
+  },
+
+  "accountMenuSignOut": "Sign out",
+  "accountMenuSigningOut": "Signing out…",
+
+  "noModulesNoticeTitle": "No console modules in this build",
+  "noModulesNoticeBody": "You are signed in. The operations dashboard, alert inbox, and administration screens are not part of this build yet.",
+
+  "bootSplashLoadingLabel": "Loading the console",
+
+  "languageSwitcherTooltip": "Change language",
+  "languageNameEnglish": "English",
+  "languageNameKannada": "ಕನ್ನಡ",
+  "@languageNameKannada": {
+    "description": "Language endonyms shown in the language picker itself — intentionally identical in app_en.arb and app_kn.arb; see TRANSLATION_STATUS.md."
+  },
+
+  "roleNameSuperAdmin": "Super Admin",
+  "roleNameOrgAdmin": "Organization Admin",
+  "roleNameSchoolAdmin": "School Admin",
+  "roleNamePrincipal": "Principal",
+  "roleNameTransportManager": "Transport Manager",
+  "roleNameVendorStaff": "Vendor Staff",
+  "roleNameDriver": "Driver",
+  "roleNameAttendant": "Attendant",
+  "roleNameGuardian": "Guardian",
+
+  "roleShortSuperAdmin": "Super\nAdmin",
+  "roleShortOrgAdmin": "Org\nAdmin",
+  "roleShortSchoolAdmin": "School\nAdmin",
+  "roleShortPrincipal": "Principal",
+  "roleShortTransportManager": "Transport\nMgr",
+  "roleShortVendorStaff": "Vendor\nStaff",
+  "roleShortDriver": "Driver",
+  "roleShortAttendant": "Attendant",
+  "roleShortGuardian": "Guardian",
+  "@roleShortGuardian": {
+    "description": "Narrow column headers for the Roles & Permissions matrix table; may contain an embedded line break."
+  },
+
+  "permCategoryTenancyConfig": "Tenancy & Configuration",
+  "permCategoryIdentityAccess": "Identity & Access",
+  "permCategoryStudentsGuardians": "Students & Guardians",
+  "permCategoryFleetStaff": "Fleet & Staff",
+  "permCategoryRoutesTrips": "Routes & Trips",
+  "permCategoryBoardingHandover": "Boarding & Handover",
+  "permCategoryTrackingAlertsIncidents": "Tracking, Alerts, Incidents",
+  "permCategoryAbsenceNotificationReportingAudit": "Absence, Notification, Reporting, Audit",
+  "permCategoryPlatformOperations": "Platform Operations",
+
+  "permNoteConfigSafetyEdit": "Governs safety-relevant thresholds; bounded by platform floors (BR-CFG-003).",
+  "permNoteStudentView": "Non-admin roles see only the current trip manifest or their own children (BR-IAM-005); non-guardian access is logged (BR-IAM-012).",
+  "permNotePickupPersonManage": "A guardian's grant requires the \"authorise handover\" right on the relationship (BR-GRD-006).",
+  "permNoteHandoverCodeRequest": "Requires \"can_authorise_handover\" on the relationship (BR-GRD-006); redemption at the vehicle is the separate attendant-side flow (BR-HAND-001–007).",
+  "permNoteTripView": "A guardian's grant is limited to trips carrying one of their children (BR-TRACK-002).",
+  "permNoteBoardingCorrect": "Override-capable; always audited with a reason (BR-AUD-004).",
+  "permNoteBoardingOverride": "Override-capable; always audited with a reason (BR-AUD-004).",
+  "permNoteHandoverOverride": "Notifies all guardians and the transport manager (BR-HAND-003); always audited with a reason (BR-AUD-004).",
+  "permNoteReconciliationResolve": "Override-capable; always audited with a reason (BR-AUD-004).",
+  "permNoteIncidentView": "A guardian's grant is limited to incidents affecting their own child (BR-INC-004, BR-NTF-007).",
+  "permNoteAbsenceDeclare": "A guardian's grant requires the \"declare absence\" right (BR-ABS-001).",
+  "permNoteNotificationSelfView": "Everyone, scoped to their own notifications only — never a route to another family's child (BR-NTF-007).",
+  "permNoteDataExport": "Always audited with actor, scope, and record count (BR-RPT-002).",
+  "permNotePlatformTenantAccess": "The only path across the tenant boundary (BR-TEN-004); every use is audited with the target organization and justification (AUD-004).",
+
+  "roleReferenceTitle": "Roles & permissions",
+  "roleReferenceDescription": "What each system role can do, straight from the permission matrix this platform enforces server-side on every request. Reference only — roles cannot be edited here yet.",
+  "roleReferenceSearchLabel": "Search",
+  "roleReferenceSearchHint": "Filter by permission ID or category",
+  "roleReferenceClearSearchTooltip": "Clear search",
+  "roleReferenceRoleFilterLabel": "Role",
+  "roleReferenceEveryRoleOption": "Every role",
+  "roleReferenceNoResults": "No permission matches this search.",
+  "roleReferenceGrantNarrowerTooltip": "Granted, narrowed to a smaller scope than this role normally has",
+
+  "errorValidationRequiredField": "Fill in every required field.",
+  "errorValidationCheckDetails": "Check the details you entered.",
+  "errorApiUnreachable": "The Guardian API could not be reached. Check your connection, then try again.",
+  "errorSessionEnded": "That session has ended. Sign in again.",
+  "errorGenericRetryShortly": "That could not be saved right now. Try again shortly.",
+  "@errorGenericRetryShortly": {
+    "description": "Shared ErrorCode-to-copy fallbacks reused by OnboardingErrorText, StudentErrorText, and similar widgets — kept as one key per distinct message rather than duplicated per feature."
+  },
+
+  "onboardingErrorOrgCodeExists": "That organization code is already in use. Choose another — codes cannot be changed once operational data exists (BR-TEN-007).",
+  "onboardingErrorSchoolCodeExists": "That school code is already used within this organization. Choose another.",
+  "onboardingErrorStaffEmployeeCodeExists": "That employee code is already used at this school. Choose another.",
+  "onboardingErrorPermissionDenied": "Your account does not have permission to create organizations.",
+
+  "studentErrorAdmissionNoExists": "That admission number is already used at this school. Check whether the student is already enrolled before creating a second record for them.",
+  "studentErrorNotFound": "That student could not be found. They may have been moved to another school.",
+  "studentErrorNotActive": "That student is not on the active roll, so they cannot be assigned to transport.",
+  "studentErrorPermissionDenied": "Your account does not have permission to manage students.",
+  "studentErrorScopeDenied": "That student is outside the schools your account covers.",
+
+  "loginErrorCredentialsInvalid": "Those details were not recognised. Check the email address and password.",
+  "loginErrorAccountLocked": "This account is locked after too many failed attempts. Contact your platform administrator to unlock it.",
+  "loginErrorRateLimitExceeded": "Too many sign-in attempts. Wait a minute, then try again.",
+  "loginErrorValidationRequiredField": "Enter both your email address and your password.",
+  "loginErrorGenericFailure": "Sign-in is not working right now. Contact your platform administrator.",
+
+  "schoolScopeOrganizationLabel": "Organization",
+  "schoolScopeLoadingHint": "Loading…",
+  "schoolScopeSelectOrganizationHint": "Select an organization",
+  "schoolScopeLabel": "School",
+  "schoolScopeSelectOrganizationFirstHint": "Select an organization first",
+  "schoolScopeSelectSchoolHint": "Select a school",
+  "schoolScopeLoadError": "Could not load your organizations or schools.",
+
+  "commonCancelButton": "Cancel",
+  "commonSaveButton": "Save",
+  "commonCloseButton": "Close",
+  "commonRetryButton": "Retry",
+  "commonAddButton": "Add",
+  "commonDoneButton": "Done",
+  "@commonDoneButton": {
+    "description": "Generic action-button labels reused verbatim across many forms/dialogs — one key per label rather than one per call site."
+  },
+
+  "schoolSettingsScreenTitle": "School",
+
+  "loginSessionEndedRevoked": "Your session was ended by the platform. This happens when an account is deactivated or a session is revoked.",
+  "loginSessionEndedRefreshFailed": "Your session expired and could not be renewed. Sign in to continue.",
+  "loginSignInLabel": "Sign in",
+  "loginFormSubtitle": "Guardian administration console",
+  "loginPasswordLabel": "Password",
+  "loginSubmittingSpinnerLabel": "Signing in",
+  "loginForgotPasswordLink": "Forgot password?",
+
+  "emailAddressLabel": "Email address",
+  "passwordVisibilityShowTooltip": "Show password",
+  "passwordVisibilityHideTooltip": "Hide password",
+  "@passwordVisibilityHideTooltip": {
+    "description": "Shared across every password field in the console (sign-in, accept-invitation, reset) — reused by key rather than duplicated per feature."
+  },
+  "confirmPasswordFieldLabel": "Confirm password",
+  "passwordMismatchError": "The two passwords do not match.",
+  "passwordValidationTooShort": "Use at least {minLength} characters.",
+  "@passwordValidationTooShort": {
+    "placeholders": { "minLength": { "type": "int" } }
+  },
+  "goToSignInButton": "Go to sign in",
+
+  "acceptInvitationTitle": "Set your password",
+  "acceptInvitationIntro": "Choose a password to activate your account and sign in.",
+  "acceptInvitationSubmitLabel": "Activate account",
+  "acceptInvitationDoneTitle": "Account activated",
+  "acceptInvitationDoneBody": "You can now sign in with your email address and new password.",
+
+  "setPasswordErrorLinkExpired": "This link has expired. Ask an administrator to send you a new one.",
+  "setPasswordErrorLinkAlreadyUsed": "This link has already been used. If you have set your password, just sign in.",
+  "setPasswordErrorLinkInvalid": "This link is not valid. Check you opened the most recent email, or ask for a new link.",
+
+  "authRecoveryErrorPasswordTooWeak": "That password is too weak. Use at least {minLength} characters and avoid common passwords.",
+  "@authRecoveryErrorPasswordTooWeak": {
+    "placeholders": { "minLength": { "type": "int" } }
+  },
+  "authRecoveryErrorApiUnreachable": "We could not reach the server. Check your connection and try again.",
+  "authRecoveryErrorGeneric": "That could not be completed right now. Please try again.",
+
+  "newPasswordFieldLabel": "New password",
+  "newPasswordHelperText": "At least {minLength} characters.",
+  "@newPasswordHelperText": {
+    "placeholders": { "minLength": { "type": "int" } }
+  },
+
+  "forgotPasswordTitle": "Reset your password",
+  "forgotPasswordIntro": "Enter your email and we will send you a 6-digit code to reset your password.",
+  "forgotPasswordEmailValidationError": "Enter a valid email address.",
+  "forgotPasswordSendCodeButton": "Send code",
+  "forgotPasswordBackToSignIn": "Back to sign in",
+  "forgotPasswordEnterCodeTitle": "Enter your code",
+  "forgotPasswordCodeIntro": "If an account exists for {email}, we’ve emailed a 6-digit code. It is valid for 10 minutes. Enter it and choose a new password.",
+  "@forgotPasswordCodeIntro": {
+    "placeholders": { "email": { "type": "String" } }
+  },
+  "forgotPasswordCodeFieldLabel": "6-digit code",
+  "forgotPasswordCodeValidationError": "Enter the 6-digit code from your email.",
+  "forgotPasswordDoneTitle": "Password changed",
+  "forgotPasswordDoneBody": "Your password has been reset and you’ve been signed out everywhere else. Sign in with your new password.",
+  "resetPasswordSubmitButton": "Reset password",
+
+  "forgotPasswordErrorOtpExpired": "That code has expired. Go back and request a new one.",
+  "forgotPasswordErrorOtpAlreadyUsed": "That code has already been used. Request a new one if you still need to reset.",
+  "forgotPasswordErrorAccountLocked": "Too many incorrect codes. Please wait 15 minutes and try again.",
+  "forgotPasswordErrorCredentialsInvalid": "That code is not correct. Check the latest email and try again.",
+
+  "guardianRelationshipMother": "Mother",
+  "guardianRelationshipFather": "Father",
+  "guardianRelationshipGuardian": "Guardian",
+  "guardianRelationshipGrandparent": "Grandparent",
+  "guardianRelationshipAuntUncle": "Aunt / Uncle",
+  "guardianRelationshipOther": "Other",
+  "@guardianRelationshipOther": {
+    "description": "Shared by GuardianTile and AddGuardianForm — both mapped the same relationship codes independently before ADR-0013."
+  },
+
+  "guardianTilePrimaryChip": "Primary",
+  "guardianTileCanCollectChip": "Can collect",
+  "guardianTileCannotCollectChip": "Cannot collect",
+  "guardianTileNotifiedChip": "Notified",
+  "guardianTileCanReportAbsenceChip": "Can report absence",
+  "guardianTileCanSignInChip": "Can sign in",
+  "guardianTileNoSignInYetChip": "No sign-in yet",
+  "guardianTileRelationshipAndPhone": "{relationship} · {phone}",
+  "@guardianTileRelationshipAndPhone": {
+    "placeholders": { "relationship": { "type": "String" }, "phone": { "type": "String" } }
+  },
+
+  "addGuardianFormTitle": "Add parent",
+  "addGuardianFormIntro": "The phone number becomes their sign-in straight away — they open the parent app, enter their number, and get a one-time code. Enter it carefully.",
+  "addGuardianRelationshipLabel": "Relationship",
+  "addGuardianFirstNameLabel": "First name",
+  "addGuardianLastNameLabel": "Last name",
+  "addGuardianPhoneLabel": "Phone (parent-app sign-in)",
+  "addGuardianPhoneHint": "e.g. 9990000001",
+  "addGuardianEmailLabel": "Email (optional)",
+  "addGuardianCanViewTitle": "Can see this child",
+  "addGuardianCanViewSubtitle": "View the child and their journey in the app",
+  "addGuardianCanNotifyTitle": "Receives notifications",
+  "addGuardianCanNotifySubtitle": "Boarding, arrival, and alert messages",
+  "addGuardianCanHandoverTitle": "Can collect the child",
+  "addGuardianCanHandoverSubtitle": "Authorised to receive the child at the stop — needed before the child can be put on a bus",
+  "addGuardianCanAbsenceTitle": "Can report an absence",
+  "addGuardianCanAbsenceSubtitle": "Tell the school the child will not travel",
+  "addGuardianPrimaryTitle": "Primary contact",
+  "addGuardianPrimarySubtitle": "The first person the school reaches",
+  "addGuardianSubmitSpinnerLabel": "Adding",
+
+  "assignRouteTitlePickup": "Set pickup",
+  "assignRouteTitleDrop": "Set drop",
+  "assignRoutePickupSubtitle": "Where this child is picked up in the morning.",
+  "assignRouteDropSubtitle": "Where this child is dropped in the afternoon.",
+  "assignRouteFieldLabel": "Route",
+  "assignRouteNoRoutesHint": "No routes on this school yet",
+  "assignRouteSelectRouteHint": "Select a route",
+  "assignRouteNameAndCode": "{name} · {code}",
+  "@assignRouteNameAndCode": {
+    "placeholders": { "name": { "type": "String" }, "code": { "type": "String" } }
+  },
+  "assignStopFieldLabel": "Stop",
+  "assignRouteStopsLoadError": "Could not load this route's stops. Try again.",
+  "assignRouteStopHintSelectRouteFirst": "Select a route first",
+  "assignRouteStopHintLoading": "Loading stops…",
+  "assignRouteStopHintNoStops": "This route has no stops yet",
+  "assignRouteStopHintSelectStop": "Select a stop",
+  "assignRouteSavingSpinnerLabel": "Saving",
+
+  "platformHealthTitle": "Platform health",
+  "platformHealthRefreshButton": "Refresh",
+  "platformHealthIntro": "A quick pulse check — whether the platform is reachable, and how many organizations are on it. Not a full monitoring dashboard.",
+  "platformHealthCheckingLabel": "Checking platform health",
+  "platformHealthOrganizationsHeading": "Organizations on the platform",
+  "platformHealthCheckedAt": "Checked {relativeTime}",
+  "@platformHealthCheckedAt": {
+    "placeholders": { "relativeTime": { "type": "String" } }
+  },
+  "platformHealthJustNow": "just now",
+  "platformHealthSecondsAgo": "{seconds, plural, =1{1 second ago} other{{seconds} seconds ago}}",
+  "@platformHealthSecondsAgo": {
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "platformHealthMinutesAgo": "{minutes, plural, =1{1 minute ago} other{{minutes} minutes ago}}",
+  "@platformHealthMinutesAgo": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "platformHealthHoursAgo": "{hours, plural, =1{1 hour ago} other{{hours} hours ago}}",
+  "@platformHealthHoursAgo": {
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "platformHealthReachableTitle": "Platform is reachable",
+  "platformHealthDegradedTitle": "Could not confirm platform health",
+  "platformHealthReachableBody": "The last check reached the database without issue.",
+  "platformHealthDegradedBody": "The last check could not read organization data. This can be transient — try refreshing in a moment. If it keeps failing, that's worth escalating.",
+  "platformHealthCountTotal": "Total",
+  "platformHealthCountActive": "Active",
+  "platformHealthCountSuspended": "Suspended",
+  "platformHealthCountClosed": "Closed",
+
+  "auditTrailTitle": "Audit trail",
+  "auditScopeAllActivity": "All activity",
+  "auditScopeOverrides": "Overrides",
+  "auditOverridesDescription": "Actions taken with an override reason — a person overrode a safety check and said why.",
+  "auditAllActivityDescription": "Every safety-relevant action, most recent first. Records cannot be edited or removed.",
+  "auditLoadingLabel": "Loading audit trail",
+  "auditLoadError": "The audit trail could not be loaded right now. Try again.",
+  "auditNoOverridesEmptyState": "No overrides recorded. That is the healthy state.",
+  "auditNoActivityEmptyState": "No activity recorded yet.",
+  "auditReasonPrefix": "Reason: {reason}",
+  "@auditReasonPrefix": {
+    "placeholders": { "reason": { "type": "String" } }
+  },
+  "auditOverrideBadge": "Override",
+
+  "errorGenericLoadRetry": "That could not be loaded right now. Try again.",
+  "pickSchoolFirstTooltip": "Pick a school first",
+
+  "vehicleListTitle": "Vehicles",
+  "vehicleListLoadingLabel": "Loading fleet",
+  "vehicleListEmptyState": "No fleet loaded. Pick a school above, or add the first vehicle.",
+  "vehicleListRowSubtitle": "{registrationNo} · {vehicleType} · {seats} seats",
+  "@vehicleListRowSubtitle": {
+    "placeholders": {
+      "registrationNo": { "type": "String" },
+      "vehicleType": { "type": "String" },
+      "seats": { "type": "int" }
+    }
+  },
+  "vehicleListAddButton": "Add vehicle",
+
+  "commonAddingSpinnerLabel": "Adding",
+
+  "createVehicleFormIntro": "The display name is what parents see in notifications — \"Bus 12\", not the plate number. Added to the school you have selected above.",
+  "vehicleTypeBus": "Bus",
+  "vehicleTypeVan": "Van",
+  "vehicleTypeMinibus": "Minibus",
+  "createVehicleRegistrationNoLabel": "Registration number",
+  "createVehicleRegistrationNoHint": "e.g. DL1PC1234",
+  "createVehicleDisplayNameLabel": "Display name",
+  "createVehicleDisplayNameHint": "e.g. Bus 12",
+  "createVehicleSeatingCapacityLabel": "Seating capacity",
+  "createVehicleVendorNameLabel": "Vendor name (optional, for outsourced fleets)",
+
+  "commonSearchLabel": "Search",
+  "commonClearSearchTooltip": "Clear search",
+
+  "staffListTitle": "Drivers",
+  "staffListSearchHint": "Filter by name, phone, or employee code",
+  "staffListLoadingLabel": "Loading roster",
+  "staffListEmptyState": "No roster loaded. Pick a school above, or add the first driver.",
+  "staffListSearchNoMatches": "No one on this roster matches \"{query}\".",
+  "@staffListSearchNoMatches": {
+    "placeholders": { "query": { "type": "String" } }
+  },
+  "staffListRowSubtitle": "{staffType} · {phone}",
+  "@staffListRowSubtitle": {
+    "placeholders": { "staffType": { "type": "String" }, "phone": { "type": "String" } }
+  },
+  "staffListHasLoginTooltip": "Can sign in to the driver app",
+  "staffListNoLoginTooltip": "No driver-app sign-in yet",
+  "staffListAddButton": "Add driver",
+
+  "firstNameLabel": "First name",
+  "lastNameLabel": "Last name",
+  "commonSavingSpinnerLabel": "Saving",
+  "commonSaveChangesButton": "Save changes",
+
+  "createStaffFormTitle": "Add driver or attendant",
+  "createStaffFormIntro": "Creates the roster record and a working driver-app sign-in in one step — the phone number below is what they sign in with (phone + one-time code). Added to the school you have selected above.",
+  "staffTypeDriver": "Driver",
+  "staffTypeAttendant": "Attendant",
+  "staffPhoneLabel": "Phone (driver-app sign-in)",
+  "staffPhoneHint": "e.g. 9990000001",
+  "staffEmployeeCodeLabel": "Employee code (optional)",
+  "staffVendorNameLabel": "Vendor name (optional, for contracted staff)",
+
+  "editStaffTitle": "Edit {name}",
+  "@editStaffTitle": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+
+  "studentListTitle": "Students",
+  "studentListSearchHint": "Filter loaded students by name or admission number",
+  "studentWithdrawConfirmTitle": "Withdraw student?",
+  "studentWithdrawConfirmBody": "{name} ({admissionNo}) will be taken off the roll and removed from transport.\n\nTheir record is kept — safety records reference it — and can still be read.",
+  "@studentWithdrawConfirmBody": {
+    "description": "Safety-relevant: confirms removing a student from transport eligibility.",
+    "placeholders": { "name": { "type": "String" }, "admissionNo": { "type": "String" } }
+  },
+  "studentWithdrawConfirmButton": "Withdraw",
+  "studentListLoadingLabel": "Loading register",
+  "studentListEmptyState": "No register loaded. Pick a school above, or enrol the first student.",
+  "studentListNoMatchWithMore": "No loaded student matches that. Scroll to load more of the register, then search again.",
+  "studentListNoMatch": "No student matches that.",
+  "studentListLoadingMoreLabel": "Loading more students",
+  "studentListCount": "{count, plural, =1{1 student} other{{count} students}}",
+  "@studentListCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "studentListEnrolButton": "Enrol student",
+  "studentListEditTooltip": "Edit {name}",
+  "@studentListEditTooltip": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "studentListWithdrawTooltip": "Withdraw {name}",
+  "@studentListWithdrawTooltip": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "studentStatusWithdrawn": "Withdrawn",
+  "studentStatusOnRollNoTransport": "On roll · not using transport",
+  "studentStatusOnRollTransport": "On roll · transport",
+  "studentListRowSubtitle": "{admissionNo} · {status}",
+  "@studentListRowSubtitle": {
+    "placeholders": { "admissionNo": { "type": "String" }, "status": { "type": "String" } }
+  },
+
+  "studentFormEditTitle": "Edit student",
+  "studentFormAdmissionNoLabel": "Admission number",
+  "studentFormAdmissionNoHelperEditing": "Cannot be changed — safety records reference it",
+  "studentFormAdmissionNoHelperNew": "The number the school already uses for this student",
+  "studentFormAdmissionNoRequired": "Enter an admission number",
+  "studentFormFirstNameRequired": "Enter a first name",
+  "studentFormLastNameRequired": "Enter a last name",
+  "studentFormDateOfBirthLabel": "Date of birth",
+  "studentFormDateOfBirthHelper": "YYYY-MM-DD — used to decide self-release eligibility",
+  "studentFormDateOfBirthFormatError": "Use the format YYYY-MM-DD",
+  "studentFormDateOfBirthPastError": "Date of birth must be in the past",
+  "studentFormTransportEligibleTitle": "Eligible for transport",
+  "studentFormTransportEligibleSubtitle": "A student on the roll whose family has opted out stays enrolled but off the bus",
+
+  "studentDetailAdmissionLine": "Admission {admissionNo}",
+  "@studentDetailAdmissionLine": {
+    "placeholders": { "admissionNo": { "type": "String" } }
+  },
+  "studentDetailDobLine": "Date of birth {date}",
+  "@studentDetailDobLine": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "studentDetailStatusOnRollTransport": "On roll · using transport",
+  "studentDetailParentsTitle": "Parents",
+  "studentDetailLoadingParentsLabel": "Loading parents",
+  "studentDetailNoParentsEmptyState": "No parents yet. Add one so they can see this child and be reached — and so the child can be assigned to a bus.",
+  "studentDetailNoHandoverGuardianWarning": "No parent here can collect the child yet — turn on \"Can collect the child\" for at least one before assigning a bus.",
+  "@studentDetailNoHandoverGuardianWarning": {
+    "description": "Safety-relevant: warns that no guardian is authorised to collect the child before a bus assignment is made."
+  },
+  "studentDetailPickupDropTitle": "Pickup & drop",
+  "studentDetailLoadingAssignmentsLabel": "Loading assignments",
+  "studentDetailDirectionPickup": "Pickup",
+  "studentDetailDirectionDrop": "Drop",
+  "studentDetailAssignmentSummary": "{routeName} · {routeCode} → {stopName}",
+  "@studentDetailAssignmentSummary": {
+    "placeholders": {
+      "routeName": { "type": "String" },
+      "routeCode": { "type": "String" },
+      "stopName": { "type": "String" }
+    }
+  },
+  "studentDetailAssignmentNotSet": "Not set",
+  "studentDetailRemoveAssignment": "Remove {label}",
+  "@studentDetailRemoveAssignment": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+  "studentDetailChangeButton": "Change",
+  "studentDetailSetButton": "Set",
+
+  "studentAssignErrorNoActiveGuardian": "Add a parent who can collect this child (turn on \"Can collect the child\") before assigning a bus.",
+  "@studentAssignErrorNoActiveGuardian": {
+    "description": "Safety-relevant: blocks a bus assignment until a guardian is authorised to collect the child."
+  },
+  "studentAssignErrorAlreadyAssigned": "This child already has that assignment — remove the current one first.",
+  "studentAssignErrorApiUnreachable": "The service is unreachable right now. Try again.",
+  "studentAssignErrorGeneric": "That could not be saved right now. Try again.",
+
+  "userListTitle": "Users",
+  "userListAddButton": "Add administrator",
+  "userListSearchHint": "Filter by name, email, or role",
+  "userListLoadingLabel": "Loading users",
+  "userListPickOrgPrompt": "Pick an organization above to see its administrators.",
+  "userListEmptyState": "No administrators yet. Add the first one above.",
+  "userListNoSearchMatches": "No one matches \"{query}\".",
+  "@userListNoSearchMatches": {
+    "placeholders": { "query": { "type": "String" } }
+  },
+  "userToggleReactivateTitle": "Reactivate {name}?",
+  "@userToggleReactivateTitle": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "userToggleDeactivateTitle": "Deactivate {name}?",
+  "@userToggleDeactivateTitle": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "userToggleReactivateBody": "They will be able to sign in again.",
+  "userToggleDeactivateBody": "They will no longer be able to sign in. This can be reversed at any time.",
+  "userToggleReactivateButton": "Reactivate",
+  "userToggleDeactivateButton": "Deactivate",
+  "userStatusActive": "Active",
+  "userStatusPending": "Pending",
+  "userStatusInactive": "Inactive",
+  "userListRowSubtitle": "{email} · {role}",
+  "@userListRowSubtitle": {
+    "placeholders": { "email": { "type": "String" }, "role": { "type": "String" } }
+  },
+  "userMoreActionsTooltip": "More actions",
+  "userResendInvitationLabel": "Resend invitation",
+  "userSendResetCodeLabel": "Send reset code"
+}

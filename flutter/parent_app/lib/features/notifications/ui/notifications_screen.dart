@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' as intl;
 
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../utils/utils.dart';
 import '../repository/models/notification_item.dart';
 import '../widgets/notification_tile.dart';
@@ -29,7 +31,7 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: AppBar(title: Text(context.l10n.notificationsAppBarTitle)),
       body: SafeArea(child: _body(context)),
     );
   }
@@ -42,17 +44,17 @@ class NotificationsScreen extends StatelessWidget {
     if (loadFailure != null && items.isEmpty) {
       return _Message(
         icon: Icons.cloud_off,
-        title: 'Cannot load notifications right now',
+        title: context.l10n.notificationsLoadFailureTitle,
         detail: loadFailure!,
         onRetry: onRefresh,
       );
     }
 
     if (items.isEmpty) {
-      return const _Message(
+      return _Message(
         icon: Icons.notifications_none,
-        title: 'No notifications yet',
-        detail: "You'll see updates about your children here.",
+        title: context.l10n.notificationsEmptyTitle,
+        detail: context.l10n.notificationsEmptyDetail,
       );
     }
 
@@ -71,7 +73,7 @@ class NotificationsScreen extends StatelessWidget {
                   GuardianSpacing.md,
                   GuardianSpacing.xs,
                 ),
-                child: Text(_dayLabel(day.date), style: context.texts.titleMedium),
+                child: Text(_dayLabel(context, day.date), style: context.texts.titleMedium),
               ),
             ),
           ),
@@ -107,16 +109,20 @@ class NotificationsScreen extends StatelessWidget {
     return days;
   }
 
-  static String _dayLabel(DateTime date) {
+  /// Weekday names come from `intl`'s locale-aware [intl.DateFormat] rather than a hand-keyed
+  /// ARB entry per weekday — see the identical decision and rationale in
+  /// journey_history_screen.dart's `_dayLabel`.
+  static String _dayLabel(BuildContext context, DateTime date) {
+    final l10n = context.l10n;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final diff = today.difference(date).inDays;
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Yesterday';
-    const weekdays = [
-      'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
-    ];
-    if (diff < 7) return weekdays[date.weekday - 1];
+    if (diff == 0) return l10n.dayLabelToday;
+    if (diff == 1) return l10n.dayLabelYesterday;
+    if (diff < 7) {
+      final localeName = Localizations.localeOf(context).toString();
+      return intl.DateFormat.EEEE(localeName).format(date);
+    }
     return '${date.day}/${date.month}/${date.year}';
   }
 }
@@ -163,7 +169,7 @@ class _Message extends StatelessWidget {
               const SizedBox(height: GuardianSpacing.lg),
               FilledButton.tonal(
                 onPressed: () => onRetry!(),
-                child: const Text('Try again'),
+                child: Text(context.l10n.tryAgainButton),
               ),
             ],
           ],

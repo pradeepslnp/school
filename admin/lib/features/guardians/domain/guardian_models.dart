@@ -1,5 +1,22 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../l10n/generated/app_localizations.dart';
+
+/// Display name for a relationship code, shared by [GuardianTile] and [AddGuardianForm] — both
+/// mapped these independently with a literal `Map<String, String>` before ADR-0013; unifying
+/// them here is what keeps "Aunt / Uncle" from drifting into two different Kannada strings
+/// later.
+String guardianRelationshipLabel(AppLocalizations l10n, String relationshipType) =>
+    switch (relationshipType) {
+      'MOTHER' => l10n.guardianRelationshipMother,
+      'FATHER' => l10n.guardianRelationshipFather,
+      'GUARDIAN' => l10n.guardianRelationshipGuardian,
+      'GRANDPARENT' => l10n.guardianRelationshipGrandparent,
+      'AUNT_UNCLE' => l10n.guardianRelationshipAuntUncle,
+      'OTHER' => l10n.guardianRelationshipOther,
+      _ => relationshipType,
+    };
+
 /// A student's guardian as the enrolment screen reads it — the parent's own details joined
 /// with the rights they hold on the link to this particular child. Returned by
 /// `GET /students/{id}/guardians` and `POST /students/{id}/guardians` (GRD-001, GRD-002).

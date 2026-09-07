@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_button_spinner.dart';
 
 /// Registers a driver or attendant (STF-001) and, in the same request, provisions their
@@ -78,12 +79,10 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Add driver or attendant', style: theme.textTheme.titleLarge),
+        Text(context.l10n.createStaffFormTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.xs),
         Text(
-          'Creates the roster record and a working driver-app sign-in in one step — the '
-          'phone number below is what they sign in with (phone + one-time code). Added to '
-          'the school you have selected above.',
+          context.l10n.createStaffFormIntro,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -91,9 +90,9 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
         const SizedBox(height: AdminSpacing.lg),
         SegmentedButton<String>(
           key: const Key('staff_form_type_field'),
-          segments: const [
-            ButtonSegment(value: 'DRIVER', label: Text('Driver')),
-            ButtonSegment(value: 'ATTENDANT', label: Text('Attendant')),
+          segments: [
+            ButtonSegment(value: 'DRIVER', label: Text(context.l10n.staffTypeDriver)),
+            ButtonSegment(value: 'ATTENDANT', label: Text(context.l10n.staffTypeAttendant)),
           ],
           selected: {_staffType},
           onSelectionChanged: widget.isSubmitting
@@ -106,10 +105,10 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
           controller: _firstName,
           autofocus: true,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'First name',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.firstNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -117,10 +116,10 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
           key: const Key('staff_form_last_name_field'),
           controller: _lastName,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'Last name',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.lastNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -129,11 +128,11 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
           controller: _phone,
           enabled: !widget.isSubmitting,
           keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(
-            labelText: 'Phone (driver-app sign-in)',
-            hintText: 'e.g. 9990000001',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.staffPhoneLabel,
+            hintText: context.l10n.staffPhoneHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -141,10 +140,10 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
           key: const Key('staff_form_employee_code_field'),
           controller: _employeeCode,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'Employee code (optional)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.staffEmployeeCodeLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -154,10 +153,10 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
           enabled: !widget.isSubmitting,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
-          decoration: const InputDecoration(
-            labelText: 'Vendor name (optional, for contracted staff)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.staffVendorNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.lg),
@@ -167,7 +166,7 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
               child: OutlinedButton(
                 key: const Key('staff_form_cancel_button'),
                 onPressed: widget.isSubmitting ? null : widget.onCancel,
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancelButton),
               ),
             ),
             const SizedBox(width: AdminSpacing.md),
@@ -176,8 +175,8 @@ class _CreateStaffFormState extends State<CreateStaffForm> {
                 key: const Key('staff_form_submit_button'),
                 onPressed: widget.isSubmitting ? null : _submit,
                 child: widget.isSubmitting
-                    ? const OnboardingButtonSpinner(semanticsLabel: 'Adding')
-                    : const Text('Add'),
+                    ? OnboardingButtonSpinner(semanticsLabel: context.l10n.commonAddingSpinnerLabel)
+                    : Text(context.l10n.commonAddButton),
               ),
             ),
           ],

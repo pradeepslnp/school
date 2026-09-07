@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../core/network/rest_client.dart';
 import '../bloc/live_trip_bloc.dart';
 import '../data_provider/live_trip_data_provider.dart';
@@ -73,7 +74,7 @@ class _LiveTripView extends StatelessWidget {
           isLoading: state.isLoading,
           isOutsideTrip: state.isOutsideTrip,
           loadFailure: state.showsFailureInsteadOfContent && !state.isOutsideTrip
-              ? _failureText(state)
+              ? _failureText(context, state)
               : null,
           onRefresh: () async =>
               context.read<LiveTripBloc>().add(const LiveTripRefreshed()),
@@ -87,14 +88,12 @@ class _LiveTripView extends StatelessWidget {
   /// [LiveTripState.isOutsideTrip] is handled separately by the screen (BR-TRACK-001) — this
   /// only covers genuine failures, so [ErrorCode.trackingNotAvailableOutsideTrip] never
   /// reaches this switch in practice.
-  static String _failureText(LiveTripState state) {
+  static String _failureText(BuildContext context, LiveTripState state) {
+    final l10n = context.l10n;
     return switch (state.failure?.code) {
-      ErrorCode.dependencyUnavailable =>
-        'Your device cannot reach the school right now. '
-            'Check your connection and try again.',
-      ErrorCode.rateLimitExceeded =>
-        'Too many attempts just now. Wait a moment and try again.',
-      _ => 'Something went wrong loading this trip. Please try again.',
+      ErrorCode.dependencyUnavailable => l10n.errorDependencyUnavailable,
+      ErrorCode.rateLimitExceeded => l10n.errorRateLimited,
+      _ => l10n.liveTripGenericFailure,
     };
   }
 }

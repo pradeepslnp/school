@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
 import '../../school_scope/widgets/school_picker_field.dart';
 import '../bloc/vehicle_list_bloc.dart';
@@ -125,7 +126,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Text('Vehicles', style: theme.textTheme.headlineSmall),
+                  child: Text(context.l10n.vehicleListTitle, style: theme.textTheme.headlineSmall),
                 ),
 _AddVehicleButton(
                   enabled: _selectedSchoolId != null,
@@ -144,8 +145,10 @@ _AddVehicleButton(
               child: BlocBuilder<VehicleListBloc, VehicleListState>(
                 builder: (context, state) {
                   if (state.isLoading && state.vehicles.isEmpty) {
-                    return const Center(
-                      child: CircularProgressIndicator(semanticsLabel: 'Loading fleet'),
+                    return Center(
+                      child: CircularProgressIndicator(
+                        semanticsLabel: context.l10n.vehicleListLoadingLabel,
+                      ),
                     );
                   }
 
@@ -153,7 +156,7 @@ _AddVehicleButton(
                     final color = context.status.critical;
                     return Center(
                       child: Text(
-                        'That could not be loaded right now. Try again.',
+                        context.l10n.errorGenericLoadRetry,
                         style: theme.textTheme.bodyMedium?.copyWith(color: color),
                       ),
                     );
@@ -162,7 +165,7 @@ _AddVehicleButton(
                   if (state.vehicles.isEmpty) {
                     return Center(
                       child: Text(
-                        'No fleet loaded. Pick a school above, or add the first vehicle.',
+                        context.l10n.vehicleListEmptyState,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -211,8 +214,11 @@ class _VehicleTable extends StatelessWidget {
             minVerticalPadding: AdminSpacing.md,
             title: Text(vehicle.displayName),
             subtitle: Text(
-              '${vehicle.registrationNo} · ${vehicle.vehicleType} · '
-              '${vehicle.seatingCapacity} seats',
+              context.l10n.vehicleListRowSubtitle(
+                vehicle.registrationNo,
+                vehicle.vehicleType,
+                vehicle.seatingCapacity,
+              ),
             ),
             trailing: Tooltip(
               message: vehicle.status,
@@ -241,10 +247,10 @@ class _AddVehicleButton extends StatelessWidget {
       key: const Key('vehicle_list_add_button'),
       onPressed: enabled ? onPressed : null,
       icon: const Icon(Icons.add),
-      label: const Text('Add vehicle'),
+      label: Text(context.l10n.vehicleListAddButton),
     );
 
     if (enabled) return button;
-    return Tooltip(message: 'Pick a school first', child: button);
+    return Tooltip(message: context.l10n.pickSchoolFirstTooltip, child: button);
   }
 }

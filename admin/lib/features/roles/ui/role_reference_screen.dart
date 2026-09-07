@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../domain/permission_matrix.dart';
 
 /// A-44 — Roles & permissions: a read-only view of the nine system roles and what each may
@@ -34,7 +35,7 @@ class _RoleReferenceScreenState extends State<RoleReferenceScreen> {
     final roleFilter = _roleFilter;
 
     return [
-      for (final category in kPermissionMatrix)
+      for (final category in permissionMatrix(context.l10n))
         PermissionCategory(
           title: category.title,
           permissions: [
@@ -59,12 +60,10 @@ class _RoleReferenceScreenState extends State<RoleReferenceScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Roles & permissions', style: theme.textTheme.headlineSmall),
+          Text(context.l10n.roleReferenceTitle, style: theme.textTheme.headlineSmall),
           const SizedBox(height: AdminSpacing.xs),
           Text(
-            'What each system role can do, straight from the permission matrix this platform '
-            'enforces server-side on every request. Reference only — roles cannot be edited '
-            'here yet.',
+            context.l10n.roleReferenceDescription,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -79,14 +78,14 @@ class _RoleReferenceScreenState extends State<RoleReferenceScreen> {
                   controller: _search,
                   onChanged: (value) => setState(() => _query = value),
                   decoration: InputDecoration(
-                    labelText: 'Search',
-                    hintText: 'Filter by permission ID or category',
+                    labelText: context.l10n.roleReferenceSearchLabel,
+                    hintText: context.l10n.roleReferenceSearchHint,
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: _query.isEmpty
                         ? null
                         : IconButton(
                             icon: const Icon(Icons.close),
-                            tooltip: 'Clear search',
+                            tooltip: context.l10n.roleReferenceClearSearchTooltip,
                             onPressed: () => setState(() {
                               _search.clear();
                               _query = '';
@@ -103,15 +102,21 @@ class _RoleReferenceScreenState extends State<RoleReferenceScreen> {
                   key: const Key('role_reference_role_filter_field'),
                   initialValue: _roleFilter,
                   isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Role',
-                    border: OutlineInputBorder(),
-                    constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.roleReferenceRoleFilterLabel,
+                    border: const OutlineInputBorder(),
+                    constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
                   ),
                   items: [
-                    const DropdownMenuItem<String?>(value: null, child: Text('Every role')),
+                    DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(context.l10n.roleReferenceEveryRoleOption),
+                    ),
                     for (final role in kSystemRoleCodes)
-                      DropdownMenuItem<String?>(value: role, child: Text(roleDisplayName(role))),
+                      DropdownMenuItem<String?>(
+                        value: role,
+                        child: Text(roleDisplayName(context.l10n, role)),
+                      ),
                   ],
                   onChanged: (value) => setState(() => _roleFilter = value),
                 ),
@@ -123,7 +128,7 @@ class _RoleReferenceScreenState extends State<RoleReferenceScreen> {
             child: categories.isEmpty
                 ? Center(
                     child: Text(
-                      'No permission matches this search.',
+                      context.l10n.roleReferenceNoResults,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -201,7 +206,7 @@ class _CategorySection extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.all(AdminSpacing.xs),
                         child: Text(
-                          roleShortLabel(role),
+                          roleShortLabel(context.l10n, role),
                           textAlign: TextAlign.center,
                           style: theme.textTheme.labelSmall,
                         ),
@@ -261,7 +266,7 @@ class _GrantMark extends StatelessWidget {
       PermissionGrant.none => Text('—', style: TextStyle(color: context.status.warning)),
       PermissionGrant.full => Icon(Icons.check, size: 18, color: context.status.safe),
       PermissionGrant.narrower => Tooltip(
-          message: 'Granted, narrowed to a smaller scope than this role normally has',
+          message: context.l10n.roleReferenceGrantNarrowerTooltip,
           child: Icon(Icons.check_circle_outline, size: 18, color: context.status.safe),
         ),
     };

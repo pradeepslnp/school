@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../l10n/generated/app_localizations.dart';
+
 /// An administrative account (ORG_ADMIN, SCHOOL_ADMIN, PRINCIPAL, or TRANSPORT_MANAGER) as
 /// returned by `GET /users`, `POST /users`, or a `PATCH /users/{id}` variant (IAM-005,
 /// IAM-008), for the Users screen (A-43).
@@ -73,23 +75,18 @@ class AdminUser extends Equatable {
       ];
 }
 
-/// Display name for a role code, matching PERSONAS.md's own naming.
-String roleDisplayName(String roleCode) {
-  switch (roleCode) {
-    case 'SUPER_ADMIN':
-      return 'Super Admin';
-    case 'ORG_ADMIN':
-      return 'Organization Admin';
-    case 'SCHOOL_ADMIN':
-      return 'School Admin';
-    case 'PRINCIPAL':
-      return 'Principal';
-    case 'TRANSPORT_MANAGER':
-      return 'Transport Manager';
-    default:
-      return roleCode;
-  }
-}
+/// Display name for a role code, matching PERSONAS.md's own naming — the same five values
+/// `roles/domain/permission_matrix.dart`'s own `roleDisplayName` resolves for its nine, so both
+/// draw on the same `roleName*` ARB keys rather than risking the two drifting apart in Kannada
+/// later.
+String roleDisplayName(AppLocalizations l10n, String roleCode) => switch (roleCode) {
+      'SUPER_ADMIN' => l10n.roleNameSuperAdmin,
+      'ORG_ADMIN' => l10n.roleNameOrgAdmin,
+      'SCHOOL_ADMIN' => l10n.roleNameSchoolAdmin,
+      'PRINCIPAL' => l10n.roleNamePrincipal,
+      'TRANSPORT_MANAGER' => l10n.roleNameTransportManager,
+      _ => roleCode,
+    };
 
 /// Whether [roleCode] is scoped to one school rather than a whole organization — mirrors
 /// `CreateAdministrativeUserUseCase.SCHOOL_SCOPED_ROLES` on the backend. Affordance only: the

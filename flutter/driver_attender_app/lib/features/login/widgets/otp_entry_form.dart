@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/l10n_extensions.dart';
 import 'button_spinner.dart';
 
 /// One-time code entry.
@@ -49,14 +50,15 @@ class _OtpEntryFormState extends State<OtpEntryForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Enter the code', style: theme.textTheme.titleLarge),
+        Text(l10n.otpEntryTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: DriverSpacing.sm),
         Text(
-          'We sent a code to ${widget.phone}.',
+          l10n.otpEntrySubtitle(widget.phone),
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: DriverSpacing.lg),
@@ -72,11 +74,11 @@ class _OtpEntryFormState extends State<OtpEntryForm> {
           autofillHints: const [AutofillHints.oneTimeCode],
           onSubmitted: (_) => _submit(),
           style: theme.textTheme.bodyLarge,
-          decoration: const InputDecoration(
-            labelText: 'Code',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.sms_outlined),
-            constraints: BoxConstraints(minHeight: kDriverTouchTarget),
+          decoration: InputDecoration(
+            labelText: l10n.otpFieldLabel,
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.sms_outlined),
+            constraints: const BoxConstraints(minHeight: kDriverTouchTarget),
           ),
         ),
         if (widget.codeResent) ...[
@@ -84,7 +86,7 @@ class _OtpEntryFormState extends State<OtpEntryForm> {
           Semantics(
             liveRegion: true,
             child: Text(
-              'A new code has been sent.',
+              l10n.otpResentNotice,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: context.status.safe,
               ),
@@ -95,8 +97,9 @@ class _OtpEntryFormState extends State<OtpEntryForm> {
         FilledButton(
           key: const Key('driver_login_verify_button'),
           onPressed: widget.isSubmitting ? null : _submit,
-          child:
-              widget.isSubmitting ? const ButtonSpinner() : const Text('Verify'),
+          child: widget.isSubmitting
+              ? const ButtonSpinner()
+              : Text(l10n.verifyButton),
         ),
         const SizedBox(height: DriverSpacing.sm),
         // Both recovery paths are on screen rather than behind a menu. A driver who mistyped
@@ -109,14 +112,14 @@ class _OtpEntryFormState extends State<OtpEntryForm> {
                 key: const Key('driver_login_change_number_button'),
                 onPressed:
                     widget.isSubmitting ? null : widget.onChangeNumber,
-                child: const Text('Change number'),
+                child: Text(l10n.changeNumberButton),
               ),
             ),
             Expanded(
               child: TextButton(
                 key: const Key('driver_login_resend_button'),
                 onPressed: widget.isSubmitting ? null : widget.onResend,
-                child: const Text('Send a new code'),
+                child: Text(l10n.resendCodeButton),
               ),
             ),
           ],

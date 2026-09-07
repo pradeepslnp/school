@@ -1,0 +1,248 @@
+{
+  "@@locale": "en",
+  "@@context": "guardian_driver — driver/attendant app. Template ARB (ADR-0013): source of truth, complete and real. See lib/l10n/TRANSLATION_STATUS.md for the Kannada coverage gap.",
+
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Generic dismiss action on a confirmation dialog."
+  },
+  "signOut": "Sign out",
+  "@signOut": {
+    "description": "Sign-out control: the AppBar icon button's tooltip on the duty screen, and the confirm action in the sign-out dialog. Same word in both places by design."
+  },
+
+  "launchScreenStartingLabel": "Starting",
+  "@launchScreenStartingLabel": {
+    "description": "Screen-reader label for the spinner shown before the stored session has been read, at app launch."
+  },
+
+  "dutyScreenTitle": "Today",
+  "@dutyScreenTitle": {
+    "description": "AppBar title on the driver's home screen once signed in."
+  },
+  "dutyScreenNoTripLoaded": "No trip loaded",
+  "@dutyScreenNoTripLoaded": {
+    "description": "Placeholder heading on the duty screen — trip/manifest features are not built yet, so this states that plainly rather than showing invented data."
+  },
+  "dutyScreenSignedInGeneric": "Signed in.",
+  "@dutyScreenSignedInGeneric": {
+    "description": "Shown under dutyScreenNoTripLoaded when the signed-in user's display name is unavailable."
+  },
+  "dutyScreenSignedInAs": "Signed in as {name}.",
+  "@dutyScreenSignedInAs": {
+    "description": "Shown under dutyScreenNoTripLoaded, naming the signed-in driver or attendant.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ravi Kumar"
+      }
+    }
+  },
+
+  "signOutDialogTitle": "Sign out?",
+  "@signOutDialogTitle": {
+    "description": "Title of the confirmation dialog before signing out on a shared handset."
+  },
+  "signOutDialogBodyNoPending": "Records on this device will be erased.",
+  "@signOutDialogBodyNoPending": {
+    "description": "Sign-out confirmation body when the outbound queue is empty."
+  },
+  "signOutDialogBodyPending": "{count, plural, one{{count} record has} other{{count} records have}} not been sent yet. Signing out sends what it can, then erases everything on this device.",
+  "@signOutDialogBodyPending": {
+    "description": "Sign-out confirmation body when boarding/handover records are still queued for sync. Safety-relevant: a driver is deciding whether to sign out with unsynced child-safety records still on the device — see TRANSLATION_STATUS.md.",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "example": "3"
+      }
+    }
+  },
+
+  "phoneEntryTitle": "Driver sign in",
+  "@phoneEntryTitle": {
+    "description": "Heading on the mobile-number entry step of sign-in."
+  },
+  "phoneEntrySubtitle": "Enter your mobile number to receive a one-time code.",
+  "@phoneEntrySubtitle": {
+    "description": "Instruction under phoneEntryTitle."
+  },
+  "phoneFieldLabel": "Mobile number",
+  "@phoneFieldLabel": {
+    "description": "Text field label for the phone-number input."
+  },
+  "sendCodeButton": "Send code",
+  "@sendCodeButton": {
+    "description": "Button that requests a one-time sign-in code."
+  },
+
+  "otpEntryTitle": "Enter the code",
+  "@otpEntryTitle": {
+    "description": "Heading on the one-time-code entry step of sign-in."
+  },
+  "otpEntrySubtitle": "We sent a code to {phone}.",
+  "@otpEntrySubtitle": {
+    "description": "Confirms which number the code was sent to, so a mistyped number is caught here.",
+    "placeholders": {
+      "phone": {
+        "type": "String",
+        "example": "+91 98765 43210"
+      }
+    }
+  },
+  "otpFieldLabel": "Code",
+  "@otpFieldLabel": {
+    "description": "Text field label for the one-time-code input."
+  },
+  "otpResentNotice": "A new code has been sent.",
+  "@otpResentNotice": {
+    "description": "Live-region confirmation shown after the driver asks for a new code."
+  },
+  "verifyButton": "Verify",
+  "@verifyButton": {
+    "description": "Button that submits the one-time code."
+  },
+  "changeNumberButton": "Change number",
+  "@changeNumberButton": {
+    "description": "Returns to the phone-number step, e.g. after a mistyped number."
+  },
+  "resendCodeButton": "Send a new code",
+  "@resendCodeButton": {
+    "description": "Requests a new one-time code to the same number."
+  },
+
+  "errorInvalidCode": "That code was not correct. Check it and try again.",
+  "@errorInvalidCode": {
+    "description": "Shown for both an unknown phone number and a wrong code — the API deliberately does not distinguish them, to avoid letting anyone enumerate a school's staff."
+  },
+  "errorOtpExpired": "That code has expired. Ask for a new one.",
+  "@errorOtpExpired": {
+    "description": "Shown when the one-time code is no longer valid."
+  },
+  "errorOtpAlreadyUsed": "That code has already been used. Ask for a new one.",
+  "@errorOtpAlreadyUsed": {
+    "description": "Shown when the one-time code was already redeemed."
+  },
+  "errorAccountLocked": "This account is locked after too many attempts. Call the transport office.",
+  "@errorAccountLocked": {
+    "description": "Shown when the account is locked after repeated failed sign-in attempts."
+  },
+  "errorRateLimited": "Too many attempts. Wait a minute, then try again.",
+  "@errorRateLimited": {
+    "description": "Shown when the client is being rate-limited."
+  },
+  "errorNoConnection": "No connection. Move to where you have signal and try again.",
+  "@errorNoConnection": {
+    "description": "Shown when sign-in fails because the API could not be reached — framed as a connection problem with a next step, not a generic failure."
+  },
+  "errorValidationFailed": "Check the details you entered.",
+  "@errorValidationFailed": {
+    "description": "Shown for a validation failure on the submitted phone number or code."
+  },
+  "errorSignInUnavailable": "Sign-in is not working right now. Call the transport office.",
+  "@errorSignInUnavailable": {
+    "description": "Fallback shown for any sign-in error not otherwise mapped, including error codes this build predates."
+  },
+
+  "sessionEndedRevoked": "Your session was ended by the school. Sign in again, or call the transport office if this keeps happening.",
+  "@sessionEndedRevoked": {
+    "description": "Shown on the sign-in screen when the previous session was revoked by the server (staff deactivation, or refresh-token reuse detected)."
+  },
+  "sessionEndedRefreshFailed": "Your session expired. Sign in again to keep recording this trip.",
+  "@sessionEndedRefreshFailed": {
+    "description": "Shown on the sign-in screen when the previous session's refresh token stopped working."
+  },
+
+  "workingLabel": "Working",
+  "@workingLabel": {
+    "description": "Screen-reader label for the in-button spinner shown while a sign-in request is submitting."
+  },
+
+  "signInTitle": "Sign in",
+  "@signInTitle": {
+    "description": "AppBar title shared by both sign-in steps."
+  },
+
+  "syncRecordsNeedReview": "{count, plural, one{{count} record needs review} other{{count} records need review}}",
+  "@syncRecordsNeedReview": {
+    "description": "Sync-status banner: records flagged for review or refused outrank queue state and are reported first (BR-SAFE-005). Safety-relevant — see TRANSLATION_STATUS.md.",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "example": "2"
+      }
+    }
+  },
+  "syncOfflinePendingRecords": "Offline · {count, plural, one{{count} record} other{{count} records}} saved on this device, will send when back in range",
+  "@syncOfflinePendingRecords": {
+    "description": "Sync-status banner: offline with records still queued. States plainly that nothing is lost. Safety-relevant — see TRANSLATION_STATUS.md.",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "example": "4"
+      }
+    }
+  },
+  "syncOfflineNoPending": "Offline · nothing waiting to send",
+  "@syncOfflineNoPending": {
+    "description": "Sync-status banner: offline with an empty outbound queue."
+  },
+  "syncSendingRecords": "Sending {count, plural, one{{count} record} other{{count} records}}…",
+  "@syncSendingRecords": {
+    "description": "Sync-status banner: online and actively draining the outbound queue.",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "example": "1"
+      }
+    }
+  },
+  "syncAllSent": "All records sent",
+  "@syncAllSent": {
+    "description": "Sync-status banner: queue empty, no last-synced time recorded yet on this device."
+  },
+  "syncAllSentJustNow": "All records sent · just now",
+  "@syncAllSentJustNow": {
+    "description": "Sync-status banner: queue empty, last drained under a minute ago."
+  },
+  "syncAllSentMinutesAgo": "All records sent · {minutes} min ago",
+  "@syncAllSentMinutesAgo": {
+    "description": "Sync-status banner: queue empty, last drained under an hour ago.",
+    "placeholders": {
+      "minutes": {
+        "type": "num",
+        "example": "12"
+      }
+    }
+  },
+  "syncAllSentHoursAgo": "All records sent · {hours} h ago",
+  "@syncAllSentHoursAgo": {
+    "description": "Sync-status banner: queue empty, last drained an hour or more ago.",
+    "placeholders": {
+      "hours": {
+        "type": "num",
+        "example": "3"
+      }
+    }
+  },
+
+  "languageSwitcherTooltip": "Change language",
+  "@languageSwitcherTooltip": {
+    "description": "Tooltip/semantic label on the AppBar language-switcher control, reachable both before and after sign-in."
+  },
+  "languagePickerTitle": "Language",
+  "@languagePickerTitle": {
+    "description": "Title of the language-choice dialog opened from languageSwitcherTooltip."
+  },
+  "languageOptionSystemDefault": "Match device",
+  "@languageOptionSystemDefault": {
+    "description": "Language option that follows the device's system locale (English or Kannada; English otherwise)."
+  },
+  "languageOptionEnglish": "English",
+  "@languageOptionEnglish": {
+    "description": "Language option label. Deliberately identical in every locale's ARB — a language's own name, not translated content."
+  },
+  "languageOptionKannada": "ಕನ್ನಡ",
+  "@languageOptionKannada": {
+    "description": "Language option label, shown in Kannada's own script (the standard convention for language pickers, so it is recognisable regardless of the app's current language). Deliberately identical in every locale's ARB — a language's own name, not translated content."
+  }
+}

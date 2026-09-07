@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
+import '../../../core/l10n_extensions.dart';
 import '../bloc/login_bloc.dart';
 import 'login_error_text.dart';
 
@@ -22,10 +23,10 @@ class PhoneEntryForm extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Sign in', style: theme.textTheme.titleLarge),
+            Text(context.l10n.loginHeading, style: theme.textTheme.titleLarge),
             const SizedBox(height: GuardianSpacing.sm),
             Text(
-              'Enter the mobile number registered with your school.',
+              context.l10n.loginInstructions,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: GuardianSpacing.lg),
@@ -35,12 +36,12 @@ class PhoneEntryForm extends StatelessWidget {
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.done,
               enabled: !state.isSubmitting,
-              decoration: const InputDecoration(
-                labelText: 'Mobile number',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.loginMobileNumberLabel,
+                border: const OutlineInputBorder(),
                 // No hardcoded example number: format varies by region and a sample from
                 // the wrong country reads as an error (ADR-0007).
-                prefixIcon: Icon(Icons.phone_outlined),
+                prefixIcon: const Icon(Icons.phone_outlined),
               ),
               onChanged: (value) =>
                   context.read<LoginBloc>().add(LoginPhoneChanged(value)),
@@ -61,7 +62,7 @@ class PhoneEntryForm extends StatelessWidget {
                       width: AppSizeConstants.inlineSpinnerSize,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Send code'),
+                  : Text(context.l10n.loginSendCodeButton),
             ),
           ],
         );

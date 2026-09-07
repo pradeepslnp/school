@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/generated/app_localizations.dart';
+
 /// Holds the app's light/dark preference.
 ///
 /// A [ValueNotifier] rather than a BLoC: there is no event to validate, no server to ask,
@@ -61,9 +63,12 @@ extension ThemeModeDisplay on ThemeMode {
         ThemeMode.dark => Icons.dark_mode_outlined,
       };
 
-  String get label => switch (this) {
-        ThemeMode.system => 'Match device',
-        ThemeMode.light => 'Light',
-        ThemeMode.dark => 'Dark',
+  /// Localised label — takes the resolved [AppLocalizations] rather than a [BuildContext] so
+  /// call sites that already have one (e.g. inside a build method) do not depend on this
+  /// extension for context lookup too.
+  String label(AppLocalizations l10n) => switch (this) {
+        ThemeMode.system => l10n.themeModeSystem,
+        ThemeMode.light => l10n.themeModeLight,
+        ThemeMode.dark => l10n.themeModeDark,
       };
 }

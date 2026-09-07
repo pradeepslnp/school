@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../l10n/app_localizations_extension.dart';
 
 /// Renders a student-register failure. Mirrors `OnboardingErrorText`'s split between *what
 /// happened* (settled in the repository) and *how to say it* (this widget).
@@ -10,9 +11,8 @@ import '../../../core/domain.dart';
 /// messages here are about admission numbers and enrolment, and a shared widget accumulating
 /// every feature's copy is how one screen ends up telling an operator about organization codes.
 ///
-/// Same known gap as the others: string literals in place of [messageKey], which BR-CFG-005
-/// wants localised. Left unresolved for the same reason — this console has no localisation
-/// mechanism yet, and inventing a one-off here would be a second thing to migrate later.
+/// [messageKey] is still carried through unused — see `OnboardingErrorText`'s doc comment for
+/// why (ADR-0013 vs. the backend-driven `CFG-006` this key targets).
 class StudentErrorText extends StatelessWidget {
   const StudentErrorText({super.key, required this.code, this.messageKey});
 
@@ -41,7 +41,7 @@ class StudentErrorText extends StatelessWidget {
             const SizedBox(width: AdminSpacing.sm),
             Expanded(
               child: Text(
-                _message,
+                _message(context),
                 style: theme.textTheme.bodyMedium?.copyWith(color: color),
               ),
             ),
@@ -51,27 +51,20 @@ class StudentErrorText extends StatelessWidget {
     );
   }
 
-  String get _message => switch (code) {
-        ErrorCode.studentAdmissionNoExists =>
-          'That admission number is already used at this school. Check whether the student is '
-              'already enrolled before creating a second record for them.',
-        ErrorCode.studentNotFound =>
-          'That student could not be found. They may have been moved to another school.',
-        ErrorCode.studentNotActive =>
-          'That student is not on the active roll, so they cannot be assigned to transport.',
-        ErrorCode.validationRequiredFieldMissing => 'Fill in every required field.',
-        ErrorCode.validationInvalidFormat ||
-        ErrorCode.validationFailed =>
-          'Check the details you entered.',
-        ErrorCode.authPermissionDenied =>
-          'Your account does not have permission to manage students.',
-        ErrorCode.authScopeDenied =>
-          'That student is outside the schools your account covers.',
-        ErrorCode.dependencyUnavailable =>
-          'The Guardian API could not be reached. Check your connection, then try again.',
-        ErrorCode.authSessionRevoked ||
-        ErrorCode.authRefreshReuseDetected =>
-          'That session has ended. Sign in again.',
-        _ => 'That could not be saved right now. Try again shortly.',
-      };
+  String _message(BuildContext context) {
+    final l10n = context.l10n;
+    return switch (code) {
+      ErrorCode.studentAdmissionNoExists => l10n.studentErrorAdmissionNoExists,
+      ErrorCode.studentNotFound => l10n.studentErrorNotFound,
+      ErrorCode.studentNotActive => l10n.studentErrorNotActive,
+      ErrorCode.validationRequiredFieldMissing => l10n.errorValidationRequiredField,
+      ErrorCode.validationInvalidFormat ||
+      ErrorCode.validationFailed => l10n.errorValidationCheckDetails,
+      ErrorCode.authPermissionDenied => l10n.studentErrorPermissionDenied,
+      ErrorCode.authScopeDenied => l10n.studentErrorScopeDenied,
+      ErrorCode.dependencyUnavailable => l10n.errorApiUnreachable,
+      ErrorCode.authSessionRevoked || ErrorCode.authRefreshReuseDetected => l10n.errorSessionEnded,
+      _ => l10n.errorGenericRetryShortly,
+    };
+  }
 }

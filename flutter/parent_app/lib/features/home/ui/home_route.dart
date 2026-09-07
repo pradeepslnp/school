@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../core/network/rest_client.dart';
 import '../../absence/ui/absence_route.dart';
 import '../../child_detail/ui/child_detail_route.dart';
@@ -150,16 +151,22 @@ class _HomeShellState extends State<_HomeShell> {
               _index = index;
               _visited.add(index);
             }),
-            destinations: const [
-              NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-              NavigationDestination(icon: Icon(Icons.history), label: 'Journeys'),
+            destinations: [
               NavigationDestination(
-                icon: Icon(Icons.notifications_none),
-                label: 'Alerts',
+                icon: const Icon(Icons.home_outlined),
+                label: context.l10n.navHomeTab,
               ),
               NavigationDestination(
-                icon: Icon(Icons.qr_code_2_outlined),
-                label: 'Pickup',
+                icon: const Icon(Icons.history),
+                label: context.l10n.navJourneysTab,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.notifications_none),
+                label: context.l10n.navAlertsTab,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.qr_code_2_outlined),
+                label: context.l10n.navPickupTab,
               ),
             ],
           ),
@@ -205,7 +212,7 @@ class HomeView extends StatelessWidget {
           // Only when there is nothing to fall back to. With cards on screen an outage is
           // a banner, not a replacement (docs/05-ui/PARENT_APP.md).
           loadFailure: state.showsFailureInsteadOfContent
-              ? _failureText(state)
+              ? _failureText(context, state)
               : null,
           isConnected: !state.isDisconnected,
           lastUpdatedAt: state.observedAt,
@@ -247,8 +254,8 @@ class HomeView extends StatelessWidget {
           context,
           LiveTripRoute(
             tripId: tripId,
-            vehicleDisplayName: status.vehicleDisplayName ?? 'the bus',
-            stopName: status.stopName ?? 'your stop',
+            vehicleDisplayName: status.vehicleDisplayName ?? context.l10n.fallbackVehicleName,
+            stopName: status.stopName ?? context.l10n.fallbackStopName,
             apiBaseUrl: apiBaseUrl,
             accessToken: accessToken,
             onUnauthorized: onUnauthorized,
@@ -266,8 +273,8 @@ class HomeView extends StatelessWidget {
       context,
       LiveTripRoute(
         tripId: tripId,
-        vehicleDisplayName: status.vehicleDisplayName ?? 'the bus',
-        stopName: status.stopName ?? 'your stop',
+        vehicleDisplayName: status.vehicleDisplayName ?? context.l10n.fallbackVehicleName,
+        stopName: status.stopName ?? context.l10n.fallbackStopName,
         apiBaseUrl: apiBaseUrl,
         accessToken: accessToken,
         onUnauthorized: onUnauthorized,
@@ -288,16 +295,14 @@ class HomeView extends StatelessWidget {
   ///
   /// Plain language describing the situation and what to do, never a code
   /// (docs/05-ui/ACCESSIBILITY.md). The API's localised `messageKey` is the intended source
-  /// once localisation lands (BR-CFG-005); until then these strings are inline, like the
-  /// rest of this app's copy.
-  static String _failureText(HomeState state) {
+  /// once `CFG-006` lands (BR-CFG-005); until then these are bundled resource keys
+  /// (ADR-0013).
+  static String _failureText(BuildContext context, HomeState state) {
+    final l10n = context.l10n;
     return switch (state.failure?.code) {
-      ErrorCode.dependencyUnavailable =>
-        'Your device cannot reach the school right now. '
-            'Check your connection and try again.',
-      ErrorCode.rateLimitExceeded =>
-        'Too many attempts just now. Wait a moment and try again.',
-      _ => 'Something went wrong loading your children. Please try again.',
+      ErrorCode.dependencyUnavailable => l10n.errorDependencyUnavailable,
+      ErrorCode.rateLimitExceeded => l10n.errorRateLimited,
+      _ => l10n.homeGenericLoadFailure,
     };
   }
 }

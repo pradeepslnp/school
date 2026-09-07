@@ -33,6 +33,20 @@ dependencies:
   # never package:http directly (PROJECT_STRUCTURE.md §core/network).
   http: ^1.5.0
 
+  # Localisation (ADR-0013 — interim client-bundled English/Kannada, ahead of the
+  # backend-driven CFG-006 design in ADR-0007). `intl` backs the generated
+  # `AppLocalizations`; `flutter_localizations` supplies the framework's own delegates
+  # (Material/Cupertino/Widgets) for the locales this console supports.
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+
+  # Persists the operator's chosen console language across sessions (ADR-0013 §5) — the
+  # same role `shared_preferences` plays in the other two apps' `ThemeController` precedent.
+  # Not routed through `RestClient`: this is a local-only UI preference, never sent to or
+  # read from the API.
+  shared_preferences: ^2.5.5
+
   # Deliberately absent: a routing package.
   #
   # The console's routing is derived from one input — the session — plus a location string,
@@ -49,3 +63,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true

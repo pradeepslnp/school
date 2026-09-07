@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+import '../core/locale/locale_controller.dart';
 import '../core/network/rest_client.dart';
 import '../core/offline/outbound_queue.dart';
 import '../core/offline/outbound_transport.dart';
@@ -35,6 +36,7 @@ class AppDependencies {
     required this.loginRepository,
     required this.outboundQueue,
     required this.syncEngine,
+    required this.localeController,
   });
 
   final AppConfig config;
@@ -47,6 +49,11 @@ class AppDependencies {
   final OutboundQueue outboundQueue;
   final SyncEngine syncEngine;
 
+  /// The driver's language preference (ADR-0013). Loaded during [bootstrap], alongside the
+  /// keychain and database reads it already awaits, so the first frame already renders in
+  /// the right language instead of flashing English and then switching.
+  final LocaleController localeController;
+
   StreamSubscription<AuthStatus>? _authSubscription;
 
   /// Builds and starts everything.
@@ -58,6 +65,12 @@ class AppDependencies {
   static Future<AppDependencies> bootstrap(AppConfig config) async {
     const clock = SystemClock();
     final secrets = PlatformSecretStore();
+
+    // ADR-0013: the driver's language preference is not secret, so it is read from
+    // shared_preferences rather than the keychain-backed SecretStore above — but it is read
+    // here, before the first frame, for the same reason: nothing should render and then
+    // switch language a moment later.
+    final localeController = await LocaleController.load();
 
     final localDatabase = LocalDatabase(
       key: DatabaseKey(secrets: secrets),
@@ -120,6 +133,7 @@ class AppDependencies {
       loginRepository: loginRepository,
       outboundQueue: outboundQueue,
       syncEngine: syncEngine,
+      localeController: localeController,
     );
 
     await sessionManager.restore();
@@ -161,6 +175,7 @@ class AppDependencies {
     await sessionManager.dispose();
     await localDatabase.close();
     restClient.close();
+    localeController.dispose();
   }
 }
 

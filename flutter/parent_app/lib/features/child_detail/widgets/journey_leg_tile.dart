@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../widgets/journey_status_chip.dart';
 import '../repository/models/child_detail.dart';
 
@@ -22,7 +24,9 @@ class JourneyLegTile extends StatelessWidget {
           SizedBox(
             width: AppSizeConstants.timestampColumnWidth,
             child: Text(
-              leg.direction == JourneyDirection.morning ? 'Morning' : 'Afternoon',
+              leg.direction == JourneyDirection.morning
+                  ? context.l10n.legDirectionMorning
+                  : context.l10n.legDirectionAfternoon,
               style: context.texts.titleMedium,
             ),
           ),
@@ -35,7 +39,7 @@ class JourneyLegTile extends StatelessWidget {
                   child: JourneyStatusChip(state: leg.state),
                 ),
                 const SizedBox(height: GuardianSpacing.xs),
-                Text(_detail(), style: context.texts.bodyMedium),
+                Text(_detail(context.l10n), style: context.texts.bodyMedium),
               ],
             ),
           ),
@@ -44,7 +48,7 @@ class JourneyLegTile extends StatelessWidget {
     );
   }
 
-  String _detail() {
+  String _detail(AppLocalizations l10n) {
     final vehicle = leg.vehicleDisplayName;
     final stop = leg.stopName;
     final scheduled = leg.scheduledAt?.timeOfDay;
@@ -56,18 +60,18 @@ class JourneyLegTile extends StatelessWidget {
     ].join(' · ');
 
     final when = switch (leg.state) {
-      JourneyState.scheduled when scheduled != null => 'Scheduled at $scheduled',
-      JourneyState.onBoard when event != null => 'Boarded at $event',
-      JourneyState.arrivedAtSchool when event != null => 'Arrived at $event',
-      JourneyState.handedOver when event != null => 'Handed over at $event',
-      JourneyState.noShow when event != null => 'Bus departed at $event',
-      JourneyState.absent => 'Marked absent',
+      JourneyState.scheduled when scheduled != null => l10n.legScheduledAt(scheduled),
+      JourneyState.onBoard when event != null => l10n.legBoardedAt(event),
+      JourneyState.arrivedAtSchool when event != null => l10n.legArrivedAt(event),
+      JourneyState.handedOver when event != null => l10n.legHandedOverAt(event),
+      JourneyState.noShow when event != null => l10n.legBusDepartedAt(event),
+      JourneyState.absent => l10n.legMarkedAbsent,
       _ => null,
     };
 
     return [if (where.isNotEmpty) where, if (when != null) when]
         .join(' · ')
-        .ifEmpty('No schedule for this leg');
+        .ifEmpty(l10n.legNoScheduleForLeg);
   }
 }
 

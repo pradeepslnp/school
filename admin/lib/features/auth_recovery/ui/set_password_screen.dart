@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../login/widgets/sign_in_scaffold.dart';
 import '../bloc/set_password_bloc.dart';
 import '../widgets/new_password_form.dart';
@@ -60,7 +61,7 @@ class SetPasswordScreen extends StatelessWidget {
                 FilledButton(
                   key: const Key('set_password_done_button'),
                   onPressed: onDone,
-                  child: const Text('Go to sign in'),
+                  child: Text(context.l10n.goToSignInButton),
                 ),
               ],
             ),
@@ -90,7 +91,7 @@ class SetPasswordScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: AdminSpacing.md),
                   child: Text(
-                    _errorText(state.error!),
+                    _errorText(context, state.error!),
                     key: const Key('set_password_error'),
                     style: theme.textTheme.bodyMedium?.copyWith(color: context.status.critical),
                   ),
@@ -102,19 +103,16 @@ class SetPasswordScreen extends StatelessWidget {
     );
   }
 
-  static String _errorText(ErrorCode code) {
+  static String _errorText(BuildContext context, ErrorCode code) {
+    final l10n = context.l10n;
     return switch (code) {
-      ErrorCode.authLinkExpired =>
-        'This link has expired. Ask an administrator to send you a new one.',
-      ErrorCode.authLinkAlreadyUsed =>
-        'This link has already been used. If you have set your password, just sign in.',
-      ErrorCode.authLinkInvalid =>
-        'This link is not valid. Check you opened the most recent email, or ask for a new link.',
+      ErrorCode.authLinkExpired => l10n.setPasswordErrorLinkExpired,
+      ErrorCode.authLinkAlreadyUsed => l10n.setPasswordErrorLinkAlreadyUsed,
+      ErrorCode.authLinkInvalid => l10n.setPasswordErrorLinkInvalid,
       ErrorCode.passwordTooWeak =>
-        'That password is too weak. Use at least $kMinPasswordLength characters and avoid common passwords.',
-      ErrorCode.dependencyUnavailable =>
-        'We could not reach the server. Check your connection and try again.',
-      _ => 'That could not be completed right now. Please try again.',
+        l10n.authRecoveryErrorPasswordTooWeak(kMinPasswordLength),
+      ErrorCode.dependencyUnavailable => l10n.authRecoveryErrorApiUnreachable,
+      _ => l10n.authRecoveryErrorGeneric,
     };
   }
 }

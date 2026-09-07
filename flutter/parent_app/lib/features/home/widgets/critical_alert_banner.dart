@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
+import '../../../core/l10n_extensions.dart';
 import '../repository/models/child_status.dart';
 
 /// The full-width banner for a child who is not accounted for.
@@ -30,16 +31,14 @@ class CriticalAlertBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColors = context.status;
-    final message =
-        '${status.displayName} has not been accounted for. The school has been alerted '
-        'and staff are checking now.';
+    final message = context.l10n.criticalBannerMessage(status.displayName);
 
     return Semantics(
       // Assertive: this is the one class of change that may interrupt whatever the screen
       // reader is saying (docs/05-ui/ACCESSIBILITY.md).
       liveRegion: true,
       container: true,
-      label: 'Urgent. $message',
+      label: context.l10n.criticalBannerUrgentSemanticLabel(message),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(GuardianSpacing.md),
@@ -68,7 +67,7 @@ class CriticalAlertBanner extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ACTION NEEDED NOW',
+                        context.l10n.criticalBannerActionNeeded,
                         style: context.texts.labelMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
@@ -77,7 +76,7 @@ class CriticalAlertBanner extends StatelessWidget {
                       ),
                       const SizedBox(height: GuardianSpacing.xs),
                       Text(
-                        'Not yet accounted for',
+                        context.l10n.criticalBannerNotAccountedTitle,
                         style: context.texts.titleLarge
                             ?.copyWith(color: Colors.white),
                       ),
@@ -109,7 +108,7 @@ class CriticalAlertBanner extends StatelessWidget {
                         foregroundColor: statusColors.critical,
                       ),
                       icon: const Icon(Icons.call),
-                      label: const Text('Call the school'),
+                      label: Text(context.l10n.criticalBannerCallSchoolButton),
                     ),
                   if (onViewDetail != null)
                     OutlinedButton(
@@ -118,7 +117,7 @@ class CriticalAlertBanner extends StatelessWidget {
                         foregroundColor: Colors.white,
                         side: const BorderSide(color: Colors.white),
                       ),
-                      child: const Text('See what happened'),
+                      child: Text(context.l10n.criticalBannerSeeWhatHappenedButton),
                     ),
                 ],
               ),

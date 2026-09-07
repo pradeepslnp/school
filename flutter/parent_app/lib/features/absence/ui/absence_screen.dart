@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../utils/utils.dart';
 import '../bloc/absence_bloc.dart';
 import '../repository/models/absence.dart';
@@ -37,7 +39,7 @@ class AbsenceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Declare absence')),
+      appBar: AppBar(title: Text(context.l10n.absenceAppBarTitle)),
       body: SafeArea(
         child: state.children.isEmpty
             ? const _NoChildren()
@@ -46,7 +48,7 @@ class AbsenceScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(GuardianSpacing.md),
                   children: [
                     if (state.children.length > 1) ...[
-                      Text('Which child?', style: context.texts.titleMedium),
+                      Text(context.l10n.whichChildLabel, style: context.texts.titleMedium),
                       const SizedBox(height: GuardianSpacing.sm),
                       _ChoiceChipRow<ChildOption>(
                         options: [
@@ -57,13 +59,13 @@ class AbsenceScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: GuardianSpacing.lg),
                     ],
-                    Text('When?', style: context.texts.titleMedium),
+                    Text(context.l10n.absenceWhenLabel, style: context.texts.titleMedium),
                     const SizedBox(height: GuardianSpacing.sm),
                     _ChoiceChipRow<AbsenceWhen>(
-                      options: const [
-                        (AbsenceWhen.today, 'Today'),
-                        (AbsenceWhen.tomorrow, 'Tomorrow'),
-                        (AbsenceWhen.dateRange, 'Date range'),
+                      options: [
+                        (AbsenceWhen.today, context.l10n.absenceWhenToday),
+                        (AbsenceWhen.tomorrow, context.l10n.absenceWhenTomorrow),
+                        (AbsenceWhen.dateRange, context.l10n.absenceWhenDateRange),
                       ],
                       selected: state.when,
                       onChanged: onWhenChanged,
@@ -77,19 +79,19 @@ class AbsenceScreen extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: GuardianSpacing.lg),
-                    Text('Which journey?', style: context.texts.titleMedium),
+                    Text(context.l10n.absenceWhichJourney, style: context.texts.titleMedium),
                     const SizedBox(height: GuardianSpacing.sm),
                     _ChoiceChipRow<AbsenceDirection>(
-                      options: const [
-                        (AbsenceDirection.both, 'Both'),
-                        (AbsenceDirection.morningOnly, 'Morning'),
-                        (AbsenceDirection.afternoonOnly, 'Afternoon'),
+                      options: [
+                        (AbsenceDirection.both, context.l10n.absenceJourneyBoth),
+                        (AbsenceDirection.morningOnly, context.l10n.absenceJourneyMorning),
+                        (AbsenceDirection.afternoonOnly, context.l10n.absenceJourneyAfternoon),
                       ],
                       selected: state.direction,
                       onChanged: onJourneyChanged,
                     ),
                     const SizedBox(height: GuardianSpacing.lg),
-                    Text('Reason (optional)', style: context.texts.titleMedium),
+                    Text(context.l10n.absenceReasonLabel, style: context.texts.titleMedium),
                     const SizedBox(height: GuardianSpacing.sm),
                     TextFormField(
                       // Remounts — and so re-reads `initialValue` — exactly when a
@@ -102,9 +104,9 @@ class AbsenceScreen extends StatelessWidget {
                       ),
                       initialValue: state.reason,
                       onChanged: onReasonChanged,
-                      decoration: const InputDecoration(
-                        hintText: 'Not required',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        hintText: context.l10n.absenceReasonHint,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     if (state.submitFailure != null) ...[
@@ -113,7 +115,7 @@ class AbsenceScreen extends StatelessWidget {
                     ],
                     if (state.confirmation != null) ...[
                       const SizedBox(height: GuardianSpacing.md),
-                      _ConfirmationBanner(text: state.confirmation!),
+                      _ConfirmationBanner(info: state.confirmation!),
                     ],
                     const SizedBox(height: GuardianSpacing.lg),
                     SizedBox(
@@ -126,11 +128,11 @@ class AbsenceScreen extends StatelessWidget {
                                 width: AppSizeConstants.inlineSpinnerSize,
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Text('Confirm'),
+                            : Text(context.l10n.absenceConfirmButton),
                       ),
                     ),
                     const SizedBox(height: GuardianSpacing.xl),
-                    Text('Upcoming absences', style: context.texts.titleMedium),
+                    Text(context.l10n.absenceUpcomingTitle, style: context.texts.titleMedium),
                     const SizedBox(height: GuardianSpacing.sm),
                     if (state.isLoadingList && state.upcoming.isEmpty)
                       const Padding(
@@ -143,7 +145,7 @@ class AbsenceScreen extends StatelessWidget {
                       _ErrorBanner(failure: state.listFailure!)
                     else if (state.upcoming.isEmpty)
                       Text(
-                        'No absences declared for this child.',
+                        context.l10n.absenceNoneDeclared,
                         style: context.texts.bodyMedium
                             ?.copyWith(color: context.colors.onSurfaceVariant),
                       )
@@ -248,7 +250,7 @@ class _DateRangePicker extends StatelessWidget {
       label: Text(
         (from != null && to != null)
             ? '${_format(from!)} – ${_format(to!)}'
-            : 'Choose dates',
+            : context.l10n.absenceDateRangeChoose,
       ),
     );
   }
@@ -263,13 +265,11 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final text = switch (failure.code) {
-      ErrorCode.absenceTripAlreadyStarted =>
-        'This trip has already started, so this absence cannot be declared. '
-            'Contact the school office instead.',
-      ErrorCode.dependencyUnavailable =>
-        'Your device cannot reach the school right now. Check your connection and try again.',
-      _ => 'Something went wrong. Please try again.',
+      ErrorCode.absenceTripAlreadyStarted => l10n.absenceErrorTripStarted,
+      ErrorCode.dependencyUnavailable => l10n.errorDependencyUnavailable,
+      _ => l10n.errorGenericTryAgain,
     };
     return Container(
       padding: const EdgeInsets.all(GuardianSpacing.md),
@@ -289,9 +289,9 @@ class _ErrorBanner extends StatelessWidget {
 }
 
 class _ConfirmationBanner extends StatelessWidget {
-  const _ConfirmationBanner({required this.text});
+  const _ConfirmationBanner({required this.info});
 
-  final String text;
+  final AbsenceConfirmation info;
 
   @override
   Widget build(BuildContext context) {
@@ -305,10 +305,33 @@ class _ConfirmationBanner extends StatelessWidget {
         children: [
           Icon(Icons.check_circle_outline, color: context.status.safe),
           const SizedBox(width: GuardianSpacing.sm),
-          Expanded(child: Text(text, style: context.texts.bodyMedium)),
+          Expanded(child: Text(_message(context), style: context.texts.bodyMedium)),
         ],
       ),
     );
+  }
+
+  String _message(BuildContext context) {
+    final l10n = context.l10n;
+    final sameDay = info.fromDate.year == info.toDate.year &&
+        info.fromDate.month == info.toDate.month &&
+        info.fromDate.day == info.toDate.day;
+    final when = sameDay
+        ? _relativeDay(l10n, info.fromDate)
+        : l10n.absenceConfirmationRange(
+            _relativeDay(l10n, info.fromDate),
+            _relativeDay(l10n, info.toDate),
+          );
+    return l10n.absenceConfirmationMessage(info.childName, when, info.direction.name);
+  }
+
+  static String _relativeDay(AppLocalizations l10n, DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final diff = DateTime(date.year, date.month, date.day).difference(today).inDays;
+    if (diff == 0) return l10n.relativeDayToday;
+    if (diff == 1) return l10n.relativeDayTomorrow;
+    return '${date.day}/${date.month}/${date.year}';
   }
 }
 
@@ -320,10 +343,11 @@ class _UpcomingAbsenceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final journey = switch (absence.direction) {
-      AbsenceDirection.both => 'Both journeys',
-      AbsenceDirection.morningOnly => 'Morning only',
-      AbsenceDirection.afternoonOnly => 'Afternoon only',
+      AbsenceDirection.both => l10n.absenceTileJourneyBoth,
+      AbsenceDirection.morningOnly => l10n.absenceTileJourneyMorning,
+      AbsenceDirection.afternoonOnly => l10n.absenceTileJourneyAfternoon,
     };
     final sameDay = absence.fromDate.year == absence.toDate.year &&
         absence.fromDate.month == absence.toDate.month &&
@@ -337,7 +361,7 @@ class _UpcomingAbsenceTile extends StatelessWidget {
       subtitle: Text(
         [journey, if (absence.reason != null) absence.reason!].join(' · '),
       ),
-      trailing: TextButton(onPressed: onCancel, child: const Text('Cancel')),
+      trailing: TextButton(onPressed: onCancel, child: Text(l10n.cancelButton)),
     );
   }
 
@@ -353,8 +377,7 @@ class _NoChildren extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(GuardianSpacing.xl),
         child: Text(
-          'Your school links your children to your account before you can declare an '
-          'absence.',
+          context.l10n.absenceNoChildrenLinked,
           textAlign: TextAlign.center,
           style: context.texts.bodyMedium,
         ),

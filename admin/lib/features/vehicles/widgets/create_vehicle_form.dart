@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_button_spinner.dart';
 
 /// Registers a vehicle (FLT-001).
@@ -73,11 +74,10 @@ class _CreateVehicleFormState extends State<CreateVehicleForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Add vehicle', style: theme.textTheme.titleLarge),
+        Text(context.l10n.vehicleListAddButton, style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.xs),
         Text(
-          'The display name is what parents see in notifications — "Bus 12", not the plate '
-          'number. Added to the school you have selected above.',
+          context.l10n.createVehicleFormIntro,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -85,10 +85,10 @@ class _CreateVehicleFormState extends State<CreateVehicleForm> {
         const SizedBox(height: AdminSpacing.lg),
         SegmentedButton<String>(
           key: const Key('vehicle_form_type_field'),
-          segments: const [
-            ButtonSegment(value: 'BUS', label: Text('Bus')),
-            ButtonSegment(value: 'VAN', label: Text('Van')),
-            ButtonSegment(value: 'MINIBUS', label: Text('Minibus')),
+          segments: [
+            ButtonSegment(value: 'BUS', label: Text(context.l10n.vehicleTypeBus)),
+            ButtonSegment(value: 'VAN', label: Text(context.l10n.vehicleTypeVan)),
+            ButtonSegment(value: 'MINIBUS', label: Text(context.l10n.vehicleTypeMinibus)),
           ],
           selected: {_vehicleType},
           onSelectionChanged: widget.isSubmitting
@@ -102,11 +102,11 @@ class _CreateVehicleFormState extends State<CreateVehicleForm> {
           autofocus: true,
           enabled: !widget.isSubmitting,
           textCapitalization: TextCapitalization.characters,
-          decoration: const InputDecoration(
-            labelText: 'Registration number',
-            hintText: 'e.g. DL1PC1234',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.createVehicleRegistrationNoLabel,
+            hintText: context.l10n.createVehicleRegistrationNoHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -114,11 +114,11 @@ class _CreateVehicleFormState extends State<CreateVehicleForm> {
           key: const Key('vehicle_form_display_name_field'),
           controller: _displayName,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'Display name',
-            hintText: 'e.g. Bus 12',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.createVehicleDisplayNameLabel,
+            hintText: context.l10n.createVehicleDisplayNameHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -127,10 +127,10 @@ class _CreateVehicleFormState extends State<CreateVehicleForm> {
           controller: _seatingCapacity,
           enabled: !widget.isSubmitting,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Seating capacity',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.createVehicleSeatingCapacityLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -140,10 +140,10 @@ class _CreateVehicleFormState extends State<CreateVehicleForm> {
           enabled: !widget.isSubmitting,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
-          decoration: const InputDecoration(
-            labelText: 'Vendor name (optional, for outsourced fleets)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.createVehicleVendorNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.lg),
@@ -153,7 +153,7 @@ class _CreateVehicleFormState extends State<CreateVehicleForm> {
               child: OutlinedButton(
                 key: const Key('vehicle_form_cancel_button'),
                 onPressed: widget.isSubmitting ? null : widget.onCancel,
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancelButton),
               ),
             ),
             const SizedBox(width: AdminSpacing.md),
@@ -162,8 +162,8 @@ class _CreateVehicleFormState extends State<CreateVehicleForm> {
                 key: const Key('vehicle_form_submit_button'),
                 onPressed: widget.isSubmitting ? null : _submit,
                 child: widget.isSubmitting
-                    ? const OnboardingButtonSpinner(semanticsLabel: 'Adding')
-                    : const Text('Add'),
+                    ? OnboardingButtonSpinner(semanticsLabel: context.l10n.commonAddingSpinnerLabel)
+                    : Text(context.l10n.commonAddButton),
               ),
             ),
           ],

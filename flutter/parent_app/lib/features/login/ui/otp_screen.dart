@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../utils/utils.dart';
 
 class OtpScreen extends StatelessWidget {
@@ -14,7 +15,7 @@ class OtpScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final controller = TextEditingController();
     return Scaffold(
-      appBar: AppBar(title: const Text('Enter code')),
+      appBar: AppBar(title: Text(context.l10n.otpAppBarTitle)),
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -27,25 +28,25 @@ class OtpScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Enter the code', style: theme.textTheme.titleLarge),
+                  Text(context.l10n.otpHeading, style: theme.textTheme.titleLarge),
                   const SizedBox(height: GuardianSpacing.sm),
                   Text(
-                    'We sent a code to $phone.',
+                    context.l10n.otpSentTo(phone),
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: GuardianSpacing.lg),
                   TextField(
                     controller: controller,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Code',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.otpCodeLabel,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: GuardianSpacing.lg),
                   FilledButton(
                     onPressed: onVerified,
-                    child: const Text('Verify'),
+                    child: Text(context.l10n.otpVerifyButton),
                   ),
                 ],
               ),

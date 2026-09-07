@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../core/network/rest_client.dart';
 import '../bloc/journey_history_bloc.dart';
 import '../data_provider/journey_history_data_provider.dart';
@@ -66,7 +67,7 @@ class _JourneyHistoryView extends StatelessWidget {
           entries: state.entries,
           isLoading: state.isLoading,
           loadFailure: state.showsFailureInsteadOfContent
-              ? _failureText(state)
+              ? _failureText(context, state)
               : null,
           onRefresh: () async =>
               context.read<JourneyHistoryBloc>().add(const JourneyHistoryRefreshed()),
@@ -78,19 +79,15 @@ class _JourneyHistoryView extends StatelessWidget {
   }
 
   /// Plain language describing the situation, never a code (docs/05-ui/ACCESSIBILITY.md).
-  static String _failureText(JourneyHistoryState state) {
+  static String _failureText(BuildContext context, JourneyHistoryState state) {
+    final l10n = context.l10n;
     return switch (state.failure?.code) {
       // The server refuses a child this account is not linked to. Phrased as a school-office
       // matter rather than an error, the same as child detail's handling of the same code.
-      ErrorCode.authScopeDenied =>
-        'This child is no longer linked to your account. '
-            'Contact the school office if you think that is wrong.',
-      ErrorCode.dependencyUnavailable =>
-        'Your device cannot reach the school right now. '
-            'Check your connection and try again.',
-      ErrorCode.rateLimitExceeded =>
-        'Too many attempts just now. Wait a moment and try again.',
-      _ => 'Something went wrong loading journey history. Please try again.',
+      ErrorCode.authScopeDenied => l10n.journeyHistoryScopeDenied,
+      ErrorCode.dependencyUnavailable => l10n.errorDependencyUnavailable,
+      ErrorCode.rateLimitExceeded => l10n.errorRateLimited,
+      _ => l10n.journeyHistoryGenericFailure,
     };
   }
 }

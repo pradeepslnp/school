@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../utils/utils.dart';
 import '../../../widgets/freshness_indicator.dart';
 import '../../../widgets/journey_status_chip.dart';
@@ -66,7 +67,7 @@ class ChildDetailScreen extends StatelessWidget {
     }
 
     if (detail == null) {
-      return const _Message(detail: 'No detail available for this child.');
+      return _Message(detail: context.l10n.childDetailNoDetailAvailable);
     }
 
     final content = ListView(
@@ -104,7 +105,7 @@ class ChildDetailScreen extends StatelessWidget {
                       child: FilledButton.icon(
                         onPressed: onTrack,
                         icon: const Icon(Icons.map_outlined),
-                        label: const Text('Track bus'),
+                        label: Text(context.l10n.trackBusButton),
                       ),
                     ),
                   ],
@@ -117,7 +118,7 @@ class ChildDetailScreen extends StatelessWidget {
         ReadableWidth(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: GuardianSpacing.sm),
-            child: Text('Today', style: context.texts.titleLarge),
+            child: Text(context.l10n.childDetailTodayLabel, style: context.texts.titleLarge),
           ),
         ),
         ReadableWidth(
@@ -138,7 +139,7 @@ class ChildDetailScreen extends StatelessWidget {
                         vertical: GuardianSpacing.md,
                       ),
                       child: Text(
-                        'No trips scheduled for today.',
+                        context.l10n.childDetailNoTripsToday,
                         style: context.texts.bodyMedium,
                       ),
                     ),
@@ -155,7 +156,7 @@ class ChildDetailScreen extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onShowPickupCode,
                 icon: const Icon(Icons.qr_code_2_outlined),
-                label: const Text('Show pickup code'),
+                label: Text(context.l10n.childDetailShowPickupCodeButton),
               ),
             ),
           ),
@@ -193,7 +194,7 @@ class _Message extends StatelessWidget {
               const SizedBox(height: GuardianSpacing.lg),
               FilledButton.tonal(
                 onPressed: () => onRetry!(),
-                child: const Text('Try again'),
+                child: Text(context.l10n.tryAgainButton),
               ),
             ],
           ],

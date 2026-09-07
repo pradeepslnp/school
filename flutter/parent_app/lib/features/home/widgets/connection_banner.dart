@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 
 /// States that the screen is showing cached data, and how old it is.
 ///
@@ -27,8 +28,8 @@ class ConnectionBanner extends StatelessWidget {
     final statusColors = context.status;
     final updated = lastUpdatedAt;
     final message = updated == null
-        ? 'Not connected. Nothing has loaded yet.'
-        : 'Not connected · last updated ${updated.timeOfDay}';
+        ? context.l10n.connectionBannerNoData
+        : context.l10n.connectionBannerLastUpdated(updated.timeOfDay);
 
     return Semantics(
       liveRegion: true,
@@ -59,7 +60,7 @@ class ConnectionBanner extends StatelessWidget {
             ),
             if (onRetry != null) ...[
               const SizedBox(width: GuardianSpacing.sm),
-              TextButton(onPressed: onRetry, child: const Text('Retry')),
+              TextButton(onPressed: onRetry, child: Text(context.l10n.retryButton)),
             ],
           ],
         ),

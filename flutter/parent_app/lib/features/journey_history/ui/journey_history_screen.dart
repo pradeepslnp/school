@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' as intl;
 
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 import '../../../utils/utils.dart';
 import '../repository/models/journey_history_entry.dart';
 import '../widgets/journey_history_entry_tile.dart';
@@ -36,17 +38,17 @@ class JourneyHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Journey history')),
+      appBar: AppBar(title: Text(context.l10n.journeyHistoryAppBarTitle)),
       body: SafeArea(child: _body(context)),
     );
   }
 
   Widget _body(BuildContext context) {
     if (children.isEmpty) {
-      return const _Message(
+      return _Message(
         icon: Icons.family_restroom,
-        title: 'No children linked yet',
-        detail: 'Your school links your children to your account.',
+        title: context.l10n.noChildrenLinkedTitle,
+        detail: context.l10n.noChildrenLinkedDetail,
       );
     }
 
@@ -76,17 +78,17 @@ class JourneyHistoryScreen extends StatelessWidget {
           SliverFillRemaining(
             child: _Message(
               icon: Icons.cloud_off,
-              title: 'Cannot load journey history right now',
+              title: context.l10n.journeyHistoryLoadFailureTitle,
               detail: loadFailure!,
               onRetry: onRefresh,
             ),
           )
         else if (entries.isEmpty)
-          const SliverFillRemaining(
+          SliverFillRemaining(
             child: _Message(
               icon: Icons.history,
-              title: 'No journeys recorded yet',
-              detail: 'Past trips will appear here once your child has traveled.',
+              title: context.l10n.journeyHistoryEmptyTitle,
+              detail: context.l10n.journeyHistoryEmptyDetail,
             ),
           )
         else
@@ -105,7 +107,7 @@ class JourneyHistoryScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_dayLabel(day.date), style: context.texts.titleMedium),
+                      Text(_dayLabel(context, day.date), style: context.texts.titleMedium),
                       Card(
                         margin: const EdgeInsets.only(top: GuardianSpacing.xs),
                         child: Padding(
@@ -150,29 +152,23 @@ class JourneyHistoryScreen extends StatelessWidget {
     return days;
   }
 
-  static String _dayLabel(DateTime date) {
+  /// Weekday and month names come from `intl`'s locale-aware [intl.DateFormat] rather than a
+  /// hand-keyed ARB entry per weekday/month: `intl` is already a dependency for this
+  /// localisation pass (ADR-0013), and calendar names are exactly what it exists to format —
+  /// duplicating them as translatable resource strings would be reinventing what the package
+  /// already provides correctly per locale.
+  static String _dayLabel(BuildContext context, DateTime date) {
+    final l10n = context.l10n;
     final now = DateTime.now().toUtc();
     final today = DateTime.utc(now.year, now.month, now.day);
     final diff = today.difference(date).inDays;
 
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Yesterday';
+    if (diff == 0) return l10n.dayLabelToday;
+    if (diff == 1) return l10n.dayLabelYesterday;
 
-    const weekdays = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    if (diff < 7) return weekdays[date.weekday - 1];
-    return '${weekdays[date.weekday - 1]}, ${date.day} ${months[date.month - 1]}';
+    final localeName = Localizations.localeOf(context).toString();
+    if (diff < 7) return intl.DateFormat.EEEE(localeName).format(date);
+    return intl.DateFormat('EEEE, d MMM', localeName).format(date);
   }
 }
 
@@ -194,7 +190,7 @@ class _ChildSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return DropdownButtonFormField<ChildOption>(
       value: selected,
-      decoration: const InputDecoration(labelText: 'Which child?'),
+      decoration: InputDecoration(labelText: context.l10n.whichChildLabel),
       items: [
         for (final child in children)
           DropdownMenuItem(value: child, child: Text(child.displayName)),
@@ -243,7 +239,7 @@ class _Message extends StatelessWidget {
               const SizedBox(height: GuardianSpacing.lg),
               FilledButton.tonal(
                 onPressed: () => onRetry!(),
-                child: const Text('Try again'),
+                child: Text(context.l10n.tryAgainButton),
               ),
             ],
           ],

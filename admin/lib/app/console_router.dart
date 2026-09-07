@@ -19,6 +19,7 @@ import '../features/staff/ui/staff_list_route.dart';
 import '../features/students/ui/student_list_route.dart';
 import '../features/users/ui/user_list_route.dart';
 import '../features/vehicles/ui/vehicle_list_route.dart';
+import '../l10n/app_localizations_extension.dart';
 import 'theme.dart';
 
 /// Where the console is.
@@ -398,12 +399,12 @@ class _BootSplash extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AdminSpacing.lg),
-            const SizedBox(
+            SizedBox(
               height: 20,
               width: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                semanticsLabel: 'Loading the console',
+                semanticsLabel: context.l10n.bootSplashLoadingLabel,
               ),
             ),
           ],

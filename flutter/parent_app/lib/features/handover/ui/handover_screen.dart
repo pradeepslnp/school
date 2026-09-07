@@ -7,6 +7,7 @@ import 'package:screen_brightness/screen_brightness.dart';
 import '../../../app/app_size_constants.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../core/l10n_extensions.dart';
 import '../bloc/handover_bloc.dart';
 import '../repository/models/handover_code.dart';
 
@@ -79,7 +80,11 @@ class _HandoverScreenState extends State<HandoverScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(selectedName == null ? 'Collect your child' : 'Collect $selectedName'),
+        title: Text(
+          selectedName == null
+              ? context.l10n.handoverCollectChildTitleNoName
+              : context.l10n.handoverCollectChildTitleWithName(selectedName),
+        ),
       ),
       body: SafeArea(child: _body(context)),
     );
@@ -90,10 +95,10 @@ class _HandoverScreenState extends State<HandoverScreen> {
     final selectedName = state.selected?.displayName;
 
     if (state.children.isEmpty) {
-      return const _Message(
+      return _Message(
         icon: Icons.family_restroom,
-        title: 'No children linked yet',
-        detail: 'Your school links your children to your account.',
+        title: context.l10n.noChildrenLinkedTitle,
+        detail: context.l10n.noChildrenLinkedDetail,
       );
     }
 
@@ -147,7 +152,7 @@ class _ChildSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return DropdownButtonFormField<ChildOption>(
       value: selected,
-      decoration: const InputDecoration(labelText: 'Which child?'),
+      decoration: InputDecoration(labelText: context.l10n.whichChildLabel),
       items: [
         for (final child in children)
           DropdownMenuItem(value: child, child: Text(child.displayName)),
@@ -182,13 +187,13 @@ class _CodeDisplay extends StatelessWidget {
     return Column(
       children: [
         Text(
-          'Show this to the bus attendant',
+          context.l10n.handoverShowToAttendant,
           style: context.texts.bodyLarge,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: GuardianSpacing.lg),
         Semantics(
-          label: 'Verification QR code for $childName',
+          label: context.l10n.handoverQrSemanticLabel(childName),
           child: Container(
             padding: const EdgeInsets.all(GuardianSpacing.md),
             decoration: BoxDecoration(
@@ -204,14 +209,14 @@ class _CodeDisplay extends StatelessWidget {
                 data: code.code,
                 version: QrVersions.auto,
                 size: 210,
-                semanticsLabel: 'Verification QR code',
+                semanticsLabel: context.l10n.handoverQrSemanticsLabelPlain,
               ),
             ),
           ),
         ),
         const SizedBox(height: GuardianSpacing.lg),
         Text(
-          'If the attendant cannot scan',
+          context.l10n.handoverIfCannotScan,
           style: context.texts.labelMedium
               ?.copyWith(color: context.colors.onSurfaceVariant),
         ),
@@ -232,7 +237,7 @@ class _CodeDisplay extends StatelessWidget {
           const SizedBox(height: GuardianSpacing.lg),
           FilledButton(
             onPressed: onRequestNewCode,
-            child: const Text('Generate a new code'),
+            child: Text(context.l10n.handoverGenerateNewCode),
           ),
         ],
       ],
@@ -249,7 +254,7 @@ class _ExpiryLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     if (code.isExpired) {
       return Text(
-        'This code has expired',
+        context.l10n.handoverCodeExpired,
         style: context.texts.bodyMedium?.copyWith(color: context.status.warning),
       );
     }
@@ -258,8 +263,8 @@ class _ExpiryLabel extends StatelessWidget {
     final minutes = remaining.inMinutes;
     final seconds = remaining.inSeconds % 60;
     final label = minutes > 0
-        ? 'Expires in $minutes:${seconds.toString().padLeft(2, '0')}'
-        : 'Expires in ${seconds}s';
+        ? context.l10n.handoverExpiresInMinSec(minutes, seconds.toString().padLeft(2, '0'))
+        : context.l10n.handoverExpiresInSeconds(seconds);
 
     return Text(
       label,
@@ -278,15 +283,12 @@ class _FailureMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final text = switch (failure.code) {
-      ErrorCode.guardianNotAuthorisedForHandover =>
-        'You do not hold the right to collect this child '
-            '(BR-GRD-006). Contact another guardian who does, or the school office.',
-      ErrorCode.dependencyUnavailable =>
-        'Your device cannot reach the school right now. Check your connection and try again.',
-      ErrorCode.rateLimitExceeded =>
-        'Too many attempts just now. Wait a moment and try again.',
-      _ => 'Something went wrong requesting a code. Please try again.',
+      ErrorCode.guardianNotAuthorisedForHandover => l10n.handoverErrorNotAuthorised,
+      ErrorCode.dependencyUnavailable => l10n.errorDependencyUnavailable,
+      ErrorCode.rateLimitExceeded => l10n.errorRateLimited,
+      _ => l10n.handoverGenericFailure,
     };
 
     return Padding(
@@ -301,7 +303,7 @@ class _FailureMessage extends StatelessWidget {
           const SizedBox(height: GuardianSpacing.md),
           Text(text, style: context.texts.bodyMedium, textAlign: TextAlign.center),
           const SizedBox(height: GuardianSpacing.lg),
-          FilledButton.tonal(onPressed: onRetry, child: const Text('Try again')),
+          FilledButton.tonal(onPressed: onRetry, child: Text(l10n.tryAgainButton)),
         ],
       ),
     );

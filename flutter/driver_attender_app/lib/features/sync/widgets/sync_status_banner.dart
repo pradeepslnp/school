@@ -3,6 +3,8 @@ import 'package:guardian_theme/guardian_theme.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/offline/sync_status.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../l10n/l10n_extensions.dart';
 
 /// Persistent indicator of the outbound queue (D-14).
 ///
@@ -26,7 +28,8 @@ class SyncStatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (icon, color, surface, message) = _describe(context.status);
+    final (icon, color, surface, message) =
+        _describe(context.status, context.l10n);
 
     return Material(
       color: surface,
@@ -74,7 +77,10 @@ class SyncStatusBanner extends StatelessWidget {
   /// [palette] carries each status color already paired with its surface tint, so the fill
   /// is a specified color rather than an opacity applied to the foreground and hoped to
   /// still meet AA.
-  (IconData, Color, Color, String) _describe(GuardianStatusColors palette) {
+  (IconData, Color, Color, String) _describe(
+    GuardianStatusColors palette,
+    AppLocalizations l10n,
+  ) {
     // Reviewed first: a flagged record needs a human decision and outranks queue state
     // (BR-SAFE-005).
     final needingReview = status.flaggedForReviewCount + status.refusedCount;
@@ -83,19 +89,17 @@ class SyncStatusBanner extends StatelessWidget {
         Icons.flag_outlined,
         palette.warning,
         palette.warningSurface,
-        '$needingReview ${needingReview == 1 ? 'record needs' : 'records need'} review',
+        l10n.syncRecordsNeedReview(needingReview),
       );
     }
 
     if (status.needsAttention) {
-      final n = status.pendingCount;
       return (
         Icons.cloud_off,
         palette.pendingSync,
         palette.pendingSyncSurface,
         // States plainly that nothing is lost — the attendant's real question.
-        'Offline · $n ${n == 1 ? 'record' : 'records'} saved on this device, '
-            'will send when back in range',
+        l10n.syncOfflinePendingRecords(status.pendingCount),
       );
     }
 
@@ -104,17 +108,16 @@ class SyncStatusBanner extends StatelessWidget {
         Icons.cloud_off,
         palette.neutral,
         palette.neutralSurface,
-        'Offline · nothing waiting to send',
+        l10n.syncOfflineNoPending,
       );
     }
 
     if (status.hasPendingWork) {
-      final n = status.pendingCount;
       return (
         Icons.cloud_upload_outlined,
         palette.info,
         palette.infoSurface,
-        'Sending $n ${n == 1 ? 'record' : 'records'}…',
+        l10n.syncSendingRecords(status.pendingCount),
       );
     }
 
@@ -122,27 +125,33 @@ class SyncStatusBanner extends StatelessWidget {
       Icons.cloud_done_outlined,
       palette.safe,
       palette.safeSurface,
-      'All records sent${_sinceLastSync()}',
+      _allSentMessage(l10n),
     );
   }
 
-  /// "· 3 min ago", or nothing if the queue has never been drained on this device.
+  /// "All records sent · 3 min ago", or no suffix if the queue has never been drained on
+  /// this device.
   ///
   /// Relative rather than a clock time on purpose. BR-CFG-006 requires times to render in
   /// the **school's** timezone, never the device's, and this app has no school configuration
   /// yet — so "15:47" here would be a device-local reading presented as if it were
   /// authoritative. An elapsed interval needs no timezone to be true, and "4 minutes ago" is
   /// closer to the question the attendant is actually asking.
-  String _sinceLastSync() {
+  ///
+  /// Picks a whole resource key per branch rather than composing a translated sentence out
+  /// of a translated fragment plus a separately-formatted suffix: concatenating two
+  /// independently-translated strings is exactly the pattern that breaks in languages with
+  /// different word order, so each variant is its own complete ARB message instead.
+  String _allSentMessage(AppLocalizations l10n) {
     final at = status.lastSyncedAt;
-    if (at == null) return '';
+    if (at == null) return l10n.syncAllSent;
 
     // Compared against the device clock, which is fine for an interval: both readings come
     // from the same clock, so its offset from real time cancels out.
     final elapsed = DateTime.now().toUtc().difference(at);
-    if (elapsed.isNegative) return '';
-    if (elapsed.inMinutes < 1) return ' · just now';
-    if (elapsed.inMinutes < 60) return ' · ${elapsed.inMinutes} min ago';
-    return ' · ${elapsed.inHours} h ago';
+    if (elapsed.isNegative) return l10n.syncAllSent;
+    if (elapsed.inMinutes < 1) return l10n.syncAllSentJustNow;
+    if (elapsed.inMinutes < 60) return l10n.syncAllSentMinutesAgo(elapsed.inMinutes);
+    return l10n.syncAllSentHoursAgo(elapsed.inHours);
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 
 /// What the console shows when it has no modules to show.
 ///
@@ -32,14 +33,13 @@ class NoModulesNotice extends StatelessWidget {
               ),
               const SizedBox(height: AdminSpacing.md),
               Text(
-                'No console modules in this build',
+                context.l10n.noModulesNoticeTitle,
                 style: theme.textTheme.titleLarge,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AdminSpacing.sm),
               Text(
-                'You are signed in. The operations dashboard, alert inbox, and '
-                'administration screens are not part of this build yet.',
+                context.l10n.noModulesNoticeBody,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
