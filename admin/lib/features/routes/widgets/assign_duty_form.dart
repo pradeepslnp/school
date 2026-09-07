@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_button_spinner.dart';
 import '../../staff/domain/staff_models.dart';
 
@@ -67,25 +68,29 @@ class _AssignDutyFormState extends State<AssignDutyForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Assign crew', style: theme.textTheme.titleLarge),
+        Text(context.l10n.routeCrewAssignButton, style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.sm),
         DropdownButtonFormField<String>(
           key: const Key('duty_form_staff_id_field'),
           initialValue: _staffId,
           isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'Driver or attendant',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.dutyFormStaffLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
           hint: Text(
-            widget.staffOptions.isEmpty ? 'No roster loaded for this school' : 'Select a person',
+            widget.staffOptions.isEmpty
+                ? context.l10n.dutyFormNoRosterHint
+                : context.l10n.dutyFormSelectPersonHint,
           ),
           items: [
             for (final staff in widget.staffOptions)
               DropdownMenuItem(
                 value: staff.id,
-                child: Text('${staff.displayName} · ${staff.staffType}'),
+                child: Text(
+                  context.l10n.dutyFormStaffOption(staff.displayName, _staffTypeLabel(context, staff.staffType)),
+                ),
               ),
           ],
           onChanged: widget.isSubmitting || widget.staffOptions.isEmpty
@@ -95,9 +100,9 @@ class _AssignDutyFormState extends State<AssignDutyForm> {
         const SizedBox(height: AdminSpacing.md),
         SegmentedButton<String>(
           key: const Key('duty_form_role_field'),
-          segments: const [
-            ButtonSegment(value: 'DRIVER', label: Text('Driver')),
-            ButtonSegment(value: 'ATTENDANT', label: Text('Attendant')),
+          segments: [
+            ButtonSegment(value: 'DRIVER', label: Text(context.l10n.staffTypeDriver)),
+            ButtonSegment(value: 'ATTENDANT', label: Text(context.l10n.staffTypeAttendant)),
           ],
           selected: {_role},
           onSelectionChanged:
@@ -106,10 +111,10 @@ class _AssignDutyFormState extends State<AssignDutyForm> {
         const SizedBox(height: AdminSpacing.md),
         SegmentedButton<String>(
           key: const Key('duty_form_direction_field'),
-          segments: const [
-            ButtonSegment(value: 'BOTH', label: Text('Both')),
-            ButtonSegment(value: 'PICKUP', label: Text('Pickup')),
-            ButtonSegment(value: 'DROP', label: Text('Drop')),
+          segments: [
+            ButtonSegment(value: 'BOTH', label: Text(context.l10n.directionBoth)),
+            ButtonSegment(value: 'PICKUP', label: Text(context.l10n.studentDetailDirectionPickup)),
+            ButtonSegment(value: 'DROP', label: Text(context.l10n.studentDetailDirectionDrop)),
           ],
           selected: {_direction},
           onSelectionChanged: widget.isSubmitting
@@ -123,7 +128,7 @@ class _AssignDutyFormState extends State<AssignDutyForm> {
               child: OutlinedButton(
                 key: const Key('duty_form_cancel_button'),
                 onPressed: widget.isSubmitting ? null : widget.onCancel,
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancelButton),
               ),
             ),
             const SizedBox(width: AdminSpacing.md),
@@ -132,13 +137,22 @@ class _AssignDutyFormState extends State<AssignDutyForm> {
                 key: const Key('duty_form_submit_button'),
                 onPressed: widget.isSubmitting || _staffId == null ? null : _submit,
                 child: widget.isSubmitting
-                    ? const OnboardingButtonSpinner(semanticsLabel: 'Assigning')
-                    : const Text('Assign'),
+                    ? OnboardingButtonSpinner(semanticsLabel: context.l10n.dutyFormAssigningSpinnerLabel)
+                    : Text(context.l10n.dutyFormAssignButton),
               ),
             ),
           ],
         ),
       ],
     );
+  }
+
+  String _staffTypeLabel(BuildContext context, String staffType) {
+    final l10n = context.l10n;
+    return switch (staffType) {
+      'DRIVER' => l10n.staffTypeDriver,
+      'ATTENDANT' => l10n.staffTypeAttendant,
+      _ => staffType,
+    };
   }
 }

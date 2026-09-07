@@ -54,8 +54,10 @@ class _SchoolSettingsScreenState extends State<SchoolSettingsScreen> {
                 child: BlocBuilder<SchoolSettingsBloc, SchoolSettingsState>(
                   builder: (context, state) {
                     if (state.isLoading && state.school == null) {
-                      return const Center(
-                        child: CircularProgressIndicator(semanticsLabel: 'Loading school'),
+                      return Center(
+                        child: CircularProgressIndicator(
+                          semanticsLabel: context.l10n.schoolSettingsLoadingLabel,
+                        ),
                       );
                     }
 

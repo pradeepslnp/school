@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../domain/onboarding_models.dart';
 import 'onboarding_button_spinner.dart';
 
@@ -80,12 +81,10 @@ class _CreateSchoolFormState extends State<CreateSchoolForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Step 2 of 2 — First school', style: theme.textTheme.titleLarge),
+        Text(context.l10n.createSchoolStepTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.xs),
         Text(
-          '${widget.organization.name} (${widget.organization.code}) was created. An '
-          'organization needs at least one school before it can be used day to day '
-          '(BR-TEN-002) — add one now, or come back to it later.',
+          context.l10n.createSchoolIntro(widget.organization.name, widget.organization.code),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -97,11 +96,11 @@ class _CreateSchoolFormState extends State<CreateSchoolForm> {
           autofocus: true,
           enabled: !widget.isSubmitting,
           textCapitalization: TextCapitalization.characters,
-          decoration: const InputDecoration(
-            labelText: 'School code',
-            hintText: 'e.g. GW-MAIN',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.createSchoolCodeLabel,
+            hintText: context.l10n.createSchoolCodeHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -109,11 +108,11 @@ class _CreateSchoolFormState extends State<CreateSchoolForm> {
           key: const Key('org_onboarding_school_name_field'),
           controller: _name,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'School name',
-            hintText: 'e.g. Greenwood Main Campus',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.schoolFieldNameLabel,
+            hintText: context.l10n.createSchoolNameHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -121,11 +120,11 @@ class _CreateSchoolFormState extends State<CreateSchoolForm> {
           key: const Key('org_onboarding_school_timezone_field'),
           controller: _timezone,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'Timezone (IANA identifier)',
-            hintText: 'e.g. Asia/Kolkata',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.schoolFieldTimezoneLabel,
+            hintText: context.l10n.createSchoolTimezoneHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -140,10 +139,10 @@ class _CreateSchoolFormState extends State<CreateSchoolForm> {
                   signed: true,
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Latitude',
-                  border: OutlineInputBorder(),
-                  constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+                decoration: InputDecoration(
+                  labelText: context.l10n.schoolFieldLatitudeLabel,
+                  border: const OutlineInputBorder(),
+                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
                 ),
               ),
             ),
@@ -157,10 +156,10 @@ class _CreateSchoolFormState extends State<CreateSchoolForm> {
                   signed: true,
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Longitude',
-                  border: OutlineInputBorder(),
-                  constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+                decoration: InputDecoration(
+                  labelText: context.l10n.schoolFieldLongitudeLabel,
+                  border: const OutlineInputBorder(),
+                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
                 ),
               ),
             ),
@@ -174,10 +173,10 @@ class _CreateSchoolFormState extends State<CreateSchoolForm> {
           keyboardType: TextInputType.number,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
-          decoration: const InputDecoration(
-            labelText: 'Geofence radius (metres, 20–2000)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.schoolFieldGeofenceLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.lg),
@@ -185,14 +184,14 @@ class _CreateSchoolFormState extends State<CreateSchoolForm> {
           key: const Key('org_onboarding_create_school_button'),
           onPressed: widget.isSubmitting ? null : _submit,
           child: widget.isSubmitting
-              ? const OnboardingButtonSpinner(semanticsLabel: 'Adding school')
-              : const Text('Add school'),
+              ? OnboardingButtonSpinner(semanticsLabel: context.l10n.createSchoolAddingSpinnerLabel)
+              : Text(context.l10n.createSchoolSubmitButton),
         ),
         const SizedBox(height: AdminSpacing.sm),
         TextButton(
           key: const Key('org_onboarding_skip_school_button'),
           onPressed: widget.isSubmitting ? null : widget.onSkip,
-          child: const Text('Finish without adding a school'),
+          child: Text(context.l10n.createSchoolSkipButton),
         ),
       ],
     );

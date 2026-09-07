@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../domain/onboarding_models.dart';
 
 /// Step 3: confirmation, once the organization (and optionally its first school) exists.
@@ -33,25 +34,30 @@ class OnboardingCompleteSummary extends StatelessWidget {
             Icon(Icons.check_circle_outline, color: safeColor),
             const SizedBox(width: AdminSpacing.sm),
             Expanded(
-              child: Text('Organization onboarded', style: theme.textTheme.titleLarge),
+              child: Text(context.l10n.onboardingCompleteTitle, style: theme.textTheme.titleLarge),
             ),
           ],
         ),
         const SizedBox(height: AdminSpacing.md),
-        _SummaryRow(label: 'Organization', value: '${organization.name} (${organization.code})'),
+        _SummaryRow(
+          label: context.l10n.onboardingSummaryOrgLabel,
+          value: context.l10n.onboardingNameAndCode(organization.name, organization.code),
+        ),
         if (school != null) ...[
-          _SummaryRow(label: 'First school', value: '${school!.name} (${school!.code})'),
+          _SummaryRow(
+            label: context.l10n.onboardingSummaryFirstSchoolLabel,
+            value: context.l10n.onboardingNameAndCode(school!.name, school!.code),
+          ),
           _CopyableIdRow(
             key: const Key('onboarding_school_id_row'),
-            label: 'School ID',
+            label: context.l10n.schoolDetailsIdLabel,
             value: school!.id,
           ),
         ] else
           Padding(
             padding: const EdgeInsets.only(top: AdminSpacing.sm),
             child: Text(
-              'No school was added yet. Add one from the Schools screen before this '
-              'organization is used day to day (BR-TEN-002).',
+              context.l10n.onboardingNoSchoolYet,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -61,7 +67,7 @@ class OnboardingCompleteSummary extends StatelessWidget {
         FilledButton(
           key: const Key('org_onboarding_start_another_button'),
           onPressed: onStartAnother,
-          child: const Text('Onboard another organization'),
+          child: Text(context.l10n.onboardingStartAnotherButton),
         ),
       ],
     );
@@ -127,11 +133,11 @@ class _CopyableIdRow extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.copy, size: 18),
-            tooltip: 'Copy',
+            tooltip: context.l10n.copyTooltip,
             onPressed: () {
               Clipboard.setData(ClipboardData(text: value));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Copied to clipboard')),
+                SnackBar(content: Text(context.l10n.copiedToClipboardSnackbar)),
               );
             },
           ),

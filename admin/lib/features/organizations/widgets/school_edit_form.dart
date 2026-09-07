@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../domain/onboarding_models.dart';
 import 'onboarding_button_spinner.dart';
 
@@ -71,9 +72,8 @@ class _SchoolEditFormState extends State<SchoolEditForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _CopyableIdField(
-          label: 'School ID',
-          helperText: 'Give this to whoever registers staff, vehicles, or routes for '
-              'this school.',
+          label: context.l10n.schoolDetailsIdLabel,
+          helperText: context.l10n.schoolDetailsIdHelper,
           value: widget.school.id,
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -81,10 +81,10 @@ class _SchoolEditFormState extends State<SchoolEditForm> {
           key: const Key('school_details_code_field'),
           enabled: false,
           controller: TextEditingController(text: widget.school.code),
-          decoration: const InputDecoration(
-            labelText: 'School code (fixed)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.schoolDetailsCodeFixedLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -92,10 +92,10 @@ class _SchoolEditFormState extends State<SchoolEditForm> {
           key: const Key('school_details_name_field'),
           controller: _name,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'School name',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.schoolFieldNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -103,10 +103,10 @@ class _SchoolEditFormState extends State<SchoolEditForm> {
           key: const Key('school_details_timezone_field'),
           controller: _timezone,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'Timezone (IANA identifier)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.schoolFieldTimezoneLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -121,10 +121,10 @@ class _SchoolEditFormState extends State<SchoolEditForm> {
                   signed: true,
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Latitude',
-                  border: OutlineInputBorder(),
-                  constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+                decoration: InputDecoration(
+                  labelText: context.l10n.schoolFieldLatitudeLabel,
+                  border: const OutlineInputBorder(),
+                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
                 ),
               ),
             ),
@@ -138,10 +138,10 @@ class _SchoolEditFormState extends State<SchoolEditForm> {
                   signed: true,
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Longitude',
-                  border: OutlineInputBorder(),
-                  constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+                decoration: InputDecoration(
+                  labelText: context.l10n.schoolFieldLongitudeLabel,
+                  border: const OutlineInputBorder(),
+                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
                 ),
               ),
             ),
@@ -155,10 +155,10 @@ class _SchoolEditFormState extends State<SchoolEditForm> {
           keyboardType: TextInputType.number,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
-          decoration: const InputDecoration(
-            labelText: 'Geofence radius (metres, 20–2000)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.schoolFieldGeofenceLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -166,8 +166,8 @@ class _SchoolEditFormState extends State<SchoolEditForm> {
           key: const Key('school_details_save_button'),
           onPressed: widget.isSubmitting ? null : _submit,
           child: widget.isSubmitting
-              ? const OnboardingButtonSpinner(semanticsLabel: 'Saving school')
-              : const Text('Save school changes'),
+              ? OnboardingButtonSpinner(semanticsLabel: context.l10n.schoolDetailsSavingSpinnerLabel)
+              : Text(context.l10n.schoolDetailsSaveButton),
         ),
       ],
     );
@@ -221,11 +221,11 @@ class _CopyableIdField extends StatelessWidget {
               IconButton(
                 key: const Key('school_details_id_copy_button'),
                 icon: const Icon(Icons.copy, size: 18),
-                tooltip: 'Copy',
+                tooltip: context.l10n.copyTooltip,
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: value));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Copied to clipboard')),
+                    SnackBar(content: Text(context.l10n.copiedToClipboardSnackbar)),
                   );
                 },
               ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/domain/onboarding_models.dart';
 import '../../organizations/widgets/onboarding_button_spinner.dart';
 import '../domain/user_models.dart';
@@ -137,12 +138,12 @@ class _CreateUserFormState extends State<CreateUserForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Add administrator', style: theme.textTheme.titleLarge),
+        Text(context.l10n.userListAddButton, style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.xs),
         Text(
           _isInvite
-              ? 'We email them a link to set their own password and activate the account.'
-              : 'You set a password now and share it with them yourself.',
+              ? context.l10n.createUserInviteDescription
+              : context.l10n.createUserPasswordDescription,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -150,16 +151,16 @@ class _CreateUserFormState extends State<CreateUserForm> {
         const SizedBox(height: AdminSpacing.lg),
         SegmentedButton<String>(
           key: const Key('user_form_delivery_mode'),
-          segments: const [
+          segments: [
             ButtonSegment(
               value: 'INVITE',
-              label: Text('Send invite'),
-              icon: Icon(Icons.mail_outline),
+              label: Text(context.l10n.createUserSendInviteOption),
+              icon: const Icon(Icons.mail_outline),
             ),
             ButtonSegment(
               value: 'PASSWORD',
-              label: Text('Set password'),
-              icon: Icon(Icons.password_outlined),
+              label: Text(context.l10n.createUserSetPasswordOption),
+              icon: const Icon(Icons.password_outlined),
             ),
           ],
           selected: {_deliveryMode},
@@ -172,14 +173,14 @@ class _CreateUserFormState extends State<CreateUserForm> {
           key: const Key('user_form_role_field'),
           initialValue: _roleCode,
           isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'Role',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.roleReferenceRoleFilterLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
           items: [
             for (final role in widget.roleCodes)
-              DropdownMenuItem(value: role, child: Text(roleDisplayName(role))),
+              DropdownMenuItem(value: role, child: Text(roleDisplayName(context.l10n, role))),
           ],
           onChanged: widget.isSubmitting || widget.roleCodes.isEmpty
               ? null
@@ -194,11 +195,11 @@ class _CreateUserFormState extends State<CreateUserForm> {
             key: const Key('user_form_school_field'),
             initialValue: _schoolId,
             isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'School',
-              hintText: 'Which school this role applies to',
-              border: OutlineInputBorder(),
-              constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+            decoration: InputDecoration(
+              labelText: context.l10n.schoolScopeLabel,
+              hintText: context.l10n.createUserSchoolHint,
+              border: const OutlineInputBorder(),
+              constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
             ),
             items: [
               for (final school in widget.schools)
@@ -215,10 +216,10 @@ class _CreateUserFormState extends State<CreateUserForm> {
           controller: _firstName,
           autofocus: true,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'First name',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.firstNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -226,10 +227,10 @@ class _CreateUserFormState extends State<CreateUserForm> {
           key: const Key('user_form_last_name_field'),
           controller: _lastName,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'Last name',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.lastNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -238,11 +239,11 @@ class _CreateUserFormState extends State<CreateUserForm> {
           controller: _email,
           enabled: !widget.isSubmitting,
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
-            labelText: 'Email (sign-in)',
-            hintText: 'What this person signs in with',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.createUserEmailLabel,
+            hintText: context.l10n.createUserEmailHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -251,10 +252,10 @@ class _CreateUserFormState extends State<CreateUserForm> {
           controller: _phone,
           enabled: !widget.isSubmitting,
           keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(
-            labelText: 'Phone (optional)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.createUserPhoneLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         if (!_isInvite) ...[
@@ -267,8 +268,8 @@ class _CreateUserFormState extends State<CreateUserForm> {
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _submit(),
             decoration: InputDecoration(
-              labelText: 'Initial password',
-              hintText: 'At least 12 characters',
+              labelText: context.l10n.createUserPasswordLabel,
+              hintText: context.l10n.createUserPasswordHint,
               border: const OutlineInputBorder(),
               constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
               suffixIcon: Row(
@@ -276,7 +277,9 @@ class _CreateUserFormState extends State<CreateUserForm> {
                 children: [
                   IconButton(
                     key: const Key('user_form_password_visibility_button'),
-                    tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+                    tooltip: _obscurePassword
+                        ? context.l10n.passwordVisibilityShowTooltip
+                        : context.l10n.passwordVisibilityHideTooltip,
                     icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
                     onPressed: widget.isSubmitting
                         ? null
@@ -284,7 +287,7 @@ class _CreateUserFormState extends State<CreateUserForm> {
                   ),
                   IconButton(
                     key: const Key('user_form_password_generate_button'),
-                    tooltip: 'Generate a password',
+                    tooltip: context.l10n.createUserGeneratePasswordTooltip,
                     icon: const Icon(Icons.autorenew),
                     onPressed: widget.isSubmitting ? null : _generatePassword,
                   ),
@@ -300,7 +303,7 @@ class _CreateUserFormState extends State<CreateUserForm> {
               child: OutlinedButton(
                 key: const Key('user_form_cancel_button'),
                 onPressed: widget.isSubmitting ? null : widget.onCancel,
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancelButton),
               ),
             ),
             const SizedBox(width: AdminSpacing.md),
@@ -309,8 +312,8 @@ class _CreateUserFormState extends State<CreateUserForm> {
                 key: const Key('user_form_submit_button'),
                 onPressed: widget.isSubmitting ? null : _submit,
                 child: widget.isSubmitting
-                    ? const OnboardingButtonSpinner(semanticsLabel: 'Adding')
-                    : const Text('Add'),
+                    ? OnboardingButtonSpinner(semanticsLabel: context.l10n.commonAddingSpinnerLabel)
+                    : Text(context.l10n.commonAddButton),
               ),
             ),
           ],
@@ -340,20 +343,19 @@ class InvitationSentView extends StatelessWidget {
           children: [
             Icon(Icons.mark_email_read_outlined, color: context.status.safe),
             const SizedBox(width: AdminSpacing.sm),
-            Expanded(child: Text('Invitation sent', style: theme.textTheme.titleLarge)),
+            Expanded(child: Text(context.l10n.invitationSentTitle, style: theme.textTheme.titleLarge)),
           ],
         ),
         const SizedBox(height: AdminSpacing.xs),
         Text(
-          'We’ve emailed $email a link to set their password. It is valid for 72 hours; '
-          'you can re-send it from their row if it expires.',
+          context.l10n.invitationSentBody(email),
           style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: AdminSpacing.lg),
         FilledButton(
           key: const Key('user_form_invitation_done_button'),
           onPressed: onDone,
-          child: const Text('Done'),
+          child: Text(context.l10n.commonDoneButton),
         ),
       ],
     );
@@ -388,31 +390,34 @@ class CreatedUserCredentialsView extends StatelessWidget {
             Icon(Icons.check_circle_outline, color: context.status.safe),
             const SizedBox(width: AdminSpacing.sm),
             Expanded(
-              child: Text('Account created', style: theme.textTheme.titleLarge),
+              child: Text(context.l10n.accountCreatedTitle, style: theme.textTheme.titleLarge),
             ),
           ],
         ),
         const SizedBox(height: AdminSpacing.xs),
         Text(
-          'Share these sign-in details with them now — this password will not be shown '
-          'again.',
+          context.l10n.accountCreatedBody,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: AdminSpacing.lg),
-        _CopyableField(key: const Key('user_form_created_email'), label: 'Email', value: email),
+        _CopyableField(
+          key: const Key('user_form_created_email'),
+          label: context.l10n.credentialsEmailLabel,
+          value: email,
+        ),
         const SizedBox(height: AdminSpacing.md),
         _CopyableField(
           key: const Key('user_form_created_password'),
-          label: 'Password',
+          label: context.l10n.credentialsPasswordLabel,
           value: password,
         ),
         const SizedBox(height: AdminSpacing.lg),
         FilledButton(
           key: const Key('user_form_created_done_button'),
           onPressed: onDone,
-          child: const Text('Done'),
+          child: Text(context.l10n.commonDoneButton),
         ),
       ],
     );
@@ -436,13 +441,14 @@ class _CopyableField extends StatelessWidget {
         border: const OutlineInputBorder(),
         constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
         suffixIcon: IconButton(
-          tooltip: 'Copy',
+          tooltip: context.l10n.copyTooltip,
           icon: const Icon(Icons.copy_outlined),
           onPressed: () async {
+            final l10n = context.l10n;
             await Clipboard.setData(ClipboardData(text: value));
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('$label copied')),
+                SnackBar(content: Text(l10n.copiedSnackbar(label))),
               );
             }
           },

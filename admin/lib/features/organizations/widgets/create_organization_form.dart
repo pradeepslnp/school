@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import 'onboarding_button_spinner.dart';
 
 /// Step 1: the organization's own details (TEN-001).
@@ -63,11 +64,10 @@ class _CreateOrganizationFormState extends State<CreateOrganizationForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Step 1 of 2 — Organization details', style: theme.textTheme.titleLarge),
+        Text(context.l10n.createOrgStepTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.xs),
         Text(
-          'This becomes a new tenant. The code is immutable once the organization has any '
-          'schools or staff (BR-TEN-007).',
+          context.l10n.createOrgIntro,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -79,11 +79,11 @@ class _CreateOrganizationFormState extends State<CreateOrganizationForm> {
           autofocus: true,
           enabled: !widget.isSubmitting,
           textCapitalization: TextCapitalization.characters,
-          decoration: const InputDecoration(
-            labelText: 'Organization code',
-            hintText: 'e.g. GREENWOOD',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.createOrgCodeLabel,
+            hintText: context.l10n.createOrgCodeHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -91,11 +91,11 @@ class _CreateOrganizationFormState extends State<CreateOrganizationForm> {
           key: const Key('org_onboarding_name_field'),
           controller: _name,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'Organization name',
-            hintText: 'e.g. Greenwood Education Group',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.createOrgNameLabel,
+            hintText: context.l10n.createOrgNameHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -104,11 +104,11 @@ class _CreateOrganizationFormState extends State<CreateOrganizationForm> {
           controller: _regionProfileCode,
           enabled: !widget.isSubmitting,
           textCapitalization: TextCapitalization.characters,
-          decoration: const InputDecoration(
-            labelText: 'Region profile code',
-            hintText: 'e.g. IN — supplies phone, document, and retention defaults (ADR-0007)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.createOrgRegionLabel,
+            hintText: context.l10n.createOrgRegionHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -117,10 +117,10 @@ class _CreateOrganizationFormState extends State<CreateOrganizationForm> {
           controller: _contactEmail,
           enabled: !widget.isSubmitting,
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
-            labelText: 'Contact email (optional)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.createOrgContactEmailLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -131,10 +131,10 @@ class _CreateOrganizationFormState extends State<CreateOrganizationForm> {
           keyboardType: TextInputType.phone,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
-          decoration: const InputDecoration(
-            labelText: 'Contact phone (optional)',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.createOrgContactPhoneLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.lg),
@@ -144,8 +144,8 @@ class _CreateOrganizationFormState extends State<CreateOrganizationForm> {
           // than a disabled control explaining nothing (ACCESSIBILITY.md §Operable).
           onPressed: widget.isSubmitting ? null : _submit,
           child: widget.isSubmitting
-              ? const OnboardingButtonSpinner(semanticsLabel: 'Creating organization')
-              : const Text('Create organization'),
+              ? OnboardingButtonSpinner(semanticsLabel: context.l10n.createOrgCreatingSpinnerLabel)
+              : Text(context.l10n.createOrgSubmitButton),
         ),
       ],
     );

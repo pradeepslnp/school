@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
 import '../../staff/domain/staff_models.dart';
 import '../bloc/duty_assignment_bloc.dart';
@@ -120,7 +121,7 @@ class _RouteCrewView extends StatelessWidget {
                       key: const Key('route_crew_assign_button'),
                       onPressed: () => _openAssignForm(context),
                       icon: const Icon(Icons.person_add_alt),
-                      label: const Text('Assign crew'),
+                      label: Text(context.l10n.routeCrewAssignButton),
                     ),
                   ],
                 ),
@@ -129,15 +130,17 @@ class _RouteCrewView extends StatelessWidget {
                   child: BlocBuilder<DutyAssignmentBloc, DutyAssignmentState>(
                     builder: (context, state) {
                       if (state.isLoading && state.assignments.isEmpty) {
-                        return const Center(
-                          child: CircularProgressIndicator(semanticsLabel: 'Loading crew'),
+                        return Center(
+                          child: CircularProgressIndicator(
+                            semanticsLabel: context.l10n.routeCrewLoadingLabel,
+                          ),
                         );
                       }
 
                       if (state.assignments.isEmpty) {
                         return Center(
                           child: Text(
-                            'No crew assigned yet.',
+                            context.l10n.routeCrewEmptyState,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -155,7 +158,7 @@ class _RouteCrewView extends StatelessWidget {
                   child: TextButton(
                     key: const Key('route_crew_close_button'),
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Close'),
+                    child: Text(context.l10n.commonCloseButton),
                   ),
                 ),
               ],
@@ -185,10 +188,28 @@ class _CrewList extends StatelessWidget {
           leading: Icon(
             assignment.role == 'DRIVER' ? Icons.airline_seat_recline_normal : Icons.badge,
           ),
-          title: Text(assignment.role),
-          subtitle: Text(assignment.direction ?? 'Both directions'),
+          title: Text(_roleLabel(context, assignment.role)),
+          subtitle: Text(_directionLabel(context, assignment.direction)),
         );
       },
     );
+  }
+
+  String _roleLabel(BuildContext context, String role) {
+    final l10n = context.l10n;
+    return switch (role) {
+      'DRIVER' => l10n.staffTypeDriver,
+      'ATTENDANT' => l10n.staffTypeAttendant,
+      _ => role,
+    };
+  }
+
+  String _directionLabel(BuildContext context, String? direction) {
+    final l10n = context.l10n;
+    return switch (direction) {
+      'PICKUP' => l10n.studentDetailDirectionPickup,
+      'DROP' => l10n.studentDetailDirectionDrop,
+      _ => l10n.routeCrewBothDirectionsLabel,
+    };
   }
 }

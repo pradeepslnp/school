@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
 import '../../school_scope/widgets/school_picker_field.dart';
 import '../../vehicles/domain/vehicle_models.dart';
@@ -138,7 +139,7 @@ class _RouteListScreenState extends State<RouteListScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Text('Routes', style: theme.textTheme.headlineSmall),
+                  child: Text(context.l10n.consoleDestinationRoutes, style: theme.textTheme.headlineSmall),
                 ),
 _AddRouteButton(
                   enabled: _selectedSchoolId != null,
@@ -157,8 +158,10 @@ _AddRouteButton(
               child: BlocBuilder<RouteListBloc, RouteListState>(
                 builder: (context, state) {
                   if (state.isLoading && state.routes.isEmpty) {
-                    return const Center(
-                      child: CircularProgressIndicator(semanticsLabel: 'Loading routes'),
+                    return Center(
+                      child: CircularProgressIndicator(
+                        semanticsLabel: context.l10n.routeListLoadingLabel,
+                      ),
                     );
                   }
 
@@ -166,7 +169,7 @@ _AddRouteButton(
                     final color = context.status.critical;
                     return Center(
                       child: Text(
-                        'That could not be loaded right now. Try again.',
+                        context.l10n.errorGenericLoadRetry,
                         style: theme.textTheme.bodyMedium?.copyWith(color: color),
                       ),
                     );
@@ -175,7 +178,7 @@ _AddRouteButton(
                   if (state.routes.isEmpty) {
                     return Center(
                       child: Text(
-                        'No routes loaded. Pick a school above, or add the first route.',
+                        context.l10n.routeListEmptyState,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -243,11 +246,13 @@ class _RouteTable extends StatelessWidget {
                 IconButton(
                   key: Key('route_list_stops_${route.id}'),
                   icon: const Icon(Icons.alt_route_outlined),
-                  tooltip: 'Stops on ${route.name}',
+                  tooltip: context.l10n.routeStopsTooltip(route.name),
                   onPressed: () => onOpenStops(route),
                 ),
                 Tooltip(
-                  message: route.hasVehicle ? 'Has a default bus' : 'No bus assigned yet',
+                  message: route.hasVehicle
+                      ? context.l10n.routeHasVehicleTooltip
+                      : context.l10n.routeNoVehicleTooltip,
                   child: Icon(
                     route.hasVehicle ? Icons.directions_bus : Icons.directions_bus_outlined,
                     color: route.hasVehicle
@@ -281,10 +286,10 @@ class _AddRouteButton extends StatelessWidget {
       key: const Key('route_list_add_button'),
       onPressed: enabled ? onPressed : null,
       icon: const Icon(Icons.add),
-      label: const Text('Add route'),
+      label: Text(context.l10n.routeListAddButton),
     );
 
     if (enabled) return button;
-    return Tooltip(message: 'Pick a school first', child: button);
+    return Tooltip(message: context.l10n.pickSchoolFirstTooltip, child: button);
   }
 }

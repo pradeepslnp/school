@@ -2001,6 +2001,918 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That could not be saved right now. Try again.'**
   String get studentAssignErrorGeneric;
+
+  /// No description provided for @userListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get userListTitle;
+
+  /// No description provided for @userListAddButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add administrator'**
+  String get userListAddButton;
+
+  /// No description provided for @userListSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by name, email, or role'**
+  String get userListSearchHint;
+
+  /// No description provided for @userListLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading users'**
+  String get userListLoadingLabel;
+
+  /// No description provided for @userListPickOrgPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick an organization above to see its administrators.'**
+  String get userListPickOrgPrompt;
+
+  /// No description provided for @userListEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No administrators yet. Add the first one above.'**
+  String get userListEmptyState;
+
+  /// No description provided for @userListNoSearchMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No one matches \"{query}\".'**
+  String userListNoSearchMatches(String query);
+
+  /// No description provided for @userToggleReactivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactivate {name}?'**
+  String userToggleReactivateTitle(String name);
+
+  /// No description provided for @userToggleDeactivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate {name}?'**
+  String userToggleDeactivateTitle(String name);
+
+  /// No description provided for @userToggleReactivateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They will be able to sign in again.'**
+  String get userToggleReactivateBody;
+
+  /// No description provided for @userToggleDeactivateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They will no longer be able to sign in. This can be reversed at any time.'**
+  String get userToggleDeactivateBody;
+
+  /// No description provided for @userToggleReactivateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactivate'**
+  String get userToggleReactivateButton;
+
+  /// No description provided for @userToggleDeactivateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get userToggleDeactivateButton;
+
+  /// No description provided for @userStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get userStatusActive;
+
+  /// No description provided for @userStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get userStatusPending;
+
+  /// No description provided for @userStatusInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get userStatusInactive;
+
+  /// No description provided for @userListRowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{email} · {role}'**
+  String userListRowSubtitle(String email, String role);
+
+  /// No description provided for @userMoreActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get userMoreActionsTooltip;
+
+  /// No description provided for @userResendInvitationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend invitation'**
+  String get userResendInvitationLabel;
+
+  /// No description provided for @userSendResetCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Send reset code'**
+  String get userSendResetCodeLabel;
+
+  /// No description provided for @createUserInviteDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'We email them a link to set their own password and activate the account.'**
+  String get createUserInviteDescription;
+
+  /// No description provided for @createUserPasswordDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'You set a password now and share it with them yourself.'**
+  String get createUserPasswordDescription;
+
+  /// No description provided for @createUserSendInviteOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Send invite'**
+  String get createUserSendInviteOption;
+
+  /// No description provided for @createUserSetPasswordOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Set password'**
+  String get createUserSetPasswordOption;
+
+  /// No description provided for @createUserSchoolHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Which school this role applies to'**
+  String get createUserSchoolHint;
+
+  /// No description provided for @createUserEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email (sign-in)'**
+  String get createUserEmailLabel;
+
+  /// No description provided for @createUserEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What this person signs in with'**
+  String get createUserEmailHint;
+
+  /// No description provided for @createUserPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone (optional)'**
+  String get createUserPhoneLabel;
+
+  /// No description provided for @createUserPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial password'**
+  String get createUserPasswordLabel;
+
+  /// No description provided for @createUserPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 12 characters'**
+  String get createUserPasswordHint;
+
+  /// No description provided for @createUserGeneratePasswordTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a password'**
+  String get createUserGeneratePasswordTooltip;
+
+  /// No description provided for @invitationSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation sent'**
+  String get invitationSentTitle;
+
+  /// No description provided for @invitationSentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We’ve emailed {email} a link to set their password. It is valid for 72 hours; you can re-send it from their row if it expires.'**
+  String invitationSentBody(String email);
+
+  /// No description provided for @accountCreatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created'**
+  String get accountCreatedTitle;
+
+  /// Safety/security-relevant: a one-time-shown administrative credential.
+  ///
+  /// In en, this message translates to:
+  /// **'Share these sign-in details with them now — this password will not be shown again.'**
+  String get accountCreatedBody;
+
+  /// No description provided for @credentialsEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get credentialsEmailLabel;
+
+  /// No description provided for @credentialsPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get credentialsPasswordLabel;
+
+  /// No description provided for @copyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copyTooltip;
+
+  /// No description provided for @copiedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} copied'**
+  String copiedSnackbar(String label);
+
+  /// No description provided for @editUserLocaleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred locale'**
+  String get editUserLocaleLabel;
+
+  /// No description provided for @editUserLocaleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. en'**
+  String get editUserLocaleHint;
+
+  /// No description provided for @orgListAddButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add organization'**
+  String get orgListAddButton;
+
+  /// No description provided for @orgListLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading organizations'**
+  String get orgListLoadingLabel;
+
+  /// No description provided for @orgListEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No organizations yet. Add the first one to get started.'**
+  String get orgListEmptyState;
+
+  /// No description provided for @orgListRowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{code} · {regionProfile}'**
+  String orgListRowSubtitle(String code, String regionProfile);
+
+  /// No description provided for @orgSuspendedChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended'**
+  String get orgSuspendedChip;
+
+  /// No description provided for @orgListLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'That could not be loaded right now. Try again shortly.'**
+  String get orgListLoadError;
+
+  /// No description provided for @createOrgStepTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 1 of 2 — Organization details'**
+  String get createOrgStepTitle;
+
+  /// No description provided for @createOrgIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'This becomes a new tenant. The code is immutable once the organization has any schools or staff (BR-TEN-007).'**
+  String get createOrgIntro;
+
+  /// No description provided for @createOrgCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization code'**
+  String get createOrgCodeLabel;
+
+  /// No description provided for @createOrgCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. GREENWOOD'**
+  String get createOrgCodeHint;
+
+  /// No description provided for @createOrgNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization name'**
+  String get createOrgNameLabel;
+
+  /// No description provided for @createOrgNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Greenwood Education Group'**
+  String get createOrgNameHint;
+
+  /// No description provided for @createOrgRegionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Region profile code'**
+  String get createOrgRegionLabel;
+
+  /// No description provided for @createOrgRegionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. IN — supplies phone, document, and retention defaults (ADR-0007)'**
+  String get createOrgRegionHint;
+
+  /// No description provided for @createOrgContactEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact email (optional)'**
+  String get createOrgContactEmailLabel;
+
+  /// No description provided for @createOrgContactPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact phone (optional)'**
+  String get createOrgContactPhoneLabel;
+
+  /// No description provided for @createOrgCreatingSpinnerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating organization'**
+  String get createOrgCreatingSpinnerLabel;
+
+  /// No description provided for @createOrgSubmitButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create organization'**
+  String get createOrgSubmitButton;
+
+  /// No description provided for @schoolFieldNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'School name'**
+  String get schoolFieldNameLabel;
+
+  /// No description provided for @schoolFieldTimezoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Timezone (IANA identifier)'**
+  String get schoolFieldTimezoneLabel;
+
+  /// No description provided for @schoolFieldLatitudeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get schoolFieldLatitudeLabel;
+
+  /// No description provided for @schoolFieldLongitudeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get schoolFieldLongitudeLabel;
+
+  /// Shared field labels between CreateSchoolForm (onboarding step 2) and SchoolEditForm (A-40/A-41 edit) — one key per field so the two never drift in Kannada either.
+  ///
+  /// In en, this message translates to:
+  /// **'Geofence radius (metres, 20–2000)'**
+  String get schoolFieldGeofenceLabel;
+
+  /// No description provided for @createSchoolStepTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 2 of 2 — First school'**
+  String get createSchoolStepTitle;
+
+  /// No description provided for @createSchoolIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'{orgName} ({orgCode}) was created. An organization needs at least one school before it can be used day to day (BR-TEN-002) — add one now, or come back to it later.'**
+  String createSchoolIntro(String orgName, String orgCode);
+
+  /// No description provided for @createSchoolCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'School code'**
+  String get createSchoolCodeLabel;
+
+  /// No description provided for @createSchoolCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. GW-MAIN'**
+  String get createSchoolCodeHint;
+
+  /// No description provided for @createSchoolNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Greenwood Main Campus'**
+  String get createSchoolNameHint;
+
+  /// No description provided for @createSchoolTimezoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Asia/Kolkata'**
+  String get createSchoolTimezoneHint;
+
+  /// No description provided for @createSchoolAddingSpinnerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding school'**
+  String get createSchoolAddingSpinnerLabel;
+
+  /// No description provided for @createSchoolSubmitButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add school'**
+  String get createSchoolSubmitButton;
+
+  /// No description provided for @createSchoolSkipButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish without adding a school'**
+  String get createSchoolSkipButton;
+
+  /// No description provided for @schoolDetailsIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'School ID'**
+  String get schoolDetailsIdLabel;
+
+  /// No description provided for @schoolDetailsIdHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Give this to whoever registers staff, vehicles, or routes for this school.'**
+  String get schoolDetailsIdHelper;
+
+  /// No description provided for @schoolDetailsCodeFixedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'School code (fixed)'**
+  String get schoolDetailsCodeFixedLabel;
+
+  /// No description provided for @schoolDetailsSavingSpinnerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving school'**
+  String get schoolDetailsSavingSpinnerLabel;
+
+  /// No description provided for @schoolDetailsSaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save school changes'**
+  String get schoolDetailsSaveButton;
+
+  /// No description provided for @copiedToClipboardSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get copiedToClipboardSnackbar;
+
+  /// No description provided for @onboardingCompleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization onboarded'**
+  String get onboardingCompleteTitle;
+
+  /// No description provided for @onboardingSummaryOrgLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get onboardingSummaryOrgLabel;
+
+  /// No description provided for @onboardingNameAndCode.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} ({code})'**
+  String onboardingNameAndCode(String name, String code);
+
+  /// No description provided for @onboardingSummaryFirstSchoolLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'First school'**
+  String get onboardingSummaryFirstSchoolLabel;
+
+  /// No description provided for @onboardingNoSchoolYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No school was added yet. Add one from the Schools screen before this organization is used day to day (BR-TEN-002).'**
+  String get onboardingNoSchoolYet;
+
+  /// No description provided for @onboardingStartAnotherButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Onboard another organization'**
+  String get onboardingStartAnotherButton;
+
+  /// No description provided for @backButtonTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get backButtonTooltip;
+
+  /// No description provided for @orgDetailsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization details'**
+  String get orgDetailsSectionTitle;
+
+  /// No description provided for @orgStatusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get orgStatusClosed;
+
+  /// No description provided for @orgStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get orgStatusActive;
+
+  /// No description provided for @orgConfirmSuspendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspend {name}?'**
+  String orgConfirmSuspendTitle(String name);
+
+  /// No description provided for @orgConfirmSuspendBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This blocks sign-in and administrative access for everyone in {name}. No data is deleted, and any trip already in progress keeps recording safety events as normal (BR-TEN-006). You can reactivate at any time.'**
+  String orgConfirmSuspendBody(String name);
+
+  /// No description provided for @orgSuspendButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspend organization'**
+  String get orgSuspendButton;
+
+  /// No description provided for @orgConfirmReactivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactivate {name}?'**
+  String orgConfirmReactivateTitle(String name);
+
+  /// No description provided for @orgConfirmReactivateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This restores sign-in and administrative access for everyone in {name}.'**
+  String orgConfirmReactivateBody(String name);
+
+  /// No description provided for @orgReactivateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactivate organization'**
+  String get orgReactivateButton;
+
+  /// No description provided for @orgDetailsCodeFixedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization code (fixed, BR-TEN-007)'**
+  String get orgDetailsCodeFixedLabel;
+
+  /// No description provided for @orgDetailsSavingSpinnerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving organization'**
+  String get orgDetailsSavingSpinnerLabel;
+
+  /// No description provided for @orgDetailsSaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save organization changes'**
+  String get orgDetailsSaveButton;
+
+  /// No description provided for @addSchoolPromptIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'No school has been added yet. {orgName} needs at least one before it can be used day to day (BR-TEN-002).'**
+  String addSchoolPromptIntro(String orgName);
+
+  /// No description provided for @addSchoolPromptSkipButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get addSchoolPromptSkipButton;
+
+  /// No description provided for @routeListLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading routes'**
+  String get routeListLoadingLabel;
+
+  /// No description provided for @routeListEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No routes loaded. Pick a school above, or add the first route.'**
+  String get routeListEmptyState;
+
+  /// No description provided for @routeStopsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops on {name}'**
+  String routeStopsTooltip(String name);
+
+  /// No description provided for @routeHasVehicleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Has a default bus'**
+  String get routeHasVehicleTooltip;
+
+  /// No description provided for @routeNoVehicleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'No bus assigned yet'**
+  String get routeNoVehicleTooltip;
+
+  /// No description provided for @routeListAddButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add route'**
+  String get routeListAddButton;
+
+  /// No description provided for @createRouteIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Creates the route itself. Stops are added separately once the map editor exists — this is enough for assigning a driver or attendant to it today. Added to the school you have selected above.'**
+  String get createRouteIntro;
+
+  /// No description provided for @createRouteCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Route code'**
+  String get createRouteCodeLabel;
+
+  /// No description provided for @createRouteCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. R3'**
+  String get createRouteCodeHint;
+
+  /// No description provided for @createRouteNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Route name'**
+  String get createRouteNameLabel;
+
+  /// No description provided for @createRouteNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Green Park — Morning'**
+  String get createRouteNameHint;
+
+  /// No description provided for @createRouteDefaultVehicleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default bus (optional)'**
+  String get createRouteDefaultVehicleLabel;
+
+  /// No description provided for @createRouteNoVehiclesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No vehicles on this school yet'**
+  String get createRouteNoVehiclesHint;
+
+  /// No description provided for @noneOptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get noneOptionLabel;
+
+  /// No description provided for @createRouteVehicleOption.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} · {registrationNo}'**
+  String createRouteVehicleOption(String displayName, String registrationNo);
+
+  /// No description provided for @routeCrewAssignButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign crew'**
+  String get routeCrewAssignButton;
+
+  /// No description provided for @routeCrewLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading crew'**
+  String get routeCrewLoadingLabel;
+
+  /// No description provided for @routeCrewEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No crew assigned yet.'**
+  String get routeCrewEmptyState;
+
+  /// No description provided for @routeCrewBothDirectionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Both directions'**
+  String get routeCrewBothDirectionsLabel;
+
+  /// No description provided for @dutyFormStaffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver or attendant'**
+  String get dutyFormStaffLabel;
+
+  /// No description provided for @dutyFormNoRosterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No roster loaded for this school'**
+  String get dutyFormNoRosterHint;
+
+  /// No description provided for @dutyFormSelectPersonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a person'**
+  String get dutyFormSelectPersonHint;
+
+  /// No description provided for @dutyFormStaffOption.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · {staffType}'**
+  String dutyFormStaffOption(String name, String staffType);
+
+  /// No description provided for @directionBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get directionBoth;
+
+  /// No description provided for @dutyFormAssigningSpinnerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigning'**
+  String get dutyFormAssigningSpinnerLabel;
+
+  /// No description provided for @dutyFormAssignButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign'**
+  String get dutyFormAssignButton;
+
+  /// No description provided for @routeStopsDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops'**
+  String get routeStopsDialogTitle;
+
+  /// No description provided for @routeStopsLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading stops'**
+  String get routeStopsLoadingLabel;
+
+  /// No description provided for @routeStopsMinWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'A route needs at least two stops before students can be assigned to it.'**
+  String get routeStopsMinWarning;
+
+  /// No description provided for @routeStopsEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No stops yet. Add the first one.'**
+  String get routeStopsEmptyState;
+
+  /// No description provided for @routeStopsAddButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add stop'**
+  String get routeStopsAddButton;
+
+  /// No description provided for @routeStopsRemoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}'**
+  String routeStopsRemoveTooltip(String name);
+
+  /// No description provided for @stopPickupTime.
+  ///
+  /// In en, this message translates to:
+  /// **'pickup {time}'**
+  String stopPickupTime(String time);
+
+  /// No description provided for @stopDropTime.
+  ///
+  /// In en, this message translates to:
+  /// **'drop {time}'**
+  String stopDropTime(String time);
+
+  /// No description provided for @stopGeofenceRadiusMetres.
+  ///
+  /// In en, this message translates to:
+  /// **'{radius} m'**
+  String stopGeofenceRadiusMetres(int radius);
+
+  /// No description provided for @stopFormNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop name'**
+  String get stopFormNameLabel;
+
+  /// No description provided for @stopFormNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Green Park — parents see this'**
+  String get stopFormNameHint;
+
+  /// No description provided for @stopFormLatitudeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 28.5494'**
+  String get stopFormLatitudeHint;
+
+  /// No description provided for @stopFormLongitudeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 77.2001'**
+  String get stopFormLongitudeHint;
+
+  /// No description provided for @stopFormGeofenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Geofence radius (metres)'**
+  String get stopFormGeofenceLabel;
+
+  /// No description provided for @stopFormGeofenceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'20–500'**
+  String get stopFormGeofenceHint;
+
+  /// No description provided for @stopFormPickupTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup time (optional)'**
+  String get stopFormPickupTimeLabel;
+
+  /// No description provided for @stopFormDropTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop time (optional)'**
+  String get stopFormDropTimeLabel;
+
+  /// No description provided for @stopFormTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'HH:mm'**
+  String get stopFormTimeHint;
+
+  /// No description provided for @stopFormLandmarkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Landmark (optional)'**
+  String get stopFormLandmarkLabel;
+
+  /// No description provided for @stopFormLandmarkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps parents find the stop'**
+  String get stopFormLandmarkHint;
+
+  /// No description provided for @stopFormErrorNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Give the stop a name.'**
+  String get stopFormErrorNameRequired;
+
+  /// No description provided for @stopFormErrorLatitudeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude must be a number between -90 and 90.'**
+  String get stopFormErrorLatitudeRange;
+
+  /// No description provided for @stopFormErrorLongitudeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude must be a number between -180 and 180.'**
+  String get stopFormErrorLongitudeRange;
+
+  /// No description provided for @stopFormErrorGeofenceRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Geofence radius must be between 20 and 500 metres.'**
+  String get stopFormErrorGeofenceRange;
+
+  /// No description provided for @stopFormErrorTimeFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Times must be in 24-hour HH:mm form, e.g. 07:40.'**
+  String get stopFormErrorTimeFormat;
+
+  /// No description provided for @schoolSettingsLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading school'**
+  String get schoolSettingsLoadingLabel;
 }
 
 class _AppLocalizationsDelegate

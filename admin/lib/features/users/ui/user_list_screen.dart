@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
 import '../bloc/user_list_bloc.dart';
 import '../bloc/user_list_event.dart';
@@ -119,22 +120,26 @@ class _UserListScreenState extends State<UserListScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(
-          activate ? 'Reactivate ${user.displayName}?' : 'Deactivate ${user.displayName}?',
+          activate
+              ? context.l10n.userToggleReactivateTitle(user.displayName)
+              : context.l10n.userToggleDeactivateTitle(user.displayName),
         ),
         content: Text(
           activate
-              ? 'They will be able to sign in again.'
-              : 'They will no longer be able to sign in. This can be reversed at any time.',
+              ? context.l10n.userToggleReactivateBody
+              : context.l10n.userToggleDeactivateBody,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancelButton),
           ),
           FilledButton(
             key: const Key('user_list_toggle_confirm_button'),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(activate ? 'Reactivate' : 'Deactivate'),
+            child: Text(
+              activate ? context.l10n.userToggleReactivateButton : context.l10n.userToggleDeactivateButton,
+            ),
           ),
         ],
       ),
@@ -147,14 +152,15 @@ class _UserListScreenState extends State<UserListScreen> {
 
   /// Instant, client-side, over whatever roster is already loaded — matching
   /// `StaffListScreen._filtered`'s own note on why: no server-side search endpoint exists.
-  List<AdminUser> _filtered(List<AdminUser> users) {
+  List<AdminUser> _filtered(BuildContext context, List<AdminUser> users) {
     final query = _searchQuery.trim().toLowerCase();
     if (query.isEmpty) return users;
+    final l10n = context.l10n;
     return users
         .where((user) =>
             user.displayName.toLowerCase().contains(query) ||
             user.email.toLowerCase().contains(query) ||
-            roleDisplayName(user.primaryRoleCode).toLowerCase().contains(query))
+            roleDisplayName(l10n, user.primaryRoleCode).toLowerCase().contains(query))
         .toList(growable: false);
   }
 
@@ -174,7 +180,7 @@ class _UserListScreenState extends State<UserListScreen> {
           children: [
             Row(
               children: [
-                Expanded(child: Text('Users', style: theme.textTheme.headlineSmall)),
+                Expanded(child: Text(context.l10n.userListTitle, style: theme.textTheme.headlineSmall)),
               BlocBuilder<UserListBloc, UserListState>(
                 buildWhen: (previous, current) =>
                     previous.resolvedOrganizationId != current.resolvedOrganizationId,
@@ -185,7 +191,7 @@ class _UserListScreenState extends State<UserListScreen> {
                     key: const Key('user_list_add_button'),
                     onPressed: canAdd ? () => _openAddForm(context) : null,
                     icon: const Icon(Icons.person_add_alt_outlined),
-                    label: const Text('Add administrator'),
+                    label: Text(context.l10n.userListAddButton),
                   );
                 },
               ),
@@ -213,15 +219,15 @@ class _UserListScreenState extends State<UserListScreen> {
             controller: _search,
             onChanged: (value) => setState(() => _searchQuery = value),
             decoration: InputDecoration(
-              labelText: 'Search',
-              hintText: 'Filter by name, email, or role',
+              labelText: context.l10n.commonSearchLabel,
+              hintText: context.l10n.userListSearchHint,
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _searchQuery.isEmpty
                   ? null
                   : IconButton(
                       key: const Key('user_list_search_clear_button'),
                       icon: const Icon(Icons.close),
-                      tooltip: 'Clear search',
+                      tooltip: context.l10n.commonClearSearchTooltip,
                       onPressed: () => setState(() {
                         _search.clear();
                         _searchQuery = '';
@@ -236,15 +242,15 @@ class _UserListScreenState extends State<UserListScreen> {
             child: BlocBuilder<UserListBloc, UserListState>(
               builder: (context, state) {
                 if (state.isLoading && state.users.isEmpty) {
-                  return const Center(
-                    child: CircularProgressIndicator(semanticsLabel: 'Loading users'),
+                  return Center(
+                    child: CircularProgressIndicator(semanticsLabel: context.l10n.userListLoadingLabel),
                   );
                 }
 
                 if (state.needsOrganizationPicker && state.resolvedOrganizationId == null) {
                   return Center(
                     child: Text(
-                      'Pick an organization above to see its administrators.',
+                      context.l10n.userListPickOrgPrompt,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -256,7 +262,7 @@ class _UserListScreenState extends State<UserListScreen> {
                   final color = context.status.critical;
                   return Center(
                     child: Text(
-                      'That could not be loaded right now. Try again.',
+                      context.l10n.errorGenericLoadRetry,
                       style: theme.textTheme.bodyMedium?.copyWith(color: color),
                     ),
                   );
@@ -265,7 +271,7 @@ class _UserListScreenState extends State<UserListScreen> {
                 if (state.users.isEmpty) {
                   return Center(
                     child: Text(
-                      'No administrators yet. Add the first one above.',
+                      context.l10n.userListEmptyState,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -273,11 +279,11 @@ class _UserListScreenState extends State<UserListScreen> {
                   );
                 }
 
-                final filtered = _filtered(state.users);
+                final filtered = _filtered(context, state.users);
                 if (filtered.isEmpty) {
                   return Center(
                     child: Text(
-                      'No one matches "$_searchQuery".',
+                      context.l10n.userListNoSearchMatches(_searchQuery),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -318,12 +324,16 @@ class _OrganizationPicker extends StatelessWidget {
       key: const Key('user_list_organization_field'),
       initialValue: state.resolvedOrganizationId,
       isExpanded: true,
-      decoration: const InputDecoration(
-        labelText: 'Organization',
-        border: OutlineInputBorder(),
-        constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+      decoration: InputDecoration(
+        labelText: context.l10n.schoolScopeOrganizationLabel,
+        border: const OutlineInputBorder(),
+        constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
       ),
-      hint: Text(state.isLoadingOrganizations ? 'Loading…' : 'Select an organization'),
+      hint: Text(
+        state.isLoadingOrganizations
+            ? context.l10n.schoolScopeLoadingHint
+            : context.l10n.schoolScopeSelectOrganizationHint,
+      ),
       items: [
         for (final organization in state.organizations)
           DropdownMenuItem(value: organization.id, child: Text(organization.name)),
@@ -470,16 +480,21 @@ class _UserTable extends StatelessWidget {
           final user = users[index];
           final statusColor = user.isActive ? context.status.safe : context.status.warning;
           final statusLabel = user.isActive
-              ? 'Active'
+              ? context.l10n.userStatusActive
               : user.isPending
-                  ? 'Pending'
-                  : 'Inactive';
+                  ? context.l10n.userStatusPending
+                  : context.l10n.userStatusInactive;
 
           return ListTile(
             key: Key('user_list_row_${user.id}'),
             minVerticalPadding: AdminSpacing.md,
             title: Text(user.displayName),
-            subtitle: Text('${user.email} · ${roleDisplayName(user.primaryRoleCode)}'),
+            subtitle: Text(
+              context.l10n.userListRowSubtitle(
+                user.email,
+                roleDisplayName(context.l10n, user.primaryRoleCode),
+              ),
+            ),
             onTap: () => onTapUser(user),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -498,7 +513,9 @@ class _UserTable extends StatelessWidget {
                 if (!user.isPending)
                   IconButton(
                     key: Key('user_list_toggle_${user.id}'),
-                    tooltip: user.isActive ? 'Deactivate' : 'Reactivate',
+                    tooltip: user.isActive
+                        ? context.l10n.userToggleDeactivateButton
+                        : context.l10n.userToggleReactivateButton,
                     icon: Icon(
                       user.isActive ? Icons.block_outlined : Icons.check_circle_outline,
                     ),
@@ -510,7 +527,7 @@ class _UserTable extends StatelessWidget {
                 if (user.isPending || user.isActive)
                   PopupMenuButton<String>(
                   key: Key('user_list_actions_${user.id}'),
-                  tooltip: 'More actions',
+                  tooltip: context.l10n.userMoreActionsTooltip,
                   icon: const Icon(Icons.more_vert),
                   onSelected: (action) {
                     switch (action) {
@@ -520,22 +537,22 @@ class _UserTable extends StatelessWidget {
                         onSendReset(user);
                     }
                   },
-                  itemBuilder: (context) => [
+                  itemBuilder: (menuContext) => [
                     if (user.isPending)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'resend',
                         child: ListTile(
-                          leading: Icon(Icons.mail_outline),
-                          title: Text('Resend invitation'),
+                          leading: const Icon(Icons.mail_outline),
+                          title: Text(context.l10n.userResendInvitationLabel),
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),
                     if (user.isActive)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'reset',
                         child: ListTile(
-                          leading: Icon(Icons.lock_reset_outlined),
-                          title: Text('Send reset code'),
+                          leading: const Icon(Icons.lock_reset_outlined),
+                          title: Text(context.l10n.userSendResetCodeLabel),
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../domain/stop_models.dart';
 
 /// Adds one stop to a route (RTE-001).
@@ -54,23 +55,23 @@ class _StopFormState extends State<StopForm> {
     final geofence = int.tryParse(_geofence.text.trim());
 
     if (name.isEmpty) {
-      setState(() => _error = 'Give the stop a name.');
+      setState(() => _error = context.l10n.stopFormErrorNameRequired);
       return;
     }
     if (lat == null || lat < -90 || lat > 90) {
-      setState(() => _error = 'Latitude must be a number between -90 and 90.');
+      setState(() => _error = context.l10n.stopFormErrorLatitudeRange);
       return;
     }
     if (lng == null || lng < -180 || lng > 180) {
-      setState(() => _error = 'Longitude must be a number between -180 and 180.');
+      setState(() => _error = context.l10n.stopFormErrorLongitudeRange);
       return;
     }
     if (geofence == null || geofence < 20 || geofence > 500) {
-      setState(() => _error = 'Geofence radius must be between 20 and 500 metres.');
+      setState(() => _error = context.l10n.stopFormErrorGeofenceRange);
       return;
     }
     if (!_timeIsValid(_pickupTime.text) || !_timeIsValid(_dropTime.text)) {
-      setState(() => _error = 'Times must be in 24-hour HH:mm form, e.g. 07:40.');
+      setState(() => _error = context.l10n.stopFormErrorTimeFormat);
       return;
     }
 
@@ -108,17 +109,17 @@ class _StopFormState extends State<StopForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Add stop', style: theme.textTheme.titleLarge),
+        Text(context.l10n.routeStopsAddButton, style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.lg),
         TextField(
           key: const Key('stop_form_name_field'),
           controller: _name,
           autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Stop name',
-            hintText: 'e.g. Green Park — parents see this',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.stopFormNameLabel,
+            hintText: context.l10n.stopFormNameHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -130,11 +131,11 @@ class _StopFormState extends State<StopForm> {
                 controller: _latitude,
                 keyboardType: const TextInputType.numberWithOptions(
                     signed: true, decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Latitude',
-                  hintText: 'e.g. 28.5494',
-                  border: OutlineInputBorder(),
-                  constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+                decoration: InputDecoration(
+                  labelText: context.l10n.schoolFieldLatitudeLabel,
+                  hintText: context.l10n.stopFormLatitudeHint,
+                  border: const OutlineInputBorder(),
+                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
                 ),
               ),
             ),
@@ -145,11 +146,11 @@ class _StopFormState extends State<StopForm> {
                 controller: _longitude,
                 keyboardType: const TextInputType.numberWithOptions(
                     signed: true, decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Longitude',
-                  hintText: 'e.g. 77.2001',
-                  border: OutlineInputBorder(),
-                  constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+                decoration: InputDecoration(
+                  labelText: context.l10n.schoolFieldLongitudeLabel,
+                  hintText: context.l10n.stopFormLongitudeHint,
+                  border: const OutlineInputBorder(),
+                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
                 ),
               ),
             ),
@@ -160,11 +161,11 @@ class _StopFormState extends State<StopForm> {
           key: const Key('stop_form_geofence_field'),
           controller: _geofence,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Geofence radius (metres)',
-            hintText: '20–500',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.stopFormGeofenceLabel,
+            hintText: context.l10n.stopFormGeofenceHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -174,11 +175,11 @@ class _StopFormState extends State<StopForm> {
               child: TextField(
                 key: const Key('stop_form_pickup_time_field'),
                 controller: _pickupTime,
-                decoration: const InputDecoration(
-                  labelText: 'Pickup time (optional)',
-                  hintText: 'HH:mm',
-                  border: OutlineInputBorder(),
-                  constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+                decoration: InputDecoration(
+                  labelText: context.l10n.stopFormPickupTimeLabel,
+                  hintText: context.l10n.stopFormTimeHint,
+                  border: const OutlineInputBorder(),
+                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
                 ),
               ),
             ),
@@ -187,11 +188,11 @@ class _StopFormState extends State<StopForm> {
               child: TextField(
                 key: const Key('stop_form_drop_time_field'),
                 controller: _dropTime,
-                decoration: const InputDecoration(
-                  labelText: 'Drop time (optional)',
-                  hintText: 'HH:mm',
-                  border: OutlineInputBorder(),
-                  constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+                decoration: InputDecoration(
+                  labelText: context.l10n.stopFormDropTimeLabel,
+                  hintText: context.l10n.stopFormTimeHint,
+                  border: const OutlineInputBorder(),
+                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
                 ),
               ),
             ),
@@ -201,11 +202,11 @@ class _StopFormState extends State<StopForm> {
         TextField(
           key: const Key('stop_form_landmark_field'),
           controller: _landmark,
-          decoration: const InputDecoration(
-            labelText: 'Landmark (optional)',
-            hintText: 'Helps parents find the stop',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.stopFormLandmarkLabel,
+            hintText: context.l10n.stopFormLandmarkHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         if (_error != null) ...[
@@ -222,7 +223,7 @@ class _StopFormState extends State<StopForm> {
               child: OutlinedButton(
                 key: const Key('stop_form_cancel_button'),
                 onPressed: widget.onCancel,
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancelButton),
               ),
             ),
             const SizedBox(width: AdminSpacing.md),
@@ -230,7 +231,7 @@ class _StopFormState extends State<StopForm> {
               child: FilledButton(
                 key: const Key('stop_form_add_button'),
                 onPressed: _submit,
-                child: const Text('Add stop'),
+                child: Text(context.l10n.routeStopsAddButton),
               ),
             ),
           ],

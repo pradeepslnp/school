@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 
 /// The frame around each onboarding step: bounded-width card, centred in the content area.
 ///
@@ -40,7 +41,7 @@ class OnboardingScaffold extends StatelessWidget {
                     IconButton(
                       onPressed: onBack,
                       icon: const Icon(Icons.arrow_back),
-                      tooltip: 'Back',
+                      tooltip: context.l10n.backButtonTooltip,
                     ),
                     const SizedBox(width: AdminSpacing.sm),
                   ],

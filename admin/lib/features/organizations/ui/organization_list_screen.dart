@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../bloc/organization_list_bloc.dart';
 import '../bloc/organization_list_event.dart';
 import '../bloc/organization_list_state.dart';
@@ -51,13 +52,16 @@ class _OrganizationListScreenState extends State<OrganizationListScreen> {
           Row(
             children: [
               Expanded(
-                child: Text('Organizations', style: theme.textTheme.headlineSmall),
+                child: Text(
+                  context.l10n.consoleDestinationOrganizations,
+                  style: theme.textTheme.headlineSmall,
+                ),
               ),
               FilledButton.icon(
                 key: const Key('org_list_add_button'),
                 onPressed: widget.onAddOrganization,
                 icon: const Icon(Icons.add),
-                label: const Text('Add organization'),
+                label: Text(context.l10n.orgListAddButton),
               ),
             ],
           ),
@@ -66,9 +70,9 @@ class _OrganizationListScreenState extends State<OrganizationListScreen> {
             child: BlocBuilder<OrganizationListBloc, OrganizationListState>(
               builder: (context, state) {
                 if (state.isLoading && state.organizations.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: CircularProgressIndicator(
-                      semanticsLabel: 'Loading organizations',
+                      semanticsLabel: context.l10n.orgListLoadingLabel,
                     ),
                   );
                 }
@@ -84,7 +88,7 @@ class _OrganizationListScreenState extends State<OrganizationListScreen> {
                 if (state.organizations.isEmpty) {
                   return Center(
                     child: Text(
-                      'No organizations yet. Add the first one to get started.',
+                      context.l10n.orgListEmptyState,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -134,7 +138,9 @@ class _OrganizationTable extends StatelessWidget {
             key: Key('org_list_row_${organization.id}'),
             minVerticalPadding: AdminSpacing.md,
             title: Text(organization.name),
-            subtitle: Text('${organization.code} · ${organization.regionProfileCode}'),
+            subtitle: Text(
+              context.l10n.orgListRowSubtitle(organization.code, organization.regionProfileCode),
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -170,7 +176,7 @@ class _SuspendedChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        'Suspended',
+        context.l10n.orgSuspendedChip,
         style: theme.textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.w600),
       ),
     );
@@ -194,14 +200,14 @@ class _ListError extends StatelessWidget {
           Icon(Icons.error_outline, color: color, size: 32),
           const SizedBox(height: AdminSpacing.sm),
           Text(
-            'That could not be loaded right now. Try again shortly.',
+            context.l10n.orgListLoadError,
             style: theme.textTheme.bodyMedium?.copyWith(color: color),
           ),
           const SizedBox(height: AdminSpacing.md),
           OutlinedButton(
             key: const Key('org_list_retry_button'),
             onPressed: onRetry,
-            child: const Text('Retry'),
+            child: Text(context.l10n.commonRetryButton),
           ),
         ],
       ),

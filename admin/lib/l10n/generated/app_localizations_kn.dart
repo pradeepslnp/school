@@ -1127,4 +1127,522 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get studentAssignErrorGeneric =>
       'That could not be saved right now. Try again.';
+
+  @override
+  String get userListTitle => 'Users';
+
+  @override
+  String get userListAddButton => 'Add administrator';
+
+  @override
+  String get userListSearchHint => 'Filter by name, email, or role';
+
+  @override
+  String get userListLoadingLabel => 'Loading users';
+
+  @override
+  String get userListPickOrgPrompt =>
+      'Pick an organization above to see its administrators.';
+
+  @override
+  String get userListEmptyState =>
+      'No administrators yet. Add the first one above.';
+
+  @override
+  String userListNoSearchMatches(String query) {
+    return 'No one matches \"$query\".';
+  }
+
+  @override
+  String userToggleReactivateTitle(String name) {
+    return 'Reactivate $name?';
+  }
+
+  @override
+  String userToggleDeactivateTitle(String name) {
+    return 'Deactivate $name?';
+  }
+
+  @override
+  String get userToggleReactivateBody => 'They will be able to sign in again.';
+
+  @override
+  String get userToggleDeactivateBody =>
+      'They will no longer be able to sign in. This can be reversed at any time.';
+
+  @override
+  String get userToggleReactivateButton => 'Reactivate';
+
+  @override
+  String get userToggleDeactivateButton => 'Deactivate';
+
+  @override
+  String get userStatusActive => 'Active';
+
+  @override
+  String get userStatusPending => 'Pending';
+
+  @override
+  String get userStatusInactive => 'Inactive';
+
+  @override
+  String userListRowSubtitle(String email, String role) {
+    return '$email · $role';
+  }
+
+  @override
+  String get userMoreActionsTooltip => 'More actions';
+
+  @override
+  String get userResendInvitationLabel => 'Resend invitation';
+
+  @override
+  String get userSendResetCodeLabel => 'Send reset code';
+
+  @override
+  String get createUserInviteDescription =>
+      'We email them a link to set their own password and activate the account.';
+
+  @override
+  String get createUserPasswordDescription =>
+      'You set a password now and share it with them yourself.';
+
+  @override
+  String get createUserSendInviteOption => 'Send invite';
+
+  @override
+  String get createUserSetPasswordOption => 'Set password';
+
+  @override
+  String get createUserSchoolHint => 'Which school this role applies to';
+
+  @override
+  String get createUserEmailLabel => 'Email (sign-in)';
+
+  @override
+  String get createUserEmailHint => 'What this person signs in with';
+
+  @override
+  String get createUserPhoneLabel => 'Phone (optional)';
+
+  @override
+  String get createUserPasswordLabel => 'Initial password';
+
+  @override
+  String get createUserPasswordHint => 'At least 12 characters';
+
+  @override
+  String get createUserGeneratePasswordTooltip => 'Generate a password';
+
+  @override
+  String get invitationSentTitle => 'Invitation sent';
+
+  @override
+  String invitationSentBody(String email) {
+    return 'We’ve emailed $email a link to set their password. It is valid for 72 hours; you can re-send it from their row if it expires.';
+  }
+
+  @override
+  String get accountCreatedTitle => 'Account created';
+
+  @override
+  String get accountCreatedBody =>
+      'Share these sign-in details with them now — this password will not be shown again.';
+
+  @override
+  String get credentialsEmailLabel => 'Email';
+
+  @override
+  String get credentialsPasswordLabel => 'Password';
+
+  @override
+  String get copyTooltip => 'Copy';
+
+  @override
+  String copiedSnackbar(String label) {
+    return '$label copied';
+  }
+
+  @override
+  String get editUserLocaleLabel => 'Preferred locale';
+
+  @override
+  String get editUserLocaleHint => 'e.g. en';
+
+  @override
+  String get orgListAddButton => 'Add organization';
+
+  @override
+  String get orgListLoadingLabel => 'Loading organizations';
+
+  @override
+  String get orgListEmptyState =>
+      'No organizations yet. Add the first one to get started.';
+
+  @override
+  String orgListRowSubtitle(String code, String regionProfile) {
+    return '$code · $regionProfile';
+  }
+
+  @override
+  String get orgSuspendedChip => 'Suspended';
+
+  @override
+  String get orgListLoadError =>
+      'That could not be loaded right now. Try again shortly.';
+
+  @override
+  String get createOrgStepTitle => 'Step 1 of 2 — Organization details';
+
+  @override
+  String get createOrgIntro =>
+      'This becomes a new tenant. The code is immutable once the organization has any schools or staff (BR-TEN-007).';
+
+  @override
+  String get createOrgCodeLabel => 'Organization code';
+
+  @override
+  String get createOrgCodeHint => 'e.g. GREENWOOD';
+
+  @override
+  String get createOrgNameLabel => 'Organization name';
+
+  @override
+  String get createOrgNameHint => 'e.g. Greenwood Education Group';
+
+  @override
+  String get createOrgRegionLabel => 'Region profile code';
+
+  @override
+  String get createOrgRegionHint =>
+      'e.g. IN — supplies phone, document, and retention defaults (ADR-0007)';
+
+  @override
+  String get createOrgContactEmailLabel => 'Contact email (optional)';
+
+  @override
+  String get createOrgContactPhoneLabel => 'Contact phone (optional)';
+
+  @override
+  String get createOrgCreatingSpinnerLabel => 'Creating organization';
+
+  @override
+  String get createOrgSubmitButton => 'Create organization';
+
+  @override
+  String get schoolFieldNameLabel => 'School name';
+
+  @override
+  String get schoolFieldTimezoneLabel => 'Timezone (IANA identifier)';
+
+  @override
+  String get schoolFieldLatitudeLabel => 'Latitude';
+
+  @override
+  String get schoolFieldLongitudeLabel => 'Longitude';
+
+  @override
+  String get schoolFieldGeofenceLabel => 'Geofence radius (metres, 20–2000)';
+
+  @override
+  String get createSchoolStepTitle => 'Step 2 of 2 — First school';
+
+  @override
+  String createSchoolIntro(String orgName, String orgCode) {
+    return '$orgName ($orgCode) was created. An organization needs at least one school before it can be used day to day (BR-TEN-002) — add one now, or come back to it later.';
+  }
+
+  @override
+  String get createSchoolCodeLabel => 'School code';
+
+  @override
+  String get createSchoolCodeHint => 'e.g. GW-MAIN';
+
+  @override
+  String get createSchoolNameHint => 'e.g. Greenwood Main Campus';
+
+  @override
+  String get createSchoolTimezoneHint => 'e.g. Asia/Kolkata';
+
+  @override
+  String get createSchoolAddingSpinnerLabel => 'Adding school';
+
+  @override
+  String get createSchoolSubmitButton => 'Add school';
+
+  @override
+  String get createSchoolSkipButton => 'Finish without adding a school';
+
+  @override
+  String get schoolDetailsIdLabel => 'School ID';
+
+  @override
+  String get schoolDetailsIdHelper =>
+      'Give this to whoever registers staff, vehicles, or routes for this school.';
+
+  @override
+  String get schoolDetailsCodeFixedLabel => 'School code (fixed)';
+
+  @override
+  String get schoolDetailsSavingSpinnerLabel => 'Saving school';
+
+  @override
+  String get schoolDetailsSaveButton => 'Save school changes';
+
+  @override
+  String get copiedToClipboardSnackbar => 'Copied to clipboard';
+
+  @override
+  String get onboardingCompleteTitle => 'Organization onboarded';
+
+  @override
+  String get onboardingSummaryOrgLabel => 'Organization';
+
+  @override
+  String onboardingNameAndCode(String name, String code) {
+    return '$name ($code)';
+  }
+
+  @override
+  String get onboardingSummaryFirstSchoolLabel => 'First school';
+
+  @override
+  String get onboardingNoSchoolYet =>
+      'No school was added yet. Add one from the Schools screen before this organization is used day to day (BR-TEN-002).';
+
+  @override
+  String get onboardingStartAnotherButton => 'Onboard another organization';
+
+  @override
+  String get backButtonTooltip => 'Back';
+
+  @override
+  String get orgDetailsSectionTitle => 'Organization details';
+
+  @override
+  String get orgStatusClosed => 'Closed';
+
+  @override
+  String get orgStatusActive => 'Active';
+
+  @override
+  String orgConfirmSuspendTitle(String name) {
+    return 'Suspend $name?';
+  }
+
+  @override
+  String orgConfirmSuspendBody(String name) {
+    return 'This blocks sign-in and administrative access for everyone in $name. No data is deleted, and any trip already in progress keeps recording safety events as normal (BR-TEN-006). You can reactivate at any time.';
+  }
+
+  @override
+  String get orgSuspendButton => 'Suspend organization';
+
+  @override
+  String orgConfirmReactivateTitle(String name) {
+    return 'Reactivate $name?';
+  }
+
+  @override
+  String orgConfirmReactivateBody(String name) {
+    return 'This restores sign-in and administrative access for everyone in $name.';
+  }
+
+  @override
+  String get orgReactivateButton => 'Reactivate organization';
+
+  @override
+  String get orgDetailsCodeFixedLabel =>
+      'Organization code (fixed, BR-TEN-007)';
+
+  @override
+  String get orgDetailsSavingSpinnerLabel => 'Saving organization';
+
+  @override
+  String get orgDetailsSaveButton => 'Save organization changes';
+
+  @override
+  String addSchoolPromptIntro(String orgName) {
+    return 'No school has been added yet. $orgName needs at least one before it can be used day to day (BR-TEN-002).';
+  }
+
+  @override
+  String get addSchoolPromptSkipButton => 'Not now';
+
+  @override
+  String get routeListLoadingLabel => 'Loading routes';
+
+  @override
+  String get routeListEmptyState =>
+      'No routes loaded. Pick a school above, or add the first route.';
+
+  @override
+  String routeStopsTooltip(String name) {
+    return 'Stops on $name';
+  }
+
+  @override
+  String get routeHasVehicleTooltip => 'Has a default bus';
+
+  @override
+  String get routeNoVehicleTooltip => 'No bus assigned yet';
+
+  @override
+  String get routeListAddButton => 'Add route';
+
+  @override
+  String get createRouteIntro =>
+      'Creates the route itself. Stops are added separately once the map editor exists — this is enough for assigning a driver or attendant to it today. Added to the school you have selected above.';
+
+  @override
+  String get createRouteCodeLabel => 'Route code';
+
+  @override
+  String get createRouteCodeHint => 'e.g. R3';
+
+  @override
+  String get createRouteNameLabel => 'Route name';
+
+  @override
+  String get createRouteNameHint => 'e.g. Green Park — Morning';
+
+  @override
+  String get createRouteDefaultVehicleLabel => 'Default bus (optional)';
+
+  @override
+  String get createRouteNoVehiclesHint => 'No vehicles on this school yet';
+
+  @override
+  String get noneOptionLabel => 'None';
+
+  @override
+  String createRouteVehicleOption(String displayName, String registrationNo) {
+    return '$displayName · $registrationNo';
+  }
+
+  @override
+  String get routeCrewAssignButton => 'Assign crew';
+
+  @override
+  String get routeCrewLoadingLabel => 'Loading crew';
+
+  @override
+  String get routeCrewEmptyState => 'No crew assigned yet.';
+
+  @override
+  String get routeCrewBothDirectionsLabel => 'Both directions';
+
+  @override
+  String get dutyFormStaffLabel => 'Driver or attendant';
+
+  @override
+  String get dutyFormNoRosterHint => 'No roster loaded for this school';
+
+  @override
+  String get dutyFormSelectPersonHint => 'Select a person';
+
+  @override
+  String dutyFormStaffOption(String name, String staffType) {
+    return '$name · $staffType';
+  }
+
+  @override
+  String get directionBoth => 'Both';
+
+  @override
+  String get dutyFormAssigningSpinnerLabel => 'Assigning';
+
+  @override
+  String get dutyFormAssignButton => 'Assign';
+
+  @override
+  String get routeStopsDialogTitle => 'Stops';
+
+  @override
+  String get routeStopsLoadingLabel => 'Loading stops';
+
+  @override
+  String get routeStopsMinWarning =>
+      'A route needs at least two stops before students can be assigned to it.';
+
+  @override
+  String get routeStopsEmptyState => 'No stops yet. Add the first one.';
+
+  @override
+  String get routeStopsAddButton => 'Add stop';
+
+  @override
+  String routeStopsRemoveTooltip(String name) {
+    return 'Remove $name';
+  }
+
+  @override
+  String stopPickupTime(String time) {
+    return 'pickup $time';
+  }
+
+  @override
+  String stopDropTime(String time) {
+    return 'drop $time';
+  }
+
+  @override
+  String stopGeofenceRadiusMetres(int radius) {
+    return '$radius m';
+  }
+
+  @override
+  String get stopFormNameLabel => 'Stop name';
+
+  @override
+  String get stopFormNameHint => 'e.g. Green Park — parents see this';
+
+  @override
+  String get stopFormLatitudeHint => 'e.g. 28.5494';
+
+  @override
+  String get stopFormLongitudeHint => 'e.g. 77.2001';
+
+  @override
+  String get stopFormGeofenceLabel => 'Geofence radius (metres)';
+
+  @override
+  String get stopFormGeofenceHint => '20–500';
+
+  @override
+  String get stopFormPickupTimeLabel => 'Pickup time (optional)';
+
+  @override
+  String get stopFormDropTimeLabel => 'Drop time (optional)';
+
+  @override
+  String get stopFormTimeHint => 'HH:mm';
+
+  @override
+  String get stopFormLandmarkLabel => 'Landmark (optional)';
+
+  @override
+  String get stopFormLandmarkHint => 'Helps parents find the stop';
+
+  @override
+  String get stopFormErrorNameRequired => 'Give the stop a name.';
+
+  @override
+  String get stopFormErrorLatitudeRange =>
+      'Latitude must be a number between -90 and 90.';
+
+  @override
+  String get stopFormErrorLongitudeRange =>
+      'Longitude must be a number between -180 and 180.';
+
+  @override
+  String get stopFormErrorGeofenceRange =>
+      'Geofence radius must be between 20 and 500 metres.';
+
+  @override
+  String get stopFormErrorTimeFormat =>
+      'Times must be in 24-hour HH:mm form, e.g. 07:40.';
+
+  @override
+  String get schoolSettingsLoadingLabel => 'Loading school';
 }

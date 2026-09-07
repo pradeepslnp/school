@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_button_spinner.dart';
 import '../domain/user_models.dart';
 
@@ -67,10 +68,16 @@ class _EditUserFormState extends State<EditUserForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Edit ${widget.user.displayName}', style: theme.textTheme.titleLarge),
+        Text(
+          context.l10n.editStaffTitle(widget.user.displayName),
+          style: theme.textTheme.titleLarge,
+        ),
         const SizedBox(height: AdminSpacing.xs),
         Text(
-          '${widget.user.email} · ${roleDisplayName(widget.user.primaryRoleCode)}',
+          context.l10n.userListRowSubtitle(
+            widget.user.email,
+            roleDisplayName(context.l10n, widget.user.primaryRoleCode),
+          ),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -81,10 +88,10 @@ class _EditUserFormState extends State<EditUserForm> {
           controller: _firstName,
           autofocus: true,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'First name',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.firstNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -92,10 +99,10 @@ class _EditUserFormState extends State<EditUserForm> {
           key: const Key('edit_user_form_last_name_field'),
           controller: _lastName,
           enabled: !widget.isSubmitting,
-          decoration: const InputDecoration(
-            labelText: 'Last name',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.lastNameLabel,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
@@ -105,11 +112,11 @@ class _EditUserFormState extends State<EditUserForm> {
           enabled: !widget.isSubmitting,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
-          decoration: const InputDecoration(
-            labelText: 'Preferred locale',
-            hintText: 'e.g. en',
-            border: OutlineInputBorder(),
-            constraints: BoxConstraints(minHeight: kAdminTouchTarget),
+          decoration: InputDecoration(
+            labelText: context.l10n.editUserLocaleLabel,
+            hintText: context.l10n.editUserLocaleHint,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
         ),
         const SizedBox(height: AdminSpacing.lg),
@@ -119,7 +126,7 @@ class _EditUserFormState extends State<EditUserForm> {
               child: OutlinedButton(
                 key: const Key('edit_user_form_cancel_button'),
                 onPressed: widget.isSubmitting ? null : widget.onCancel,
-                child: const Text('Cancel'),
+                child: Text(context.l10n.commonCancelButton),
               ),
             ),
             const SizedBox(width: AdminSpacing.md),
@@ -128,8 +135,8 @@ class _EditUserFormState extends State<EditUserForm> {
                 key: const Key('edit_user_form_submit_button'),
                 onPressed: widget.isSubmitting ? null : _submit,
                 child: widget.isSubmitting
-                    ? const OnboardingButtonSpinner(semanticsLabel: 'Saving')
-                    : const Text('Save'),
+                    ? OnboardingButtonSpinner(semanticsLabel: context.l10n.commonSavingSpinnerLabel)
+                    : Text(context.l10n.commonSaveButton),
               ),
             ),
           ],

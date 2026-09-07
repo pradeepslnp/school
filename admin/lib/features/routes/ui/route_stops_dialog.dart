@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
+import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
 import '../bloc/route_stops_bloc.dart';
 import '../bloc/route_stops_event.dart';
@@ -79,9 +80,9 @@ class _RouteStopsView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Stops', style: theme.textTheme.titleLarge),
+                        Text(context.l10n.routeStopsDialogTitle, style: theme.textTheme.titleLarge),
                         Text(
-                          '${route.name} · ${route.code}',
+                          context.l10n.assignRouteNameAndCode(route.name, route.code),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -104,7 +105,7 @@ class _RouteStopsView extends StatelessWidget {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.save_outlined),
-                      label: const Text('Save'),
+                      label: Text(context.l10n.commonSaveButton),
                     ),
                   ),
                 ],
@@ -114,8 +115,10 @@ class _RouteStopsView extends StatelessWidget {
                 child: BlocBuilder<RouteStopsBloc, RouteStopsState>(
                   builder: (context, state) {
                     if (state.isLoading && state.stops.isEmpty) {
-                      return const Center(
-                        child: CircularProgressIndicator(semanticsLabel: 'Loading stops'),
+                      return Center(
+                        child: CircularProgressIndicator(
+                          semanticsLabel: context.l10n.routeStopsLoadingLabel,
+                        ),
                       );
                     }
 
@@ -134,8 +137,7 @@ class _RouteStopsView extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(bottom: AdminSpacing.sm),
                             child: Text(
-                              'A route needs at least two stops before students can be '
-                              'assigned to it.',
+                              context.l10n.routeStopsMinWarning,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: context.status.warning,
                               ),
@@ -145,7 +147,7 @@ class _RouteStopsView extends StatelessWidget {
                           child: state.stops.isEmpty
                               ? Center(
                                   child: Text(
-                                    'No stops yet. Add the first one.',
+                                    context.l10n.routeStopsEmptyState,
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: theme.colorScheme.onSurfaceVariant,
                                     ),
@@ -177,7 +179,7 @@ class _RouteStopsView extends StatelessWidget {
                       key: const Key('route_stops_add_button'),
                       onPressed: () => _openAddStop(context),
                       icon: const Icon(Icons.add_location_alt_outlined),
-                      label: const Text('Add stop'),
+                      label: Text(context.l10n.routeStopsAddButton),
                     ),
                   ),
                   const SizedBox(width: AdminSpacing.md),
@@ -185,7 +187,7 @@ class _RouteStopsView extends StatelessWidget {
                     child: TextButton(
                       key: const Key('route_stops_close_button'),
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Close'),
+                      child: Text(context.l10n.commonCloseButton),
                     ),
                   ),
                 ],
@@ -208,9 +210,10 @@ class _StopRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final times = [
-      if (stop.scheduledPickupTime != null) 'pickup ${stop.scheduledPickupTime}',
-      if (stop.scheduledDropTime != null) 'drop ${stop.scheduledDropTime}',
+      if (stop.scheduledPickupTime != null) l10n.stopPickupTime(stop.scheduledPickupTime!),
+      if (stop.scheduledDropTime != null) l10n.stopDropTime(stop.scheduledDropTime!),
     ].join(' · ');
 
     return ListTile(
@@ -220,7 +223,7 @@ class _StopRow extends StatelessWidget {
       subtitle: Text(
         [
           '${stop.latitude.toStringAsFixed(4)}, ${stop.longitude.toStringAsFixed(4)}',
-          '${stop.geofenceRadiusM} m',
+          l10n.stopGeofenceRadiusMetres(stop.geofenceRadiusM),
           if (times.isNotEmpty) times,
           if (stop.landmark != null) stop.landmark!,
         ].join(' · '),
@@ -229,7 +232,7 @@ class _StopRow extends StatelessWidget {
       trailing: IconButton(
         key: Key('route_stops_remove_$index'),
         icon: const Icon(Icons.delete_outline),
-        tooltip: 'Remove ${stop.name}',
+        tooltip: l10n.routeStopsRemoveTooltip(stop.name),
         onPressed: onRemove,
       ),
     );

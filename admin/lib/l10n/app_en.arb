@@ -508,5 +508,213 @@
   },
   "userMoreActionsTooltip": "More actions",
   "userResendInvitationLabel": "Resend invitation",
-  "userSendResetCodeLabel": "Send reset code"
+  "userSendResetCodeLabel": "Send reset code",
+
+  "createUserInviteDescription": "We email them a link to set their own password and activate the account.",
+  "createUserPasswordDescription": "You set a password now and share it with them yourself.",
+  "createUserSendInviteOption": "Send invite",
+  "createUserSetPasswordOption": "Set password",
+  "createUserSchoolHint": "Which school this role applies to",
+  "createUserEmailLabel": "Email (sign-in)",
+  "createUserEmailHint": "What this person signs in with",
+  "createUserPhoneLabel": "Phone (optional)",
+  "createUserPasswordLabel": "Initial password",
+  "createUserPasswordHint": "At least 12 characters",
+  "createUserGeneratePasswordTooltip": "Generate a password",
+
+  "invitationSentTitle": "Invitation sent",
+  "invitationSentBody": "We’ve emailed {email} a link to set their password. It is valid for 72 hours; you can re-send it from their row if it expires.",
+  "@invitationSentBody": {
+    "placeholders": { "email": { "type": "String" } }
+  },
+
+  "accountCreatedTitle": "Account created",
+  "accountCreatedBody": "Share these sign-in details with them now — this password will not be shown again.",
+  "@accountCreatedBody": {
+    "description": "Safety/security-relevant: a one-time-shown administrative credential."
+  },
+  "credentialsEmailLabel": "Email",
+  "credentialsPasswordLabel": "Password",
+  "copyTooltip": "Copy",
+  "copiedSnackbar": "{label} copied",
+  "@copiedSnackbar": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+
+  "editUserLocaleLabel": "Preferred locale",
+  "editUserLocaleHint": "e.g. en",
+
+  "orgListAddButton": "Add organization",
+  "orgListLoadingLabel": "Loading organizations",
+  "orgListEmptyState": "No organizations yet. Add the first one to get started.",
+  "orgListRowSubtitle": "{code} · {regionProfile}",
+  "@orgListRowSubtitle": {
+    "placeholders": { "code": { "type": "String" }, "regionProfile": { "type": "String" } }
+  },
+  "orgSuspendedChip": "Suspended",
+  "orgListLoadError": "That could not be loaded right now. Try again shortly.",
+
+  "createOrgStepTitle": "Step 1 of 2 — Organization details",
+  "createOrgIntro": "This becomes a new tenant. The code is immutable once the organization has any schools or staff (BR-TEN-007).",
+  "createOrgCodeLabel": "Organization code",
+  "createOrgCodeHint": "e.g. GREENWOOD",
+  "createOrgNameLabel": "Organization name",
+  "createOrgNameHint": "e.g. Greenwood Education Group",
+  "createOrgRegionLabel": "Region profile code",
+  "createOrgRegionHint": "e.g. IN — supplies phone, document, and retention defaults (ADR-0007)",
+  "createOrgContactEmailLabel": "Contact email (optional)",
+  "createOrgContactPhoneLabel": "Contact phone (optional)",
+  "createOrgCreatingSpinnerLabel": "Creating organization",
+  "createOrgSubmitButton": "Create organization",
+
+  "schoolFieldNameLabel": "School name",
+  "schoolFieldTimezoneLabel": "Timezone (IANA identifier)",
+  "schoolFieldLatitudeLabel": "Latitude",
+  "schoolFieldLongitudeLabel": "Longitude",
+  "schoolFieldGeofenceLabel": "Geofence radius (metres, 20–2000)",
+  "@schoolFieldGeofenceLabel": {
+    "description": "Shared field labels between CreateSchoolForm (onboarding step 2) and SchoolEditForm (A-40/A-41 edit) — one key per field so the two never drift in Kannada either."
+  },
+
+  "createSchoolStepTitle": "Step 2 of 2 — First school",
+  "createSchoolIntro": "{orgName} ({orgCode}) was created. An organization needs at least one school before it can be used day to day (BR-TEN-002) — add one now, or come back to it later.",
+  "@createSchoolIntro": {
+    "placeholders": { "orgName": { "type": "String" }, "orgCode": { "type": "String" } }
+  },
+  "createSchoolCodeLabel": "School code",
+  "createSchoolCodeHint": "e.g. GW-MAIN",
+  "createSchoolNameHint": "e.g. Greenwood Main Campus",
+  "createSchoolTimezoneHint": "e.g. Asia/Kolkata",
+  "createSchoolAddingSpinnerLabel": "Adding school",
+  "createSchoolSubmitButton": "Add school",
+  "createSchoolSkipButton": "Finish without adding a school",
+
+  "schoolDetailsIdLabel": "School ID",
+  "schoolDetailsIdHelper": "Give this to whoever registers staff, vehicles, or routes for this school.",
+  "schoolDetailsCodeFixedLabel": "School code (fixed)",
+  "schoolDetailsSavingSpinnerLabel": "Saving school",
+  "schoolDetailsSaveButton": "Save school changes",
+  "copiedToClipboardSnackbar": "Copied to clipboard",
+
+  "onboardingCompleteTitle": "Organization onboarded",
+  "onboardingSummaryOrgLabel": "Organization",
+  "onboardingNameAndCode": "{name} ({code})",
+  "@onboardingNameAndCode": {
+    "placeholders": { "name": { "type": "String" }, "code": { "type": "String" } }
+  },
+  "onboardingSummaryFirstSchoolLabel": "First school",
+  "onboardingNoSchoolYet": "No school was added yet. Add one from the Schools screen before this organization is used day to day (BR-TEN-002).",
+  "onboardingStartAnotherButton": "Onboard another organization",
+  "backButtonTooltip": "Back",
+
+  "orgDetailsSectionTitle": "Organization details",
+  "orgStatusClosed": "Closed",
+  "orgStatusActive": "Active",
+  "orgConfirmSuspendTitle": "Suspend {name}?",
+  "@orgConfirmSuspendTitle": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "orgConfirmSuspendBody": "This blocks sign-in and administrative access for everyone in {name}. No data is deleted, and any trip already in progress keeps recording safety events as normal (BR-TEN-006). You can reactivate at any time.",
+  "@orgConfirmSuspendBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "orgSuspendButton": "Suspend organization",
+  "orgConfirmReactivateTitle": "Reactivate {name}?",
+  "@orgConfirmReactivateTitle": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "orgConfirmReactivateBody": "This restores sign-in and administrative access for everyone in {name}.",
+  "@orgConfirmReactivateBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "orgReactivateButton": "Reactivate organization",
+
+  "orgDetailsCodeFixedLabel": "Organization code (fixed, BR-TEN-007)",
+  "orgDetailsSavingSpinnerLabel": "Saving organization",
+  "orgDetailsSaveButton": "Save organization changes",
+
+  "addSchoolPromptIntro": "No school has been added yet. {orgName} needs at least one before it can be used day to day (BR-TEN-002).",
+  "@addSchoolPromptIntro": {
+    "placeholders": { "orgName": { "type": "String" } }
+  },
+  "addSchoolPromptSkipButton": "Not now",
+
+  "routeListLoadingLabel": "Loading routes",
+  "routeListEmptyState": "No routes loaded. Pick a school above, or add the first route.",
+  "routeStopsTooltip": "Stops on {name}",
+  "@routeStopsTooltip": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "routeHasVehicleTooltip": "Has a default bus",
+  "routeNoVehicleTooltip": "No bus assigned yet",
+  "routeListAddButton": "Add route",
+
+  "createRouteIntro": "Creates the route itself. Stops are added separately once the map editor exists — this is enough for assigning a driver or attendant to it today. Added to the school you have selected above.",
+  "createRouteCodeLabel": "Route code",
+  "createRouteCodeHint": "e.g. R3",
+  "createRouteNameLabel": "Route name",
+  "createRouteNameHint": "e.g. Green Park — Morning",
+  "createRouteDefaultVehicleLabel": "Default bus (optional)",
+  "createRouteNoVehiclesHint": "No vehicles on this school yet",
+  "noneOptionLabel": "None",
+  "createRouteVehicleOption": "{displayName} · {registrationNo}",
+  "@createRouteVehicleOption": {
+    "placeholders": { "displayName": { "type": "String" }, "registrationNo": { "type": "String" } }
+  },
+
+  "routeCrewAssignButton": "Assign crew",
+  "routeCrewLoadingLabel": "Loading crew",
+  "routeCrewEmptyState": "No crew assigned yet.",
+  "routeCrewBothDirectionsLabel": "Both directions",
+
+  "dutyFormStaffLabel": "Driver or attendant",
+  "dutyFormNoRosterHint": "No roster loaded for this school",
+  "dutyFormSelectPersonHint": "Select a person",
+  "dutyFormStaffOption": "{name} · {staffType}",
+  "@dutyFormStaffOption": {
+    "placeholders": { "name": { "type": "String" }, "staffType": { "type": "String" } }
+  },
+  "directionBoth": "Both",
+  "dutyFormAssigningSpinnerLabel": "Assigning",
+  "dutyFormAssignButton": "Assign",
+
+  "routeStopsDialogTitle": "Stops",
+  "routeStopsLoadingLabel": "Loading stops",
+  "routeStopsMinWarning": "A route needs at least two stops before students can be assigned to it.",
+  "routeStopsEmptyState": "No stops yet. Add the first one.",
+  "routeStopsAddButton": "Add stop",
+  "routeStopsRemoveTooltip": "Remove {name}",
+  "@routeStopsRemoveTooltip": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "stopPickupTime": "pickup {time}",
+  "@stopPickupTime": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "stopDropTime": "drop {time}",
+  "@stopDropTime": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "stopGeofenceRadiusMetres": "{radius} m",
+  "@stopGeofenceRadiusMetres": {
+    "placeholders": { "radius": { "type": "int" } }
+  },
+
+  "stopFormNameLabel": "Stop name",
+  "stopFormNameHint": "e.g. Green Park — parents see this",
+  "stopFormLatitudeHint": "e.g. 28.5494",
+  "stopFormLongitudeHint": "e.g. 77.2001",
+  "stopFormGeofenceLabel": "Geofence radius (metres)",
+  "stopFormGeofenceHint": "20–500",
+  "stopFormPickupTimeLabel": "Pickup time (optional)",
+  "stopFormDropTimeLabel": "Drop time (optional)",
+  "stopFormTimeHint": "HH:mm",
+  "stopFormLandmarkLabel": "Landmark (optional)",
+  "stopFormLandmarkHint": "Helps parents find the stop",
+  "stopFormErrorNameRequired": "Give the stop a name.",
+  "stopFormErrorLatitudeRange": "Latitude must be a number between -90 and 90.",
+  "stopFormErrorLongitudeRange": "Longitude must be a number between -180 and 180.",
+  "stopFormErrorGeofenceRange": "Geofence radius must be between 20 and 500 metres.",
+  "stopFormErrorTimeFormat": "Times must be in 24-hour HH:mm form, e.g. 07:40.",
+  "schoolSettingsLoadingLabel": "Loading school"
 }

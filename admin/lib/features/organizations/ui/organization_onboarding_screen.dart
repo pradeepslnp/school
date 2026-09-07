@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../l10n/app_localizations_extension.dart';
 import '../bloc/organization_onboarding_bloc.dart';
 import '../bloc/organization_onboarding_event.dart';
 import '../bloc/organization_onboarding_state.dart';
@@ -55,7 +56,7 @@ class _OrganizationOnboardingScreenState
       child: BlocBuilder<OrganizationOnboardingBloc, OrganizationOnboardingState>(
         builder: (context, state) {
           return OnboardingScaffold(
-            title: 'Organizations',
+            title: context.l10n.consoleDestinationOrganizations,
             // This screen is pushed over the console shell by `OrganizationListRoute`, so
             // popping is what returns the operator to the Organizations list.
             onBack: Navigator.of(context).canPop()
