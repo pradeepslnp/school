@@ -18,10 +18,10 @@ public record IssuedSession(
    * The user, as the signing-in client needs them.
    *
    * <p>{@code roles} and {@code scopes} are here <strong>for UI affordances only</strong> —
-   * deciding which tabs to render, and which organization/school to pre-select on a scoped
-   * screen. Neither is ever trusted for authorisation: every request re-resolves permission and
-   * scope server-side (BR-IAM-001, BR-IAM-004, BR-IAM-006). The parent app deliberately does not
-   * even model either field.
+   * deciding which tabs to render, and which organization/school to pre-select on a scoped screen.
+   * Neither is ever trusted for authorisation: every request re-resolves permission and scope
+   * server-side (BR-IAM-001, BR-IAM-004, BR-IAM-006). The parent app deliberately does not even
+   * model either field.
    */
   public record AuthenticatedUserView(
       String id,

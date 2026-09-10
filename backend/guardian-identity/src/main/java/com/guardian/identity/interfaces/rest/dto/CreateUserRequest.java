@@ -45,6 +45,15 @@ public record CreateUserRequest(
       String lastName,
       String roleCode,
       String initialPassword) {
-    this(organizationId, schoolId, email, phone, firstName, lastName, roleCode, initialPassword, "PASSWORD");
+    this(
+        organizationId,
+        schoolId,
+        email,
+        phone,
+        firstName,
+        lastName,
+        roleCode,
+        initialPassword,
+        "PASSWORD");
   }
 }

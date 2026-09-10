@@ -1645,4 +1645,188 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get schoolSettingsLoadingLabel => 'Loading school';
+
+  @override
+  String get studentListImportButton => 'Import';
+
+  @override
+  String get studentImportTitle => 'Import students';
+
+  @override
+  String get studentImportIntro =>
+      'Upload a spreadsheet of students, saved as CSV. Rows that are ready are enrolled straight away; anything that needs fixing is listed for you to correct and upload again.';
+
+  @override
+  String get studentImportColumnsTitle => 'Columns';
+
+  @override
+  String get studentImportColumnsBody =>
+      'Required: admissionNo, firstName, lastName. Optional: dateOfBirth (YYYY-MM-DD) and transportEligible (true or false — defaults to true). Column names are matched loosely, ignoring case and spaces. A column that isn\'t one of these stops the whole file — guardian and stop columns are not supported yet.';
+
+  @override
+  String get studentImportChooseFileButton => 'Choose CSV file';
+
+  @override
+  String get studentImportUploadingLabel => 'Uploading and checking the file';
+
+  @override
+  String studentImportUploadingNamed(String name) {
+    return 'Uploading $name…';
+  }
+
+  @override
+  String studentImportSummary(int totalRows, int successCount, int errorCount) {
+    return '$totalRows rows · $successCount imported · $errorCount errors';
+  }
+
+  @override
+  String get studentImportSummaryHintErrors =>
+      'The rows below were not enrolled. Fix them in your spreadsheet and upload again — only the corrected rows need to be in the next file.';
+
+  @override
+  String get studentImportSummaryHintAllImported =>
+      'Every row was enrolled. They now appear on the register.';
+
+  @override
+  String get studentImportSummaryHintNothing =>
+      'Nothing was enrolled. Correct the rows below and upload again.';
+
+  @override
+  String get studentImportDownloadErrorsButton => 'Download error rows';
+
+  @override
+  String get studentImportAnotherButton => 'Import another file';
+
+  @override
+  String get studentImportColRow => 'Row';
+
+  @override
+  String get studentImportColField => 'Column';
+
+  @override
+  String get studentImportColProblem => 'What to fix';
+
+  @override
+  String get studentImportErrorEmpty =>
+      'That file has no student rows. Check you saved the sheet with the students in it as CSV.';
+
+  @override
+  String get studentImportErrorUnreadable =>
+      'That file could not be read as a spreadsheet. Open it in your spreadsheet program and use “Save as… CSV”, then upload the CSV.';
+
+  @override
+  String get studentImportErrorUnsupportedColumn =>
+      'One of the columns in that file is not supported yet. Keep only admissionNo, firstName, lastName, dateOfBirth and transportEligible, then upload again.';
+
+  @override
+  String get studentImportErrorTooManyRows =>
+      'That file has too many rows for one upload. Split it into smaller files and import them one at a time.';
+
+  @override
+  String get studentImportErrorNoFile =>
+      'No file was chosen. Pick a CSV file to upload.';
+
+  @override
+  String get custodyPanelTitle => 'Custody restrictions';
+
+  @override
+  String get custodyAddButton => 'Add restriction';
+
+  @override
+  String get custodyPanelWarning =>
+      'A restriction takes effect immediately and overrides every parent right — the person named cannot collect or see this child while it is in force. Every restriction is recorded with its reason.';
+
+  @override
+  String get custodyLoadingLabel => 'Loading restrictions';
+
+  @override
+  String get custodyEmptyState => 'No restrictions. That is the normal state.';
+
+  @override
+  String get custodyLiftButton => 'Lift';
+
+  @override
+  String get custodyStatusLifted => 'Lifted';
+
+  @override
+  String get custodyLiftConfirmTitle => 'Lift this restriction?';
+
+  @override
+  String get custodyLiftConfirmBody =>
+      'The person named will be able to collect and see this child again, straight away. The restriction and its history are kept.';
+
+  @override
+  String get custodyLiftConfirmButton => 'Lift restriction';
+
+  @override
+  String custodyEffectiveLine(String from, String until) {
+    return 'In force from $from until $until';
+  }
+
+  @override
+  String get custodyOpenEnded => 'no end date';
+
+  @override
+  String custodySubjectGuardian(String id) {
+    return 'Parent $id';
+  }
+
+  @override
+  String get custodyTypeNoHandover => 'Cannot collect the child';
+
+  @override
+  String get custodyTypeNoVisibility => 'Cannot see the child\'s journey';
+
+  @override
+  String get custodyTypeFull => 'Cannot collect or see the child';
+
+  @override
+  String get custodyAddTitle => 'Add a custody restriction';
+
+  @override
+  String get custodySubjectAGuardian => 'A parent on file';
+
+  @override
+  String get custodySubjectAPerson => 'Someone else, by name';
+
+  @override
+  String get custodyGuardianLabel => 'Parent';
+
+  @override
+  String get custodyPersonNameLabel => 'Full name';
+
+  @override
+  String get custodyPersonNameRequired => 'Enter the person\'s full name';
+
+  @override
+  String get custodyTypeLabel => 'Restriction';
+
+  @override
+  String get custodyReasonLabel => 'Reason (required)';
+
+  @override
+  String get custodyReasonHelper =>
+      'What authorises this — a court order and its reference, a school safeguarding decision. Kept on the audit record.';
+
+  @override
+  String get custodyErrorReasonRequired =>
+      'A reason is required for every custody restriction.';
+
+  @override
+  String get custodyUntilLabel => 'End date (optional)';
+
+  @override
+  String get custodyUntilFormatError =>
+      'Use the format YYYY-MM-DD, or leave blank for no end date.';
+
+  @override
+  String get custodyAddSubmitButton => 'Add restriction';
+
+  @override
+  String get custodyErrorSubjectRequired =>
+      'Name exactly one person — a parent on file, or someone by name.';
+
+  @override
+  String get custodyErrorNotFound =>
+      'That restriction could not be found. It may already have been lifted.';
 }

@@ -14,8 +14,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 /**
- * Lists the administrative accounts (ORG_ADMIN/SCHOOL_ADMIN/PRINCIPAL/TRANSPORT_MANAGER) within
- * one organization, for the Users screen (A-43, feature IAM-005, IAM-008).
+ * Lists the administrative accounts (ORG_ADMIN/SCHOOL_ADMIN/PRINCIPAL/TRANSPORT_MANAGER) within one
+ * organization, for the Users screen (A-43, feature IAM-005, IAM-008).
  *
  * <p>Bootstraps into the target organization's tenant via {@link TenantScopedTransaction} the same
  * way {@link CreateAdministrativeUserUseCase} does, and for the same reason: a {@code SUPER_ADMIN}
@@ -44,7 +44,8 @@ public class ListAdministrativeUsersUseCase {
     if (!SUPER_ADMIN.equals(actorRole)) {
       TenantId callerTenant = TenantContext.require();
       if (!callerTenant.value().equals(organizationId)) {
-        throw new ResourceNotFoundException(ErrorCode.AUTH_SCOPE_DENIED, "organization", organizationId);
+        throw new ResourceNotFoundException(
+            ErrorCode.AUTH_SCOPE_DENIED, "organization", organizationId);
       }
     }
 

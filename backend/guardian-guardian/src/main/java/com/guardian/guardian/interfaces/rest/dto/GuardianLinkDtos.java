@@ -23,11 +23,11 @@ public final class GuardianLinkDtos {
    * {@code POST /students/{studentId}/guardians}.
    *
    * <p>The rights are {@link Boolean} rather than primitive so "omitted" is distinguishable from
-   * "false": an omitted {@code canView}/{@code canReceiveNotifications} defaults to {@code true} and
-   * an omitted {@code canAuthoriseHandover}/{@code canDeclareAbsence}/{@code isPrimary} to {@code
-   * false}, matching the schema's own column defaults. The console form always sends explicit
-   * values; the defaulting protects a direct API caller from accidentally creating a parent who
-   * cannot even see their child.
+   * "false": an omitted {@code canView}/{@code canReceiveNotifications} defaults to {@code true}
+   * and an omitted {@code canAuthoriseHandover}/{@code canDeclareAbsence}/{@code isPrimary} to
+   * {@code false}, matching the schema's own column defaults. The console form always sends
+   * explicit values; the defaulting protects a direct API caller from accidentally creating a
+   * parent who cannot even see their child.
    */
   public record AddGuardianRequest(
       @NotBlank @Size(max = 128) String firstName,

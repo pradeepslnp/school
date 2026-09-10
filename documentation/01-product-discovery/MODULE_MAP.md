@@ -91,7 +91,7 @@ Organizations, schools, branches; onboarding and lifecycle. Establishes tenant c
 Users, credentials, sessions, roles, permissions, scope resolution. Implements ADR-0006. Guardian and staff identity converge here; a person may be both a guardian and a staff member.
 
 ### MOD-03 Student Registry
-Student records, class/grade, enrolment status, transport eligibility. Source of truth for who exists; does not own transport assignment (MOD-07).
+Student records, class/grade, enrolment status, transport eligibility. Enrolment is one-at-a-time or bulk from an uploaded spreadsheet (STU-002), both through one enrolment path. Source of truth for who exists; does not own transport assignment (MOD-07).
 
 ### MOD-04 Guardian Management
 Guardian records, guardian–student relationships with rights, and authorised pickup persons with validity windows. Owns the answer to *"may this adult collect this child?"* — consumed by MOD-09.

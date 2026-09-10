@@ -31,10 +31,10 @@ import org.springframework.stereotype.Service;
  *
  * <p>The operator fallback for a person who cannot start self-service reset — most often because
  * their email was entered wrong and only an operator can look at the record. The operator triggers
- * the email; the admin still receives and enters the code themselves, exactly as in the self-service
- * flow. Distinct from {@link RequestPasswordResetUseCase} because that one is public and
- * deliberately silent about whether an account exists; this one is authenticated, so it can report
- * plainly that a user is not resettable.
+ * the email; the admin still receives and enters the code themselves, exactly as in the
+ * self-service flow. Distinct from {@link RequestPasswordResetUseCase} because that one is public
+ * and deliberately silent about whether an account exists; this one is authenticated, so it can
+ * report plainly that a user is not resettable.
  *
  * <p>Same tenant handling and caller-boundary guard as {@link ResendInvitationUseCase}.
  */
@@ -75,7 +75,8 @@ public class SendPasswordResetCodeUseCase {
     if (!SUPER_ADMIN.equals(actorRole)) {
       TenantId callerTenant = TenantContext.require();
       if (!callerTenant.value().equals(organizationId)) {
-        throw new ResourceNotFoundException(ErrorCode.AUTH_SCOPE_DENIED, "organization", organizationId);
+        throw new ResourceNotFoundException(
+            ErrorCode.AUTH_SCOPE_DENIED, "organization", organizationId);
       }
     }
 
@@ -84,7 +85,10 @@ public class SendPasswordResetCodeUseCase {
             TenantId.of(organizationId), () -> issueWithin(userId, actorId, actorRole, now));
 
     emailSender.sendPasswordResetCode(
-        issued.email(), issued.firstName(), issued.code(), RequestPasswordResetUseCase.CODE_LIFETIME);
+        issued.email(),
+        issued.firstName(),
+        issued.code(),
+        RequestPasswordResetUseCase.CODE_LIFETIME);
   }
 
   private Issued issueWithin(UUID userId, UUID actorId, String actorRole, Instant now) {
@@ -98,10 +102,14 @@ public class SendPasswordResetCodeUseCase {
           ErrorCode.USER_NOT_ACTIVE, Map.of("status", user.status().name()));
     }
 
-    OtpCode code = (magicOtp == null || magicOtp.isBlank()) ? OtpCode.generate() : OtpCode.of(magicOtp);
+    OtpCode code =
+        (magicOtp == null || magicOtp.isBlank()) ? OtpCode.generate() : OtpCode.of(magicOtp);
     resetOtps.save(
         OtpCredential.issue(
-            user.id(), secretHasher.hash(code.value()), now, RequestPasswordResetUseCase.CODE_LIFETIME));
+            user.id(),
+            secretHasher.hash(code.value()),
+            now,
+            RequestPasswordResetUseCase.CODE_LIFETIME));
 
     auditPort.record(
         AuditRecord.builder()

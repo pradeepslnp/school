@@ -64,12 +64,12 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * enumeration surface.
  *
  * <p>Suspension "blocks all user access except platform operations" — it does not stop in-flight
- * safety recording for a trip already started. Rather than integrate with the trip/routes domain
- * to find the exact use-case boundary (not audited as part of this change), {@link
+ * safety recording for a trip already started. Rather than integrate with the trip/routes domain to
+ * find the exact use-case boundary (not audited as part of this change), {@link
  * #SAFETY_PERMISSION_PREFIXES} allow-lists whole permission families by prefix. This is a
- * deliberately coarse approximation: over-permitting safety-critical operations during a
- * suspension is the safer failure mode than under-permitting them. Worth revisiting with a real
- * audit of the trip domain.
+ * deliberately coarse approximation: over-permitting safety-critical operations during a suspension
+ * is the safer failure mode than under-permitting them. Worth revisiting with a real audit of the
+ * trip domain.
  */
 @Component
 @BusinessRule({"BR-IAM-002", "BR-IAM-004", "BR-TEN-006"})
@@ -77,8 +77,8 @@ public class PermissionEnforcementInterceptor implements HandlerInterceptor {
 
   /**
    * Permission-ID prefixes that stay enforceable on a suspended organization (BR-TEN-006's
-   * in-flight-safety carve-out). See the class Javadoc for why this is prefix-based rather than
-   * an exact, individually-reviewed permission list.
+   * in-flight-safety carve-out). See the class Javadoc for why this is prefix-based rather than an
+   * exact, individually-reviewed permission list.
    */
   private static final Set<String> SAFETY_PERMISSION_PREFIXES =
       Set.of(

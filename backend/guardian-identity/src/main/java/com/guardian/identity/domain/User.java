@@ -84,9 +84,9 @@ public final class User {
 
   /**
    * A brand-new, active administrative account — the shape Users &amp; Roles (A-43, feature
-   * IAM-005/IAM-008) needs. Unlike {@link #create}, phone is optional and email is required:
-   * admin console staff sign in by email and password ({@code StaffLoginUseCase}), not phone OTP
-   * (see this class's own documentation on why guardians and staff are provisioned differently).
+   * IAM-005/IAM-008) needs. Unlike {@link #create}, phone is optional and email is required: admin
+   * console staff sign in by email and password ({@code StaffLoginUseCase}), not phone OTP (see
+   * this class's own documentation on why guardians and staff are provisioned differently).
    */
   public static User createAdministrative(
       UserId id,

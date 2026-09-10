@@ -24,11 +24,15 @@ public interface RouteStudentAssignmentRepository {
 
   RouteStudentAssignment save(RouteStudentAssignment assignment, UUID actorUserId);
 
-  /** A student's active assignments, joined with the route and stop they name, for the enrolment
-   * screen (RTE-003). */
+  /**
+   * A student's active assignments, joined with the route and stop they name, for the enrolment
+   * screen (RTE-003).
+   */
   List<StudentAssignment> findActiveForStudent(UUID studentId);
 
-  /** Deactivates an assignment. Never a delete — a past manifest must still show who was expected. */
+  /**
+   * Deactivates an assignment. Never a delete — a past manifest must still show who was expected.
+   */
   void deactivate(UUID assignmentId, UUID actorUserId);
 
   /**

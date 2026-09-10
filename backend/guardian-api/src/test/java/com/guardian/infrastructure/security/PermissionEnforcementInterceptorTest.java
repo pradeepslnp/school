@@ -38,8 +38,8 @@ import org.springframework.web.method.HandlerMethod;
  * Unit tests for {@link PermissionEnforcementInterceptor}, focused on the organization-suspension
  * check (BR-TEN-006) added alongside TEN-004. {@code PermissionResolver} and {@code
  * OrganizationRepository} are mocked; {@link SecurityContextHolder} and {@link TenantContext} are
- * set to real values rather than mocked, matching how {@code AbstractIntegrationTest} manages
- * them — both are plain static holders, not collaborators worth mocking.
+ * set to real values rather than mocked, matching how {@code AbstractIntegrationTest} manages them
+ * — both are plain static holders, not collaborators worth mocking.
  */
 @ExtendWith(MockitoExtension.class)
 class PermissionEnforcementInterceptorTest {
@@ -101,7 +101,8 @@ class PermissionEnforcementInterceptorTest {
     when(organizationRepository.findById(ORG_ID))
         .thenReturn(Optional.of(organizationWithStatus(OrganizationStatus.SUSPENDED)));
 
-    assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerFor("nonSafetyAction")))
+    assertThatThrownBy(
+            () -> interceptor.preHandle(request, response, handlerFor("nonSafetyAction")))
         .isInstanceOf(OrganizationSuspendedException.class);
   }
 
@@ -118,11 +119,13 @@ class PermissionEnforcementInterceptorTest {
   }
 
   @Test
-  @DisplayName("the permission check still runs first: an unheld permission is refused before the suspension check")
+  @DisplayName(
+      "the permission check still runs first: an unheld permission is refused before the suspension check")
   void permissionDeniedTakesPriorityOverSuspension() throws NoSuchMethodException {
     when(permissionResolver.resolve(UserId.of(ACTOR_ID))).thenReturn(Set.of());
 
-    assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerFor("nonSafetyAction")))
+    assertThatThrownBy(
+            () -> interceptor.preHandle(request, response, handlerFor("nonSafetyAction")))
         .isInstanceOf(PermissionDeniedException.class);
   }
 

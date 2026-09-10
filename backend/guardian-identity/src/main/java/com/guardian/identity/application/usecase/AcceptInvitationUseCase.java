@@ -30,10 +30,11 @@ import org.springframework.stereotype.Service;
  * Activates an invited administrative account: sets its first password and moves it {@code PENDING
  * → ACTIVE} (ADR-0012, feature IAM-009).
  *
- * <p>Public — the caller holds an invitation link and no session. Following {@code VerifyOtpUseCase}
- * in shape: the token is resolved across tenants by {@link AccountTokenDirectory} (the only way to
- * find the account from a token alone), then everything is done inside the resolved tenant under
- * RLS, and the refusal is thrown <em>after</em> the transaction so nothing is half-applied.
+ * <p>Public — the caller holds an invitation link and no session. Following {@code
+ * VerifyOtpUseCase} in shape: the token is resolved across tenants by {@link AccountTokenDirectory}
+ * (the only way to find the account from a token alone), then everything is done inside the
+ * resolved tenant under RLS, and the refusal is thrown <em>after</em> the transaction so nothing is
+ * half-applied.
  *
  * <p>Clicking the link is itself the proof the invitee controls the email — there is no separate
  * verification step.
@@ -122,7 +123,8 @@ public class AcceptInvitationUseCase {
 
     Optional<User> foundUser = users.findById(location.userId());
     if (foundUser.isEmpty()) {
-      log.error("Invite token {} resolved pre-auth but its user is invisible under RLS", token.id());
+      log.error(
+          "Invite token {} resolved pre-auth but its user is invisible under RLS", token.id());
       return Outcome.refused(ErrorCode.INTERNAL_ERROR);
     }
 
@@ -137,8 +139,7 @@ public class AcceptInvitationUseCase {
     // password complaint. Throws straight out (rolling back), which is correct — nothing is set.
     passwordPolicy.validate(newPassword);
 
-    passwordCredentials.save(
-        PasswordCredential.issue(user.id(), secretHasher.hash(newPassword)));
+    passwordCredentials.save(PasswordCredential.issue(user.id(), secretHasher.hash(newPassword)));
     accountTokens.save(token.consume(now));
     User activated = users.save(user.withStatus(UserStatus.ACTIVE));
 

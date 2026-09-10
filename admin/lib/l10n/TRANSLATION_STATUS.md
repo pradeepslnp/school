@@ -2,7 +2,7 @@
 
 Per [ADR-0013](../../../documentation/00-governance/adr/ADR-0013-interim-client-bundled-flutter-localisation.md), `app_en.arb` is the complete, real source of truth. `app_kn.arb` currently carries the **English value as an explicit, tracked placeholder** for every key below — not a silent gap, not an inline `TODO`. Every key in `app_en.arb` has a mirrored key in `app_kn.arb` (parity is verified as part of this pass); none of the Kannada values are a real translation yet.
 
-**Total resource keys: 468. Kannada status for all of them: `pending-kn-translation`.**
+**Total resource keys: 521. Kannada status for all of them: `pending-kn-translation`.**
 
 ## Safety-critical — requires native-speaker sign-off before a Kannada value ships
 
@@ -34,6 +34,10 @@ The keys below are called out separately because they touch guardian handover au
 | `studentWithdrawConfirmTitle` | Withdraw student? | pending-kn-translation — native-speaker review required |
 | `studentWithdrawConfirmBody` | {name} ({admissionNo}) will be taken off the roll and removed from transport.<br><br>Their record is kept — safety records reference it — and can still be read. | pending-kn-translation — native-speaker review required |
 | `studentWithdrawConfirmButton` | Withdraw | pending-kn-translation — native-speaker review required |
+| `custodyPanelWarning` | A restriction takes effect immediately and overrides every parent right… | pending-kn-translation — native-speaker review required |
+| `custodyTypeNoHandover` / `custodyTypeNoVisibility` / `custodyTypeFull` | Cannot collect / see / collect-or-see the child | pending-kn-translation — native-speaker review required |
+| `custodyLiftConfirmBody` | The person named will be able to collect and see this child again, straight away… | pending-kn-translation — native-speaker review required |
+| `custodyReasonHelper` | What authorises this — a court order and its reference… | pending-kn-translation — native-speaker review required |
 
 Not included above because this admin console does not yet surface them: wrong-bus/missed-bus rider-facing alerts and incident/SOS screens are part of `parent_app`/`driver_attender_app`'s scope (see those apps' own `TRANSLATION_STATUS.md`) — this console currently has no dashboard, alerts, or SOS destination built (`NoModulesNotice`), so there is no equivalent in-app copy here to flag yet. If A-01/alerts/SOS land in a later build, extend this table then.
 
@@ -431,6 +435,78 @@ Every key below is `pending-kn-translation` in `app_kn.arb` (English-fallback pl
 | `studentAssignErrorAlreadyAssigned` | This child already has that assignment — remove the current one first. | pending-kn-translation |
 | `studentAssignErrorApiUnreachable` | The service is unreachable right now. Try again. | pending-kn-translation |
 | `studentAssignErrorGeneric` | That could not be saved right now. Try again. | pending-kn-translation |
+
+### Bulk student import (A-12, STU-002)
+
+None of these are safety-critical: bulk import does not touch handover authorisation, the
+audit/override register, or removing a student from transport. The `dateOfBirth` mention in
+`studentImportColumnsBody` is a field description, not a control.
+
+| Key | English value | Kannada status |
+|---|---|---|
+| `studentListImportButton` | Import | pending-kn-translation |
+| `studentImportTitle` | Import students | pending-kn-translation |
+| `studentImportIntro` | Upload a spreadsheet of students, saved as CSV. Rows that are ready are enrolled straight away; anything that needs fixing is listed for you to correct and upload again. | pending-kn-translation |
+| `studentImportColumnsTitle` | Columns | pending-kn-translation |
+| `studentImportColumnsBody` | Required: admissionNo, firstName, lastName. Optional: dateOfBirth (YYYY-MM-DD) and transportEligible (true or false — defaults to true). Column names are matched loosely, ignoring case and spaces. A column that isn't one of these stops the whole file — guardian and stop columns are not supported yet. | pending-kn-translation |
+| `studentImportChooseFileButton` | Choose CSV file | pending-kn-translation |
+| `studentImportUploadingLabel` | Uploading and checking the file | pending-kn-translation |
+| `studentImportUploadingNamed` | Uploading {name}… | pending-kn-translation |
+| `studentImportSummary` | {totalRows} rows · {successCount} imported · {errorCount} errors | pending-kn-translation |
+| `studentImportSummaryHintErrors` | The rows below were not enrolled. Fix them in your spreadsheet and upload again — only the corrected rows need to be in the next file. | pending-kn-translation |
+| `studentImportSummaryHintAllImported` | Every row was enrolled. They now appear on the register. | pending-kn-translation |
+| `studentImportSummaryHintNothing` | Nothing was enrolled. Correct the rows below and upload again. | pending-kn-translation |
+| `studentImportDownloadErrorsButton` | Download error rows | pending-kn-translation |
+| `studentImportAnotherButton` | Import another file | pending-kn-translation |
+| `studentImportColRow` | Row | pending-kn-translation |
+| `studentImportColField` | Column | pending-kn-translation |
+| `studentImportColProblem` | What to fix | pending-kn-translation |
+| `studentImportErrorEmpty` | That file has no student rows. Check you saved the sheet with the students in it as CSV. | pending-kn-translation |
+| `studentImportErrorUnreadable` | That file could not be read as a spreadsheet. Open it in your spreadsheet program and use “Save as… CSV”, then upload the CSV. | pending-kn-translation |
+| `studentImportErrorUnsupportedColumn` | One of the columns in that file is not supported yet. Keep only admissionNo, firstName, lastName, dateOfBirth and transportEligible, then upload again. | pending-kn-translation |
+| `studentImportErrorTooManyRows` | That file has too many rows for one upload. Split it into smaller files and import them one at a time. | pending-kn-translation |
+| `studentImportErrorNoFile` | No file was chosen. Pick a CSV file to upload. | pending-kn-translation |
+
+### Custody restrictions (A-14, GRD-006)
+
+⚠️ marks the keys that describe the handover/visibility override itself — a machine or
+unreviewed Kannada rendering of any of these is a real safety risk (see the safety-critical
+table at the top).
+
+| Key | English value | Kannada status |
+|---|---|---|
+| `custodyPanelTitle` | Custody restrictions | pending-kn-translation |
+| `custodyAddButton` | Add restriction | pending-kn-translation |
+| `custodyPanelWarning` ⚠️ | A restriction takes effect immediately and overrides every parent right — the person named cannot collect or see this child while it is in force. Every restriction is recorded with its reason. | pending-kn-translation |
+| `custodyLoadingLabel` | Loading restrictions | pending-kn-translation |
+| `custodyEmptyState` | No restrictions. That is the normal state. | pending-kn-translation |
+| `custodyLiftButton` | Lift | pending-kn-translation |
+| `custodyStatusLifted` | Lifted | pending-kn-translation |
+| `custodyLiftConfirmTitle` | Lift this restriction? | pending-kn-translation |
+| `custodyLiftConfirmBody` ⚠️ | The person named will be able to collect and see this child again, straight away. The restriction and its history are kept. | pending-kn-translation |
+| `custodyLiftConfirmButton` | Lift restriction | pending-kn-translation |
+| `custodyEffectiveLine` | In force from {from} until {until} | pending-kn-translation |
+| `custodyOpenEnded` | no end date | pending-kn-translation |
+| `custodySubjectGuardian` | Parent {id} | pending-kn-translation |
+| `custodyTypeNoHandover` ⚠️ | Cannot collect the child | pending-kn-translation |
+| `custodyTypeNoVisibility` ⚠️ | Cannot see the child's journey | pending-kn-translation |
+| `custodyTypeFull` ⚠️ | Cannot collect or see the child | pending-kn-translation |
+| `custodyAddTitle` | Add a custody restriction | pending-kn-translation |
+| `custodySubjectAGuardian` | A parent on file | pending-kn-translation |
+| `custodySubjectAPerson` | Someone else, by name | pending-kn-translation |
+| `custodyGuardianLabel` | Parent | pending-kn-translation |
+| `custodyPersonNameLabel` | Full name | pending-kn-translation |
+| `custodyPersonNameRequired` | Enter the person's full name | pending-kn-translation |
+| `custodyTypeLabel` | Restriction | pending-kn-translation |
+| `custodyReasonLabel` | Reason (required) | pending-kn-translation |
+| `custodyReasonHelper` ⚠️ | What authorises this — a court order and its reference, a school safeguarding decision. Kept on the audit record. | pending-kn-translation |
+| `custodyErrorReasonRequired` | A reason is required for every custody restriction. | pending-kn-translation |
+| `custodyUntilLabel` | End date (optional) | pending-kn-translation |
+| `custodyUntilFormatError` | Use the format YYYY-MM-DD, or leave blank for no end date. | pending-kn-translation |
+| `custodyAddSubmitButton` | Add restriction | pending-kn-translation |
+| `custodyErrorSubjectRequired` | Name exactly one person — a parent on file, or someone by name. | pending-kn-translation |
+| `custodyErrorNotFound` | That restriction could not be found. It may already have been lifted. | pending-kn-translation |
+
 ### Users / administrators (A-43)
 
 | Key | English value | Kannada status |

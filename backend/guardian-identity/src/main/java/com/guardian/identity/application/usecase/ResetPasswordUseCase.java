@@ -8,9 +8,9 @@ import com.guardian.common.tenant.TenantScopedTransaction;
 import com.guardian.identity.application.AuthenticationFailedException;
 import com.guardian.identity.application.PasswordPolicy;
 import com.guardian.identity.application.port.AccountEmailSender;
+import com.guardian.identity.application.port.PasswordCredentialRepository;
 import com.guardian.identity.application.port.PreAuthenticationDirectory;
 import com.guardian.identity.application.port.PreAuthenticationDirectory.EmailMatch;
-import com.guardian.identity.application.port.PasswordCredentialRepository;
 import com.guardian.identity.application.port.ResetOtpCredentialRepository;
 import com.guardian.identity.application.port.SecretHasher;
 import com.guardian.identity.application.port.SessionRepository;
@@ -32,16 +32,16 @@ import org.springframework.stereotype.Service;
  * Completes a password reset: verifies the emailed code, sets the new password, and ends every
  * existing session (ADR-0012, feature IAM-010).
  *
- * <p>Shaped like {@code VerifyOtpUseCase}: the account is resolved by email across tenants (the same
- * bootstrap {@code StaffLoginUseCase} does), the code is checked under the resolved tenant with the
- * attempt counter advancing on a wrong guess, and the refusal is thrown <em>after</em> the
+ * <p>Shaped like {@code VerifyOtpUseCase}: the account is resolved by email across tenants (the
+ * same bootstrap {@code StaffLoginUseCase} does), the code is checked under the resolved tenant
+ * with the attempt counter advancing on a wrong guess, and the refusal is thrown <em>after</em> the
  * transaction so that failed-attempt write survives. Two things it does that sign-in does not: it
  * <strong>revokes all of the user's sessions</strong> (the old password may be compromised, so
  * everything it could have opened must close), and it emails a password-changed notice.
  *
  * <p>Which {@link ErrorCode} is returned is a security decision, matching the sign-in OTP path:
- * unknown email, inactive account, and wrong code all answer {@code AUTH_CREDENTIALS_INVALID} so the
- * endpoint cannot be used to enumerate accounts; expired, already-used, and locked are reported
+ * unknown email, inactive account, and wrong code all answer {@code AUTH_CREDENTIALS_INVALID} so
+ * the endpoint cannot be used to enumerate accounts; expired, already-used, and locked are reported
  * distinctly because the person requested the code themselves and the client needs to tell them to
  * ask for a fresh one.
  */
@@ -89,7 +89,8 @@ public class ResetPasswordUseCase {
 
   /**
    * @throws AuthenticationFailedException if the email/code pair is wrong, expired, used, or locked
-   * @throws com.guardian.common.error.BusinessRuleViolationException if the new password is too weak
+   * @throws com.guardian.common.error.BusinessRuleViolationException if the new password is too
+   *     weak
    */
   public void execute(String email, String otp, String newPassword) {
     Instant now = Instant.now();
@@ -98,7 +99,8 @@ public class ResetPasswordUseCase {
     OtpCode submitted = parseOtp(otp);
 
     Outcome outcome =
-        tenantScoped.execute(match.tenantId(), () -> resetWithin(match, submitted, newPassword, now));
+        tenantScoped.execute(
+            match.tenantId(), () -> resetWithin(match, submitted, newPassword, now));
 
     switch (outcome) {
       case Outcome.Refused refused -> throw new AuthenticationFailedException(refused.code());
@@ -109,7 +111,8 @@ public class ResetPasswordUseCase {
     }
   }
 
-  private Outcome resetWithin(EmailMatch match, OtpCode submitted, String newPassword, Instant now) {
+  private Outcome resetWithin(
+      EmailMatch match, OtpCode submitted, String newPassword, Instant now) {
     Optional<OtpCredential> found = resetOtps.findLatest(match.userId());
     if (found.isEmpty()) {
       // Never requested a code. Same answer as a wrong code.
@@ -194,7 +197,9 @@ public class ResetPasswordUseCase {
     }
     List<EmailMatch> matches = directory.findByEmail(email.trim());
     if (matches.size() > 1) {
-      log.error("Email resolves to {} users across tenants; refusing to guess (BR-IAM-003)", matches.size());
+      log.error(
+          "Email resolves to {} users across tenants; refusing to guess (BR-IAM-003)",
+          matches.size());
       throw new AuthenticationFailedException(ErrorCode.AUTH_CREDENTIALS_INVALID);
     }
     if (matches.isEmpty() || !matches.get(0).status().canAuthenticate()) {

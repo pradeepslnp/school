@@ -7,6 +7,8 @@ import '../core/session/session_manager.dart';
 import '../core/session/session_store.dart';
 import '../features/audit/data_provider/audit_data_provider.dart';
 import '../features/audit/repository/audit_repository.dart';
+import '../features/custody_restrictions/data_provider/custody_restriction_data_provider.dart';
+import '../features/custody_restrictions/repository/custody_restriction_repository.dart';
 import '../features/auth_recovery/data_provider/auth_recovery_data_provider.dart';
 import '../features/auth_recovery/repository/auth_recovery_repository.dart';
 import '../features/guardians/data_provider/guardian_data_provider.dart';
@@ -26,6 +28,8 @@ import '../features/route_assignments/repository/route_assignment_repository.dar
 import '../features/routes/repository/stop_repository.dart';
 import '../features/staff/data_provider/staff_data_provider.dart';
 import '../features/students/data_provider/student_data_provider.dart';
+import '../features/students/import/data_provider/student_import_data_provider.dart';
+import '../features/students/import/repository/student_import_repository.dart';
 import '../features/students/repository/student_repository.dart';
 import '../features/staff/repository/staff_repository.dart';
 import '../features/users/data_provider/user_data_provider.dart';
@@ -52,6 +56,7 @@ class AppDependencies {
     required this.organizationOnboardingRepository,
     required this.staffRepository,
     required this.studentRepository,
+    required this.studentImportRepository,
     required this.vehicleRepository,
     required this.routeRepository,
     required this.stopRepository,
@@ -60,6 +65,7 @@ class AppDependencies {
     required this.userRepository,
     required this.platformHealthRepository,
     required this.guardianRepository,
+    required this.custodyRestrictionRepository,
     required this.auditRepository,
     required this.authRecoveryRepository,
     required this.workspaceContext,
@@ -85,6 +91,10 @@ class AppDependencies {
   /// though only `SUPER_ADMIN`/`ORG_ADMIN`/`SCHOOL_ADMIN` are offered the write affordances;
   /// see `StudentListScreen`.
   final StudentRepository studentRepository;
+
+  /// Bulk student import (A-12, STU-002) — reached from the register by roles holding
+  /// `PERM-STUDENT-IMPORT` (`SUPER_ADMIN` / `ORG_ADMIN` / `SCHOOL_ADMIN`).
+  final StudentImportRepository studentImportRepository;
 
   /// Vehicle registration (A-20, FLT-001) — reached by roles holding `PERM-VEHICLE-MANAGE`
   /// (PERMISSION_MATRIX.md); see `ConsoleDestinations`.
@@ -118,6 +128,11 @@ class AppDependencies {
   /// their phone (GRD-001, GRD-002, screen A-11). Reached from the student detail
   /// screen by roles holding `PERM-GUARDIAN-LINK`.
   final GuardianRepository guardianRepository;
+
+  /// Custody restrictions on a student (GRD-006, screen A-14) — a safety-critical override,
+  /// reached from the student record by roles holding `PERM-CUSTODY-RESTRICTION-MANAGE`. Never
+  /// exposed to any guardian-facing surface (BR-GRD-008 🔴).
+  final CustodyRestrictionRepository custodyRestrictionRepository;
 
   /// The audit trail and override register (AUD-002, AUD-003, screens A-54/A-55) — read-only,
   /// reached by roles holding `PERM-AUDIT-VIEW`; see `ConsoleDestinations`.
@@ -170,6 +185,10 @@ class AppDependencies {
       dataProvider: StudentDataProvider(client: restClient),
     );
 
+    final studentImportRepository = StudentImportRepository(
+      dataProvider: StudentImportDataProvider(client: restClient),
+    );
+
     final vehicleRepository = VehicleRepository(
       dataProvider: VehicleDataProvider(client: restClient),
     );
@@ -202,6 +221,10 @@ class AppDependencies {
       dataProvider: GuardianDataProvider(client: restClient),
     );
 
+    final custodyRestrictionRepository = CustodyRestrictionRepository(
+      dataProvider: CustodyRestrictionDataProvider(client: restClient),
+    );
+
     final auditRepository = AuditRepository(
       dataProvider: AuditDataProvider(client: restClient),
     );
@@ -232,6 +255,7 @@ class AppDependencies {
       organizationOnboardingRepository: organizationOnboardingRepository,
       staffRepository: staffRepository,
       studentRepository: studentRepository,
+      studentImportRepository: studentImportRepository,
       vehicleRepository: vehicleRepository,
       routeRepository: routeRepository,
       stopRepository: stopRepository,
@@ -240,6 +264,7 @@ class AppDependencies {
       userRepository: userRepository,
       platformHealthRepository: platformHealthRepository,
       guardianRepository: guardianRepository,
+      custodyRestrictionRepository: custodyRestrictionRepository,
       auditRepository: auditRepository,
       authRecoveryRepository: authRecoveryRepository,
       workspaceContext: workspaceContext,

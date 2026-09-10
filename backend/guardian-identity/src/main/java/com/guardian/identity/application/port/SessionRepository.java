@@ -2,7 +2,9 @@ package com.guardian.identity.application.port;
 
 import com.guardian.identity.domain.Session;
 import com.guardian.identity.domain.SessionId;
+import com.guardian.identity.domain.UserId;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,6 +12,16 @@ import java.util.UUID;
 public interface SessionRepository {
 
   Optional<Session> findById(SessionId id);
+
+  /**
+   * Every session belonging to one user in the current tenant, newest first — what the "my
+   * sessions" screen reads (IAM-004).
+   *
+   * <p>Returns the whole history, revoked and expired rows included: the use case decides what to
+   * show, and "this device signed out an hour ago" is information a person checking for unfamiliar
+   * activity wants to see, not hide.
+   */
+  List<Session> findByUser(UserId userId);
 
   Session save(Session session);
 
@@ -27,10 +39,10 @@ public interface SessionRepository {
   /**
    * Revokes every live session belonging to one user, across all families, and returns how many.
    *
-   * <p>What a password reset calls (ADR-0012): a reset means the old password may be compromised, so
-   * every session that old password could have opened must end at once — not just one rotation
-   * family. Atomic for the same reason as {@link #revokeFamily}: a partial revocation leaves exactly
-   * the sessions an attacker may be holding.
+   * <p>What a password reset calls (ADR-0012): a reset means the old password may be compromised,
+   * so every session that old password could have opened must end at once — not just one rotation
+   * family. Atomic for the same reason as {@link #revokeFamily}: a partial revocation leaves
+   * exactly the sessions an attacker may be holding.
    */
   int revokeAllForUser(UUID userId, String reason);
 }

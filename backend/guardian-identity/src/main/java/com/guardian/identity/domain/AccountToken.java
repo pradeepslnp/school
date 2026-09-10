@@ -5,8 +5,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * An issued invitation or password-reset link token, and the rules governing whether it may still be
- * accepted (ADR-0012).
+ * An issued invitation or password-reset link token, and the rules governing whether it may still
+ * be accepted (ADR-0012).
  *
  * <p>Shares the {@code user_credentials} table with {@link OtpCredential} and {@link
  * PasswordCredential} via {@code credential_type}, but is a distinct type for the same reason those
@@ -127,6 +127,12 @@ public final class AccountToken {
   /** Deliberately excludes the hash and expiry: this string can reach logs. */
   @Override
   public String toString() {
-    return "AccountToken[id=" + id + ", purpose=" + purpose + ", used=" + (consumedAt != null) + "]";
+    return "AccountToken[id="
+        + id
+        + ", purpose="
+        + purpose
+        + ", used="
+        + (consumedAt != null)
+        + "]";
   }
 }

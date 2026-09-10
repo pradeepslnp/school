@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * Implements guardian-guardian's {@link GuardianAccountProvisioningPort} by calling
- * guardian-identity's {@link ProvisionGuardianAccountUseCase} — this is the one place in the backend
- * allowed to depend on both modules, which is exactly why the port lives in guardian-guardian and
- * the adapter lives here. See the port's own documentation, and {@code
+ * guardian-identity's {@link ProvisionGuardianAccountUseCase} — this is the one place in the
+ * backend allowed to depend on both modules, which is exactly why the port lives in
+ * guardian-guardian and the adapter lives here. See the port's own documentation, and {@code
  * StaffAccountProvisioningAdapter} for the identical shape on the staff side.
  */
 @Component

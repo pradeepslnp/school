@@ -98,19 +98,19 @@ Non-operating days suppress trip generation (BR-TRIP-011). `PUT` replaces a date
 
 ## Roles & Permissions
 
-| Method | Path | Feature | Permission | Rules |
-|---|---|---|---|---|
-| `GET` | `/permissions` | IAM-006 | `PERM-ROLE-MANAGE` | |
-| `GET` | `/roles` | IAM-005 | `PERM-ROLE-MANAGE` | BR-IAM-003 |
-| `POST` | `/roles` | IAM-005 | `PERM-ROLE-MANAGE` | BR-IAM-003 |
-| `PUT` | `/roles/{id}/permissions` | IAM-006 | `PERM-ROLE-MANAGE` | BR-IAM-002, BR-IAM-004 |
-| `DELETE` | `/roles/{id}` | IAM-005 | `PERM-ROLE-MANAGE` | |
+**Not built.** The nine system-role templates are fixed (`SystemRolePermissions` in code, matching the permission matrix), and role *assignment* is done through `PUT /users/{id}/role` above (IAM-005). Tenant-defined roles and per-role permission editing (IAM-006) — the endpoints below — need a design decision on custom-role resolution and safety-permission floors, captured in a future ADR.
 
-`GET /permissions` returns the platform's fixed permission set. **Tenants assign permissions; they cannot invent them** — a role referencing an unknown code is rejected.
+| Method | Path | Feature | Permission | Rules | Status |
+|---|---|---|---|---|---|
+| `GET` | `/permissions` | IAM-006 | `PERM-ROLE-MANAGE` | | ⬜ not built |
+| `GET` | `/roles` | IAM-005 | `PERM-ROLE-MANAGE` | BR-IAM-003 | ⬜ not built |
+| `POST` | `/roles` | IAM-006 | `PERM-ROLE-MANAGE` | BR-IAM-003 | ⬜ not built |
+| `PUT` | `/roles/{id}/permissions` | IAM-006 | `PERM-ROLE-MANAGE` | BR-IAM-002, BR-IAM-004 | ⬜ not built |
+| `DELETE` | `/roles/{id}` | IAM-006 | `PERM-ROLE-MANAGE` | | ⬜ not built |
 
-Permission changes take effect on the **next request** for every affected user, without re-issuing tokens (BR-IAM-004). This is the property that makes revocation meaningful.
+Permission changes — including a role removed from a user via `PUT /users/{id}/role` — take effect on the **next request** for every affected user, without re-issuing tokens (BR-IAM-004). This is the property that makes revocation meaningful.
 
-System roles (`is_system_role`) match the templates in the permission matrix and cannot be deleted.
+System roles (`is_system_role`) match the templates in the permission matrix and cannot be deleted or edited.
 
 ---
 
@@ -122,25 +122,36 @@ System roles (`is_system_role`) match the templates in the permission matrix and
 | `GET` | `/users` | — | `PERM-USER-VIEW` | BR-IAM-006 |
 | `GET` | `/users/{id}` | — | `PERM-USER-VIEW` | |
 | `PATCH` | `/users/{id}` | — | `PERM-USER-EDIT` | |
-| `POST` | `/users/{id}/deactivate` | IAM-008 | `PERM-USER-DEACTIVATE` | BR-IAM-008 |
-| `PUT` | `/users/{id}/roles` | IAM-005 | `PERM-ROLE-MANAGE` | BR-IAM-003 |
-| `PUT` | `/users/{id}/scopes` | IAM-007 | `PERM-ROLE-MANAGE` | BR-IAM-006 |
+| `PATCH` | `/users/{id}/deactivate` | IAM-008 | `PERM-USER-DEACTIVATE` | BR-IAM-008 |
+| `PATCH` | `/users/{id}/reactivate` | IAM-008 | `PERM-USER-DEACTIVATE` | |
+| `PUT` | `/users/{id}/role` | IAM-005, IAM-007 | `PERM-ROLE-MANAGE` | BR-IAM-003, BR-IAM-006 |
+| `DELETE` | `/users/{id}/sessions` | IAM-004 | `PERM-SESSION-REVOKE` | BR-IAM-007 |
 | `GET` | `/users/me` | — | authenticated | BR-IAM-004 |
 | `PATCH` | `/users/me` | — | `PERM-PROFILE-SELF-EDIT` | |
 
-### `POST /users/{id}/deactivate`
+Every `/users` write except `/users/me` takes `organizationId` (a body field on `POST`, a query parameter elsewhere) — a `SUPER_ADMIN` finishing a customer's onboarding is not a member of that organization's tenant, so the target organization is named explicitly rather than read from the caller.
 
-Revokes **every session immediately** and removes the user from future duty assignments (BR-IAM-008). This is the endpoint called when a driver leaves employment — the delay between "no longer employed" and "no longer has access to children's data" must be zero.
+### `PATCH /users/{id}/deactivate`
 
-A user must have an email or a phone (`ck_users_identifier`) — guardians commonly have only a phone.
+Marks the account inactive and **revokes every session it holds immediately**, in the same transaction (BR-IAM-008). For a driver or attendant this is issued through the Drivers screen (`POST /transport-staff/{staffId}/deactivate`), which additionally clears the person's standing duty assignments — the delay between "no longer employed" and "no longer has access to children's data" must be zero. Refresh already refuses an inactive user, so a session could not outlive deactivation by more than an access token's ≤15-minute life anyway; revoking now closes that window.
 
-### `PUT /users/{id}/scopes`
+`/reactivate` re-enables sign-in and revokes nothing.
+
+### `PUT /users/{id}/role`
 
 ```json
-{ "scopes": [ { "level": "SCHOOL", "refId": "…" }, { "level": "ROUTE", "refId": "…" } ] }
+{ "organizationId": "…", "roleCode": "TRANSPORT_MANAGER", "schoolId": "…" }
 ```
 
-`OWN_CHILDREN`, `TRIP`, and `SELF` are **not settable** — they are derived at request time from guardian links and trip crew ([`MOD-02-identity.md`](../03-database/tables/MOD-02-identity.md)). Attempting to set one returns `400`.
+Changes an administrator's role **and** its scope in one call — the two are a pair (a `SCHOOL_ADMIN` *is* a school-scoped role), and applying them separately would leave the account momentarily holding two roles or none. Supersedes the old administrative `user_roles` grant and appends the new `user_scopes` row in one transaction. `schoolId` is **required** when `roleCode` is school-scoped (`SCHOOL_ADMIN`, `PRINCIPAL`, `TRANSPORT_MANAGER`) and must be omitted for `ORG_ADMIN`; a mismatch returns `USER_SCOPE_NOT_PERMITTED_FOR_ROLE` (422).
+
+Operates only on the nine fixed system-role templates. Which roles a caller may assign follows the same hierarchy as `POST /users` (a `SUPER_ADMIN` any; an `ORG_ADMIN` the school-scoped ones within their organization). `OWN_CHILDREN`, `TRIP`, and `SELF` scopes are never settable — they are derived at request time from guardian links and trip crew ([`MOD-02-identity.md`](../03-database/tables/MOD-02-identity.md)).
+
+Tenant-defined roles and per-role permission editing (IAM-006, `POST /roles`, `PUT /roles/{id}/permissions`) are **not built** — see the module README.
+
+### `DELETE /users/{id}/sessions`
+
+Ends every live session the account holds without deactivating it (IAM-004) — a forced re-login for a shared device left signed in, or a suspected credential compromise. Immediate for refresh, ≤15 min for access tokens (BR-IAM-007). Distinct from deactivation, which also does this but disables the account.
 
 ---
 

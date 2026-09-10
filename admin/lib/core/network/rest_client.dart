@@ -115,6 +115,52 @@ class RestClient {
     );
   }
 
+  /// Uploads [fileBytes] as one `multipart/form-data` part named [fileField], alongside the
+  /// string [fields].
+  ///
+  /// **Never retried** — for the same reason [post] is not. A retried student import that
+  /// actually succeeded the first time enrols every child twice, and BR-STU-003 only catches
+  /// that on the second run, after the audit trail already disagrees with itself. There is no
+  /// idempotency-key path because a spreadsheet upload is not something an operator submits
+  /// twice by accident the way a form is.
+  ///
+  /// The one multipart surface in the console (bulk student import, STU-002). On [RestClient]
+  /// rather than `package:http` in the data provider, so the auth header, the client-type
+  /// header, and the transport-failure handling still happen in exactly one place.
+  Future<ApiResponse> postMultipart(
+    String path, {
+    required List<int> fileBytes,
+    required String fileName,
+    String fileField = 'file',
+    Map<String, String> fields = const {},
+    Map<String, dynamic>? query,
+  }) async {
+    final uri = _uri(path, query);
+
+    try {
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll(await _headers(authenticated: true, json: false));
+      request.fields.addAll(fields);
+      request.files.add(
+        http.MultipartFile.fromBytes(fileField, fileBytes, filename: fileName),
+      );
+
+      final streamed = await _http.send(request).timeout(timeout);
+      final response = await http.Response.fromStream(streamed);
+
+      if (response.statusCode == 401) {
+        await onUnauthorized?.call();
+      }
+      return _toApiResponse(response);
+    } on TimeoutException {
+      return const ApiResponse.transportFailure();
+    } on http.ClientException {
+      // Same as everywhere else in this client: the browser withholds the detail, so a
+      // dropped connection, a DNS failure, and a CORS rejection are one outcome.
+      return const ApiResponse.transportFailure();
+    }
+  }
+
   Future<ApiResponse> put(
     String path, {
     Object? body,

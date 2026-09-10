@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
  * why this lives in {@code guardian-tenancy} rather than a dedicated platform module, and for what
  * "health" does and does not mean here.
  *
- * <p>Translation only, matching every other controller in this module: parse nothing (this
- * endpoint takes no input beyond the caller's own identity), call one use case, map the result.
+ * <p>Translation only, matching every other controller in this module: parse nothing (this endpoint
+ * takes no input beyond the caller's own identity), call one use case, map the result.
  */
 @RestController
 @RequestMapping("/api/v1/platform")

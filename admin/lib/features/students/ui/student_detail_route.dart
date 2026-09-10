@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/dependencies.dart';
+import '../../custody_restrictions/bloc/student_custody_bloc.dart';
+import '../../custody_restrictions/bloc/student_custody_event.dart';
 import '../../guardians/bloc/student_guardians_bloc.dart';
 import '../../guardians/bloc/student_guardians_event.dart';
 import '../../route_assignments/bloc/student_assignments_bloc.dart';
@@ -25,9 +27,15 @@ class StudentDetailRoute extends StatelessWidget {
 
   final Student student;
 
+  /// Holders of `PERM-CUSTODY-RESTRICTION-MANAGE` (PERMISSION_MATRIX.md) — the same three roles
+  /// that hold the other write permissions on this screen.
+  static const _custodyRoles = {'SUPER_ADMIN', 'ORG_ADMIN', 'SCHOOL_ADMIN'};
+
   @override
   Widget build(BuildContext context) {
     final dependencies = DependencyScope.of(context);
+    final roles = dependencies.sessionManager.currentUser?.roles ?? const <String>[];
+    final canManageCustody = roles.any(_custodyRoles.contains);
 
     return MultiBlocProvider(
       providers: [
@@ -40,8 +48,19 @@ class StudentDetailRoute extends StatelessWidget {
               StudentAssignmentsBloc(repository: dependencies.routeAssignmentRepository)
                 ..add(StudentAssignmentsRequested(studentId: student.id)),
         ),
+        // Only for roles that can reach the endpoint — a PRINCIPAL who may view the record
+        // never triggers a custody-restriction fetch the server would refuse (BR-GRD-008 🔴).
+        if (canManageCustody)
+          BlocProvider<StudentCustodyBloc>(
+            create: (_) =>
+                StudentCustodyBloc(repository: dependencies.custodyRestrictionRepository)
+                  ..add(StudentCustodyRequested(studentId: student.id)),
+          ),
       ],
-      child: StudentDetailScreen(student: student),
+      child: StudentDetailScreen(
+        student: student,
+        showCustodyPanel: canManageCustody,
+      ),
     );
   }
 }

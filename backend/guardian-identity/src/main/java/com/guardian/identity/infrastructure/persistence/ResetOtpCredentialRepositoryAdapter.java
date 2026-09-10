@@ -8,8 +8,8 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 /**
- * Implements {@link ResetOtpCredentialRepository} over JPA, storing the reset code under
- * {@code credential_type = 'RESET'} in {@code user_credentials} (ADR-0012).
+ * Implements {@link ResetOtpCredentialRepository} over JPA, storing the reset code under {@code
+ * credential_type = 'RESET'} in {@code user_credentials} (ADR-0012).
  *
  * <p>A near-copy of {@link OtpCredentialRepositoryAdapter} on a different {@code credential_type} —
  * the duplication is deliberate. Merging them behind a "type" parameter would make it one edit away

@@ -25,8 +25,13 @@ class JdbcUserScopeRepository implements UserScopeRepository {
 
   @Override
   public List<UserScope> findByUser(UserId userId) {
+    // Newest first. user_scopes is append-only (V15 grants no DELETE) — a role change adds a
+    // superseding row rather than editing one — so the most recently inserted row is the scope
+    // in force, and every reader that takes element 0 (UserResponse, SessionFactory, the Users
+    // list) is reading the current scope. Older rows remain as the trail of where this account
+    // has been scoped.
     return jdbcTemplate.query(
-        "SELECT scope_level, scope_ref_id FROM user_scopes WHERE user_id = ?",
+        "SELECT scope_level, scope_ref_id FROM user_scopes WHERE user_id = ? ORDER BY created_at DESC",
         (rs, rowNum) -> {
           UUID refId = (UUID) rs.getObject("scope_ref_id");
           return new UserScope(UserScope.Level.fromStored(rs.getString("scope_level")), refId);

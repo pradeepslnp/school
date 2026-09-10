@@ -2,16 +2,20 @@ package com.guardian.identity.interfaces.rest;
 
 import com.guardian.common.security.CurrentActor;
 import com.guardian.common.security.RequiresPermission;
+import com.guardian.identity.application.command.ChangeAdministrativeUserRoleCommand;
 import com.guardian.identity.application.command.CreateAdministrativeUserCommand;
 import com.guardian.identity.application.command.UpdateAdministrativeUserCommand;
 import com.guardian.identity.application.result.AdministrativeUserView;
+import com.guardian.identity.application.usecase.ChangeAdministrativeUserRoleUseCase;
 import com.guardian.identity.application.usecase.CreateAdministrativeUserUseCase;
 import com.guardian.identity.application.usecase.ListAdministrativeUsersUseCase;
 import com.guardian.identity.application.usecase.ResendInvitationUseCase;
+import com.guardian.identity.application.usecase.RevokeAllUserSessionsUseCase;
 import com.guardian.identity.application.usecase.SendPasswordResetCodeUseCase;
 import com.guardian.identity.application.usecase.SetAdministrativeUserStatusUseCase;
 import com.guardian.identity.application.usecase.UpdateAdministrativeUserUseCase;
 import com.guardian.identity.domain.UserStatus;
+import com.guardian.identity.interfaces.rest.dto.ChangeUserRoleRequest;
 import com.guardian.identity.interfaces.rest.dto.CreateUserRequest;
 import com.guardian.identity.interfaces.rest.dto.UpdateUserRequest;
 import com.guardian.identity.interfaces.rest.dto.UserResponse;
@@ -20,25 +24,27 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Administrative user endpoints (feature IAM-005, IAM-008; screen A-43). See
+ * Administrative user endpoints (features IAM-004, IAM-005, IAM-007, IAM-008; screen A-43). See
  * guardian-docs/04-api/TENANCY_IDENTITY_API.md.
  *
  * <p>Every endpoint takes {@code organizationId} — as a body field on create, a query parameter
- * everywhere else — rather than resolving it server-side from the target user or school. See
- * {@link CreateAdministrativeUserUseCase}'s documentation for why: the admin console already knows
- * this id from the same cascading organization/school picker that gates Students, Drivers,
- * Vehicles, and Routes, and resolving it independently here would mean a second, redundant lookup
- * for information the caller already has.
+ * everywhere else — rather than resolving it server-side from the target user or school. See {@link
+ * CreateAdministrativeUserUseCase}'s documentation for why: the admin console already knows this id
+ * from the same cascading organization/school picker that gates Students, Drivers, Vehicles, and
+ * Routes, and resolving it independently here would mean a second, redundant lookup for information
+ * the caller already has.
  *
  * <p>This layer only translates: parse the wire format into domain types, call one use case, map
  * the result back — matching {@code OrganizationController}.
@@ -50,7 +56,9 @@ public class UserController {
   private final CreateAdministrativeUserUseCase createUser;
   private final ListAdministrativeUsersUseCase listUsers;
   private final UpdateAdministrativeUserUseCase updateUser;
+  private final ChangeAdministrativeUserRoleUseCase changeUserRole;
   private final SetAdministrativeUserStatusUseCase setUserStatus;
+  private final RevokeAllUserSessionsUseCase revokeAllUserSessions;
   private final ResendInvitationUseCase resendInvitation;
   private final SendPasswordResetCodeUseCase sendPasswordResetCode;
 
@@ -58,21 +66,24 @@ public class UserController {
       CreateAdministrativeUserUseCase createUser,
       ListAdministrativeUsersUseCase listUsers,
       UpdateAdministrativeUserUseCase updateUser,
+      ChangeAdministrativeUserRoleUseCase changeUserRole,
       SetAdministrativeUserStatusUseCase setUserStatus,
+      RevokeAllUserSessionsUseCase revokeAllUserSessions,
       ResendInvitationUseCase resendInvitation,
       SendPasswordResetCodeUseCase sendPasswordResetCode) {
     this.createUser = createUser;
     this.listUsers = listUsers;
     this.updateUser = updateUser;
+    this.changeUserRole = changeUserRole;
     this.setUserStatus = setUserStatus;
+    this.revokeAllUserSessions = revokeAllUserSessions;
     this.resendInvitation = resendInvitation;
     this.sendPasswordResetCode = sendPasswordResetCode;
   }
 
   @GetMapping
   @RequiresPermission("PERM-USER-VIEW")
-  public List<UserResponse> list(
-      @RequestParam UUID organizationId, CurrentActor actor) {
+  public List<UserResponse> list(@RequestParam UUID organizationId, CurrentActor actor) {
     return listUsers.execute(organizationId, actor.role()).stream()
         .map(UserResponse::from)
         .toList();
@@ -149,6 +160,43 @@ public class UserController {
             actor.role());
 
     return UserResponse.from(updateUser.execute(command));
+  }
+
+  /**
+   * Changes an administrator's role and scope (IAM-005/IAM-007, {@code PERM-ROLE-MANAGE}). Which
+   * roles the caller may assign, and whether a {@code schoolId} is required, are decided by {@link
+   * ChangeAdministrativeUserRoleUseCase} — see it for the checks beyond the permission.
+   */
+  @PutMapping("/{userId}/role")
+  @RequiresPermission("PERM-ROLE-MANAGE")
+  public UserResponse changeRole(
+      @PathVariable UUID userId,
+      @Valid @RequestBody ChangeUserRoleRequest request,
+      CurrentActor actor) {
+
+    ChangeAdministrativeUserRoleCommand command =
+        new ChangeAdministrativeUserRoleCommand(
+            request.organizationId(),
+            userId,
+            request.roleCode(),
+            request.schoolId(),
+            actor.userId(),
+            actor.role());
+
+    return UserResponse.from(changeUserRole.execute(command));
+  }
+
+  /**
+   * Ends every session this administrator holds, without deactivating the account (IAM-004, {@code
+   * PERM-SESSION-REVOKE}) — a forced re-login. Deactivation revokes sessions too (BR-IAM-008); this
+   * is the version that leaves the account able to sign back in.
+   */
+  @DeleteMapping("/{userId}/sessions")
+  @RequiresPermission("PERM-SESSION-REVOKE")
+  public ResponseEntity<Void> revokeSessions(
+      @PathVariable UUID userId, @RequestParam UUID organizationId, CurrentActor actor) {
+    revokeAllUserSessions.execute(organizationId, userId, actor.userId(), actor.role());
+    return ResponseEntity.noContent().build();
   }
 
   @PatchMapping("/{userId}/deactivate")

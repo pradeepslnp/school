@@ -46,7 +46,7 @@ const guardianLightColorScheme = ColorScheme(
   onTertiary: Color(0xFFFFFFFF),
   tertiaryContainer: _Brand.sand,
   onTertiaryContainer: Color(0xFF14181F),
-  // The doc's `statusCritical`, not a brighter red: `error` fills buttons and snackbars
+  // The doc's `statusCritical`, not a brighter red: `error` fills buttons and snackbar
   // that carry white text, and the brighter reds in the brand sheet do not reach 4.5:1
   // underneath it.
   error: GuardianColors.critical,

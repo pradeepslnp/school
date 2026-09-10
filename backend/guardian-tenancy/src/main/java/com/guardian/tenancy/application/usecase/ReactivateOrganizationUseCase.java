@@ -14,8 +14,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * Reactivates a suspended organization (feature TEN-004, {@code PERM-ORG-SUSPEND}, BR-TEN-006) —
- * the reverse of {@link SuspendOrganizationUseCase}; see that class's Javadoc for the bootstrap
- * and enforcement-location reasoning, which applies identically here.
+ * the reverse of {@link SuspendOrganizationUseCase}; see that class's Javadoc for the bootstrap and
+ * enforcement-location reasoning, which applies identically here.
  */
 @Service
 public class ReactivateOrganizationUseCase {

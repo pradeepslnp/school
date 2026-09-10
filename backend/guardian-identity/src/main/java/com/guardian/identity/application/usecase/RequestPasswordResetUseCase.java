@@ -26,8 +26,8 @@ import org.springframework.stereotype.Service;
 /**
  * Starts a self-service password reset by emailing a one-time code (ADR-0012, feature IAM-010).
  *
- * <p>The admin console's reset is a 6-digit code the person types back, not a link — it works across
- * devices and email clients and fits an OTP-familiar market. The code reuses the sign-in OTP
+ * <p>The admin console's reset is a 6-digit code the person types back, not a link — it works
+ * across devices and email clients and fits an OTP-familiar market. The code reuses the sign-in OTP
  * machinery ({@link OtpCredential}: single use, 5-attempt lock, BR-IAM-011) but is stored under its
  * own {@code credential_type} so it can never be replayed as a sign-in, and lives longer (10
  * minutes) because email can lag and resetting a password is not a same-second action.
@@ -90,7 +90,9 @@ public class RequestPasswordResetUseCase {
     if (matches.size() > 1) {
       // BR-IAM-003: an address belongs to one organization. More than one is a data defect;
       // refused rather than resolved by guessing, as in the OTP path.
-      log.error("Email resolves to {} users across tenants; refusing to guess (BR-IAM-003)", matches.size());
+      log.error(
+          "Email resolves to {} users across tenants; refusing to guess (BR-IAM-003)",
+          matches.size());
       return;
     }
 
@@ -108,7 +110,8 @@ public class RequestPasswordResetUseCase {
       return;
     }
 
-    emailSender.sendPasswordResetCode(issued.email(), issued.firstName(), issued.code(), CODE_LIFETIME);
+    emailSender.sendPasswordResetCode(
+        issued.email(), issued.firstName(), issued.code(), CODE_LIFETIME);
   }
 
   private Issued issueCode(EmailMatch match, Instant now) {
@@ -127,7 +130,8 @@ public class RequestPasswordResetUseCase {
       return null;
     }
 
-    OtpCode code = (magicOtp == null || magicOtp.isBlank()) ? OtpCode.generate() : OtpCode.of(magicOtp);
+    OtpCode code =
+        (magicOtp == null || magicOtp.isBlank()) ? OtpCode.generate() : OtpCode.of(magicOtp);
     resetOtps.save(
         OtpCredential.issue(user.id(), secretHasher.hash(code.value()), now, CODE_LIFETIME));
 

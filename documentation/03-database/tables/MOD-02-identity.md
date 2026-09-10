@@ -111,6 +111,8 @@ CONSTRAINT ck_user_scopes_ref   CHECK (
 
 `OWN_CHILDREN`, `TRIP`, and `SELF` are **not** stored here — they are derived at request time from `guardian_student_links` and `trip_staff`. Storing them would duplicate the source of truth and let the two diverge.
 
+**Append-only.** The migration grants `SELECT, INSERT` and no `DELETE` or `UPDATE`: a role change (`PUT /users/{id}/role`) adds a superseding row rather than mutating one, matching `user_roles`' own shape. Readers take the **most recently inserted** row (`ORDER BY created_at DESC`) as the scope in force; older rows are the trail of where the account has been scoped. `created_at` defaults to transaction start, so two changes in one transaction would tie — the assignment path only ever writes one scope row per call.
+
 **Indexes:** `idx_user_scopes_user (tenant_id, user_id)`
 
 ---

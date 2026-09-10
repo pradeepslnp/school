@@ -134,6 +134,20 @@ enum ErrorCode {
   studentHasNoActiveGuardian,
   studentAlreadyAssignedForDirection,
 
+  // Bulk student import (A-12, STU-002). These are the whole-file rejections the upload
+  // screen must explain before any row is processed; per-row failures come back inside
+  // `data.errors[]` as plain strings and are rendered from their message, not switched on.
+  studentImportNotFound,
+  studentImportFileEmpty,
+  studentImportFileUnreadable,
+  studentImportUnsupportedColumn,
+  studentImportTooManyRows,
+
+  // Custody restrictions (A-14, GRD-006). Safety-critical panel — the operator must see a
+  // precise reason a restriction was refused, never a generic "could not save".
+  custodyRestrictionNotFound,
+  custodyRestrictionSubjectRequired,
+
   // --- Transport & system ---
   rateLimitExceeded,
   dependencyUnavailable,
@@ -174,6 +188,13 @@ enum ErrorCode {
         'STUDENT_NOT_ACTIVE' => studentNotActive,
         'STUDENT_HAS_NO_ACTIVE_GUARDIAN' => studentHasNoActiveGuardian,
         'STUDENT_ALREADY_ASSIGNED_FOR_DIRECTION' => studentAlreadyAssignedForDirection,
+        'STUDENT_IMPORT_NOT_FOUND' => studentImportNotFound,
+        'STUDENT_IMPORT_FILE_EMPTY' => studentImportFileEmpty,
+        'STUDENT_IMPORT_FILE_UNREADABLE' => studentImportFileUnreadable,
+        'STUDENT_IMPORT_UNSUPPORTED_COLUMN' => studentImportUnsupportedColumn,
+        'STUDENT_IMPORT_TOO_MANY_ROWS' => studentImportTooManyRows,
+        'CUSTODY_RESTRICTION_NOT_FOUND' => custodyRestrictionNotFound,
+        'CUSTODY_RESTRICTION_SUBJECT_REQUIRED' => custodyRestrictionSubjectRequired,
         'RATE_LIMIT_EXCEEDED' => rateLimitExceeded,
         'DEPENDENCY_UNAVAILABLE' => dependencyUnavailable,
         'INTERNAL_ERROR' => internalError,

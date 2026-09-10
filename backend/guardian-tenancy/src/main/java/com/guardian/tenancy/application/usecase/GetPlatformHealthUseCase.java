@@ -9,9 +9,9 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 /**
- * Platform health at a glance (screen A-62, {@code PERM-PLATFORM-HEALTH-VIEW}), {@code
- * SUPER_ADMIN} only — the role check mirrors {@link ListOrganizationsUseCase}'s interim pattern
- * rather than the audited elevation path (BR-TEN-004 🔴, not yet built); see that class's Javadoc.
+ * Platform health at a glance (screen A-62, {@code PERM-PLATFORM-HEALTH-VIEW}), {@code SUPER_ADMIN}
+ * only — the role check mirrors {@link ListOrganizationsUseCase}'s interim pattern rather than the
+ * audited elevation path (BR-TEN-004 🔴, not yet built); see that class's Javadoc.
  *
  * <p><b>Placement.</b> This use case lives here, in {@code guardian-tenancy}, rather than in a
  * dedicated platform-operations module — none exists yet, and this reuses {@link

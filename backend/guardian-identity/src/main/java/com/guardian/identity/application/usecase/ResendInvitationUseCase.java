@@ -33,8 +33,8 @@ import org.springframework.stereotype.Service;
  * re-invited — an active one already has a password and would use the reset flow instead.
  *
  * <p>Runs within the target organization's tenant like {@link CreateAdministrativeUserUseCase}, and
- * carries the same caller-boundary guard: anyone but a {@code SUPER_ADMIN} may only act inside their
- * own tenant.
+ * carries the same caller-boundary guard: anyone but a {@code SUPER_ADMIN} may only act inside
+ * their own tenant.
  */
 @Service
 @BusinessRule({"BR-IAM-002", "BR-IAM-004"})
@@ -70,7 +70,8 @@ public class ResendInvitationUseCase {
     if (!SUPER_ADMIN.equals(actorRole)) {
       TenantId callerTenant = TenantContext.require();
       if (!callerTenant.value().equals(organizationId)) {
-        throw new ResourceNotFoundException(ErrorCode.AUTH_SCOPE_DENIED, "organization", organizationId);
+        throw new ResourceNotFoundException(
+            ErrorCode.AUTH_SCOPE_DENIED, "organization", organizationId);
       }
     }
 

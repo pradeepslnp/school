@@ -31,14 +31,16 @@ public interface GuardianRepository {
    */
   GuardianStudentLink saveLink(GuardianStudentLink link, UUID actorUserId);
 
-  /** Every active guardian of a student, with the rights held on each link — for the enrolment
-   * screen (GRD-002). Primary guardian first. */
+  /**
+   * Every active guardian of a student, with the rights held on each link — for the enrolment
+   * screen (GRD-002). Primary guardian first.
+   */
   List<StudentGuardian> findActiveForStudent(UUID studentId);
 
   /**
-   * BR-STU-002 as a lookup: does this student have at least one active guardian holding
-   * {@code can_authorise_handover}? Asked by route assignment through the routes module's
-   * {@code StudentGuardianGuard} before a student may be put on a bus.
+   * BR-STU-002 as a lookup: does this student have at least one active guardian holding {@code
+   * can_authorise_handover}? Asked by route assignment through the routes module's {@code
+   * StudentGuardianGuard} before a student may be put on a bus.
    */
   boolean hasActiveHandoverGuardian(UUID studentId);
 

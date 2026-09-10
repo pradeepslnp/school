@@ -54,6 +54,8 @@ class EndpointPermissionTest {
           .beAnnotatedWith(RequiresPermission.class)
           .orShould()
           .beAnnotatedWith("com.guardian.common.security.PublicEndpoint")
+          .orShould()
+          .beAnnotatedWith("com.guardian.common.security.SelfServiceEndpoint")
           .because(
               "access is deny-by-default (BR-IAM-002); an endpoint with no declared permission"
                   + " must not be reachable");

@@ -2913,6 +2913,324 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading school'**
   String get schoolSettingsLoadingLabel;
+
+  /// No description provided for @studentListImportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get studentListImportButton;
+
+  /// No description provided for @studentImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import students'**
+  String get studentImportTitle;
+
+  /// No description provided for @studentImportIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a spreadsheet of students, saved as CSV. Rows that are ready are enrolled straight away; anything that needs fixing is listed for you to correct and upload again.'**
+  String get studentImportIntro;
+
+  /// No description provided for @studentImportColumnsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns'**
+  String get studentImportColumnsTitle;
+
+  /// No description provided for @studentImportColumnsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Required: admissionNo, firstName, lastName. Optional: dateOfBirth (YYYY-MM-DD) and transportEligible (true or false — defaults to true). Column names are matched loosely, ignoring case and spaces. A column that isn\'t one of these stops the whole file — guardian and stop columns are not supported yet.'**
+  String get studentImportColumnsBody;
+
+  /// No description provided for @studentImportChooseFileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose CSV file'**
+  String get studentImportChooseFileButton;
+
+  /// No description provided for @studentImportUploadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading and checking the file'**
+  String get studentImportUploadingLabel;
+
+  /// No description provided for @studentImportUploadingNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {name}…'**
+  String studentImportUploadingNamed(String name);
+
+  /// A-12 result headline. Mirrors ADMIN_WEB.md's mock: '412 rows · 408 imported · 4 errors'.
+  ///
+  /// In en, this message translates to:
+  /// **'{totalRows} rows · {successCount} imported · {errorCount} errors'**
+  String studentImportSummary(int totalRows, int successCount, int errorCount);
+
+  /// No description provided for @studentImportSummaryHintErrors.
+  ///
+  /// In en, this message translates to:
+  /// **'The rows below were not enrolled. Fix them in your spreadsheet and upload again — only the corrected rows need to be in the next file.'**
+  String get studentImportSummaryHintErrors;
+
+  /// No description provided for @studentImportSummaryHintAllImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Every row was enrolled. They now appear on the register.'**
+  String get studentImportSummaryHintAllImported;
+
+  /// No description provided for @studentImportSummaryHintNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was enrolled. Correct the rows below and upload again.'**
+  String get studentImportSummaryHintNothing;
+
+  /// No description provided for @studentImportDownloadErrorsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Download error rows'**
+  String get studentImportDownloadErrorsButton;
+
+  /// No description provided for @studentImportAnotherButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Import another file'**
+  String get studentImportAnotherButton;
+
+  /// No description provided for @studentImportColRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Row'**
+  String get studentImportColRow;
+
+  /// No description provided for @studentImportColField.
+  ///
+  /// In en, this message translates to:
+  /// **'Column'**
+  String get studentImportColField;
+
+  /// No description provided for @studentImportColProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'What to fix'**
+  String get studentImportColProblem;
+
+  /// No description provided for @studentImportErrorEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'That file has no student rows. Check you saved the sheet with the students in it as CSV.'**
+  String get studentImportErrorEmpty;
+
+  /// No description provided for @studentImportErrorUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'That file could not be read as a spreadsheet. Open it in your spreadsheet program and use “Save as… CSV”, then upload the CSV.'**
+  String get studentImportErrorUnreadable;
+
+  /// No description provided for @studentImportErrorUnsupportedColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'One of the columns in that file is not supported yet. Keep only admissionNo, firstName, lastName, dateOfBirth and transportEligible, then upload again.'**
+  String get studentImportErrorUnsupportedColumn;
+
+  /// No description provided for @studentImportErrorTooManyRows.
+  ///
+  /// In en, this message translates to:
+  /// **'That file has too many rows for one upload. Split it into smaller files and import them one at a time.'**
+  String get studentImportErrorTooManyRows;
+
+  /// No description provided for @studentImportErrorNoFile.
+  ///
+  /// In en, this message translates to:
+  /// **'No file was chosen. Pick a CSV file to upload.'**
+  String get studentImportErrorNoFile;
+
+  /// No description provided for @custodyPanelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custody restrictions'**
+  String get custodyPanelTitle;
+
+  /// No description provided for @custodyAddButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add restriction'**
+  String get custodyAddButton;
+
+  /// No description provided for @custodyPanelWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'A restriction takes effect immediately and overrides every parent right — the person named cannot collect or see this child while it is in force. Every restriction is recorded with its reason.'**
+  String get custodyPanelWarning;
+
+  /// No description provided for @custodyLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading restrictions'**
+  String get custodyLoadingLabel;
+
+  /// No description provided for @custodyEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No restrictions. That is the normal state.'**
+  String get custodyEmptyState;
+
+  /// No description provided for @custodyLiftButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Lift'**
+  String get custodyLiftButton;
+
+  /// No description provided for @custodyStatusLifted.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifted'**
+  String get custodyStatusLifted;
+
+  /// No description provided for @custodyLiftConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lift this restriction?'**
+  String get custodyLiftConfirmTitle;
+
+  /// No description provided for @custodyLiftConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The person named will be able to collect and see this child again, straight away. The restriction and its history are kept.'**
+  String get custodyLiftConfirmBody;
+
+  /// No description provided for @custodyLiftConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Lift restriction'**
+  String get custodyLiftConfirmButton;
+
+  /// No description provided for @custodyEffectiveLine.
+  ///
+  /// In en, this message translates to:
+  /// **'In force from {from} until {until}'**
+  String custodyEffectiveLine(String from, String until);
+
+  /// No description provided for @custodyOpenEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'no end date'**
+  String get custodyOpenEnded;
+
+  /// No description provided for @custodySubjectGuardian.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent {id}'**
+  String custodySubjectGuardian(String id);
+
+  /// No description provided for @custodyTypeNoHandover.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot collect the child'**
+  String get custodyTypeNoHandover;
+
+  /// No description provided for @custodyTypeNoVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot see the child\'s journey'**
+  String get custodyTypeNoVisibility;
+
+  /// No description provided for @custodyTypeFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot collect or see the child'**
+  String get custodyTypeFull;
+
+  /// No description provided for @custodyAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a custody restriction'**
+  String get custodyAddTitle;
+
+  /// No description provided for @custodySubjectAGuardian.
+  ///
+  /// In en, this message translates to:
+  /// **'A parent on file'**
+  String get custodySubjectAGuardian;
+
+  /// No description provided for @custodySubjectAPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone else, by name'**
+  String get custodySubjectAPerson;
+
+  /// No description provided for @custodyGuardianLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent'**
+  String get custodyGuardianLabel;
+
+  /// No description provided for @custodyPersonNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get custodyPersonNameLabel;
+
+  /// No description provided for @custodyPersonNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the person\'s full name'**
+  String get custodyPersonNameRequired;
+
+  /// No description provided for @custodyTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Restriction'**
+  String get custodyTypeLabel;
+
+  /// No description provided for @custodyReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (required)'**
+  String get custodyReasonLabel;
+
+  /// No description provided for @custodyReasonHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'What authorises this — a court order and its reference, a school safeguarding decision. Kept on the audit record.'**
+  String get custodyReasonHelper;
+
+  /// No description provided for @custodyErrorReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A reason is required for every custody restriction.'**
+  String get custodyErrorReasonRequired;
+
+  /// No description provided for @custodyUntilLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End date (optional)'**
+  String get custodyUntilLabel;
+
+  /// No description provided for @custodyUntilFormatError.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the format YYYY-MM-DD, or leave blank for no end date.'**
+  String get custodyUntilFormatError;
+
+  /// No description provided for @custodyAddSubmitButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add restriction'**
+  String get custodyAddSubmitButton;
+
+  /// No description provided for @custodyErrorSubjectRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name exactly one person — a parent on file, or someone by name.'**
+  String get custodyErrorSubjectRequired;
+
+  /// No description provided for @custodyErrorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'That restriction could not be found. It may already have been lifted.'**
+  String get custodyErrorNotFound;
 }
 
 class _AppLocalizationsDelegate

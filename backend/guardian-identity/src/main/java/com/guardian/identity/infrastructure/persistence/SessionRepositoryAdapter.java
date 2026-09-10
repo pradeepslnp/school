@@ -7,6 +7,7 @@ import com.guardian.identity.domain.Session;
 import com.guardian.identity.domain.SessionId;
 import com.guardian.identity.domain.UserId;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,13 @@ class SessionRepositoryAdapter implements SessionRepository {
   @Override
   public Optional<Session> findById(SessionId id) {
     return jpaRepository.findById(id.value()).map(SessionRepositoryAdapter::toDomain);
+  }
+
+  @Override
+  public List<Session> findByUser(UserId userId) {
+    return jpaRepository.findByUserIdOrderByIssuedAtDesc(userId.value()).stream()
+        .map(SessionRepositoryAdapter::toDomain)
+        .toList();
   }
 
   @Override

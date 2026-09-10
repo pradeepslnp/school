@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 interface DutyAssignmentJpaRepository extends JpaRepository<DutyAssignmentEntity, UUID> {
 
   List<DutyAssignmentEntity> findByRouteIdAndActiveTrue(UUID routeId);
+
+  List<DutyAssignmentEntity> findByStaffIdAndActiveTrue(UUID staffId);
 }

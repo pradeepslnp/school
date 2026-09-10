@@ -1,5 +1,6 @@
 package com.guardian.infrastructure.rest;
 
+import com.guardian.common.BusinessRule;
 import com.guardian.common.error.ErrorCode;
 import com.guardian.common.security.CurrentActor;
 import com.guardian.infrastructure.tenant.GuardianPrincipal;
@@ -22,9 +23,12 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  * session, never from client-supplied claims").
  *
  * <p>So this resolver reads {@link GuardianPrincipal} and nothing else. There is no path here that
- * consults the request body, the query string, or a header.
+ * consults the request body, the query string, or a header. That is the enforcement of BR-IAM-001:
+ * a controller method's {@code CurrentActor} is the authenticated session's, and a {@code
+ * ?userId=…} or a body field claiming to be someone else is not consulted, not merely overridden.
  */
 @Component
+@BusinessRule("BR-IAM-001")
 public class CurrentActorArgumentResolver implements HandlerMethodArgumentResolver {
 
   @Override

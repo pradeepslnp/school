@@ -26,8 +26,9 @@ public final class StudentRouteAssignmentDtos {
       @NotBlank @Pattern(regexp = "PICKUP|DROP") String direction,
       LocalDate effectiveFrom) {}
 
-  /** One assignment as the enrolment screen reads it — the route and stop named, not just their
-   * ids. */
+  /**
+   * One assignment as the enrolment screen reads it — the route and stop named, not just their ids.
+   */
   public record RouteAssignmentResponse(
       UUID id,
       UUID routeId,

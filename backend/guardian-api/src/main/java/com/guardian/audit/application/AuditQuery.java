@@ -7,9 +7,9 @@ import java.util.UUID;
  *
  * <p>All filters are optional and combine with AND. {@code overridesOnly} narrows the trail to
  * actions that carry a reason — the override register (AUD-003, A-55), which the {@code
- * idx_audit_action ... WHERE reason IS NOT NULL} index serves directly. {@code limit} is clamped
- * to a sane window here so a caller cannot ask for an unbounded scan of an append-only table that
- * only grows.
+ * idx_audit_action ... WHERE reason IS NOT NULL} index serves directly. {@code limit} is clamped to
+ * a sane window here so a caller cannot ask for an unbounded scan of an append-only table that only
+ * grows.
  */
 public record AuditQuery(
     String action, UUID actorId, String subjectType, boolean overridesOnly, int limit) {

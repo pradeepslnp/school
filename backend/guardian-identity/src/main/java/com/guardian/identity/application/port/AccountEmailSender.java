@@ -8,8 +8,8 @@ import java.time.Duration;
  *
  * <p>A port for the same reason {@code OtpSender} is one: the delivery mechanism is a deployment
  * decision, dev-logged until a real provider adapter ships (see {@code LoggingAccountEmailSender}),
- * and the concrete provider is per-tenant configuration under ADR-0005's {@code EmailChannel}. A use
- * case never knows how the message leaves the building.
+ * and the concrete provider is per-tenant configuration under ADR-0005's {@code EmailChannel}. A
+ * use case never knows how the message leaves the building.
  *
  * <p>Called <strong>after</strong> the issuing transaction commits, never inside it — a rollback
  * must not be able to leave a person holding a link the database never recorded.

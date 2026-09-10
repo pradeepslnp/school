@@ -9,13 +9,14 @@ import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
- * The one place an administrative password is judged strong enough to accept (ADR-0012, BR-IAM-013).
+ * The one place an administrative password is judged strong enough to accept (ADR-0012,
+ * BR-IAM-013).
  *
  * <p>Length-first, following NIST SP 800-63B: a minimum length and a screen against the passwords
  * everyone already tries, and deliberately <em>no</em> forced composition ("one upper, one symbol")
- * or expiry — both push people toward weaker, predictable choices. Applied server-side by every path
- * that sets a password (create-in-password-mode, accept-invitation, reset), because a rule enforced
- * only in the UI is not enforced (ENGINEERING_PRINCIPLES.md §6).
+ * or expiry — both push people toward weaker, predictable choices. Applied server-side by every
+ * path that sets a password (create-in-password-mode, accept-invitation, reset), because a rule
+ * enforced only in the UI is not enforced (ENGINEERING_PRINCIPLES.md §6).
  *
  * <p>Screening against a full breach corpus (HaveIBeenPwned k-anonymity) is a planned enhancement
  * behind this same class; the bundled list below is the floor, not the ceiling.

@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations_extension.dart';
 import '../../guardians/bloc/student_guardians_bloc.dart';
 import '../../guardians/bloc/student_guardians_event.dart';
 import '../../guardians/bloc/student_guardians_state.dart';
+import '../../custody_restrictions/widgets/custody_restriction_panel.dart';
 import '../../guardians/widgets/add_guardian_form.dart';
 import '../../guardians/widgets/guardian_tile.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
@@ -27,11 +28,19 @@ import '../domain/student_models.dart';
 /// and `PERM-ROUTE-ASSIGN-STUDENT` are held by the same roles as `PERM-STUDENT-EDIT`), so a
 /// `PRINCIPAL` or `TRANSPORT_MANAGER` who may view is not offered buttons the server would refuse.
 class StudentDetailScreen extends StatelessWidget {
-  const StudentDetailScreen({super.key, required this.student});
+  const StudentDetailScreen({
+    super.key,
+    required this.student,
+    this.showCustodyPanel = false,
+  });
 
   static const _editingRoles = {'SUPER_ADMIN', 'ORG_ADMIN', 'SCHOOL_ADMIN'};
 
   final Student student;
+
+  /// Whether to show the custody-restrictions panel (A-14) — set by the route only when the
+  /// operator holds `PERM-CUSTODY-RESTRICTION-MANAGE`, so the bloc for it exists in scope.
+  final bool showCustodyPanel;
 
   bool _canEdit(BuildContext context) {
     final user = DependencyScope.of(context).sessionManager.currentUser;
@@ -209,6 +218,10 @@ class StudentDetailScreen extends StatelessWidget {
               canEdit: canEdit,
               onSet: (direction) => _openAssign(context, direction),
             ),
+            if (showCustodyPanel) ...[
+              const SizedBox(height: AdminSpacing.xl),
+              CustodyRestrictionPanel(studentId: student.id),
+            ],
           ],
         ),
       ),

@@ -14,9 +14,9 @@ import com.guardian.identity.domain.UserId;
 import org.springframework.stereotype.Service;
 
 /**
- * Edits an administrative user's name and locale (feature IAM-005, screen A-43,
- * {@code PERM-USER-EDIT}). See {@code UpdateAdministrativeUserCommand}'s documentation for why
- * role and scope are not editable here.
+ * Edits an administrative user's name and locale (feature IAM-005, screen A-43, {@code
+ * PERM-USER-EDIT}). See {@code UpdateAdministrativeUserCommand}'s documentation for why role and
+ * scope are not editable here.
  */
 @Service
 public class UpdateAdministrativeUserUseCase {

@@ -9,6 +9,7 @@ import '../bloc/student_list_bloc.dart';
 import '../bloc/student_list_event.dart';
 import '../bloc/student_list_state.dart';
 import '../domain/student_models.dart';
+import '../import/ui/student_import_route.dart';
 import '../widgets/student_error_text.dart';
 import '../widgets/student_form.dart';
 import 'student_detail_route.dart';
@@ -92,6 +93,24 @@ class _StudentListScreenState extends State<StudentListScreen> {
     setState(() => _selectedSchoolId = schoolId);
     DependencyScope.of(context).workspaceContext.value = schoolId;
     context.read<StudentListBloc>().add(StudentListRequested(schoolId: schoolId));
+  }
+
+  /// Opens bulk import (A-12) as a pushed page, then refreshes the register if it enrolled
+  /// anyone — the rows the operator just added should appear without a manual reload.
+  Future<void> _openImport(BuildContext context) async {
+    final bloc = context.read<StudentListBloc>();
+    final schoolId = _selectedSchoolId;
+    if (schoolId == null || schoolId.isEmpty) return;
+
+    final imported = await Navigator.of(context).push<Object?>(
+      MaterialPageRoute<Object?>(
+        builder: (_) => StudentImportRoute(schoolId: schoolId),
+      ),
+    );
+
+    if ((imported ?? false) == true) {
+      bloc.add(StudentListRequested(schoolId: schoolId));
+    }
   }
 
   /// Opens the record for one student (A-11) as a pushed page. A detail view of a
@@ -242,14 +261,21 @@ class _StudentListScreenState extends State<StudentListScreen> {
                 Expanded(
                   child: Text(context.l10n.studentListTitle, style: theme.textTheme.headlineSmall),
                 ),
-                if (canEdit) _EnrolButton(
-                  // Disabled until a school is chosen below — enrolling with no school
-                  // selected would submit an empty schoolId (an operator managing more than
-                  // one organization sees the picker below before any school is known), and
-                  // a disabled button with a reason beats a dialog that fails after the fact.
-                  enabled: _selectedSchoolId != null,
-                  onPressed: () => _openForm(context),
-                ),
+                if (canEdit) ...[
+                  _ImportButton(
+                    enabled: _selectedSchoolId != null,
+                    onPressed: () => _openImport(context),
+                  ),
+                  const SizedBox(width: AdminSpacing.sm),
+                  _EnrolButton(
+                    // Disabled until a school is chosen below — enrolling with no school
+                    // selected would submit an empty schoolId (an operator managing more than
+                    // one organization sees the picker below before any school is known), and
+                    // a disabled button with a reason beats a dialog that fails after the fact.
+                    enabled: _selectedSchoolId != null,
+                    onPressed: () => _openForm(context),
+                  ),
+                ],
               ],
             ),
             if (widget.initialSchoolId == null) ...[
@@ -401,6 +427,28 @@ class _EnrolButton extends StatelessWidget {
       onPressed: enabled ? onPressed : null,
       icon: const Icon(Icons.person_add_alt_1),
       label: Text(context.l10n.studentListEnrolButton),
+    );
+
+    if (enabled) return button;
+    return Tooltip(message: context.l10n.pickSchoolFirstTooltip, child: button);
+  }
+}
+
+/// The "Import" action — opens bulk import (A-12). Disabled with a tooltip until a school is
+/// chosen, matching [_EnrolButton]: the import needs a school to enrol every row into.
+class _ImportButton extends StatelessWidget {
+  const _ImportButton({required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = OutlinedButton.icon(
+      key: const Key('student_list_import_button'),
+      onPressed: enabled ? onPressed : null,
+      icon: const Icon(Icons.upload_file),
+      label: Text(context.l10n.studentListImportButton),
     );
 
     if (enabled) return button;

@@ -14,10 +14,11 @@ import org.springframework.stereotype.Component;
  * <p>The exact counterpart of {@code LoggingOtpSender}, and contained the same way: it lets the
  * invite and reset flows be exercised end to end with no email provider and no credentials, and it
  * is gated by {@code @Profile("!prod & !production")} rather than an {@code if}, so a production
- * deployment with no real {@link AccountEmailSender} on the classpath <strong>fails to start</strong>
- * rather than silently not sending. The raw link — which carries the token — is printed here because
- * reading it is the entire purpose in development; the recipient's email is masked, because the pair
- * of a working link and a named address is what would matter if this log were ever read in anger.
+ * deployment with no real {@link AccountEmailSender} on the classpath <strong>fails to
+ * start</strong> rather than silently not sending. The raw link — which carries the token — is
+ * printed here because reading it is the entire purpose in development; the recipient's email is
+ * masked, because the pair of a working link and a named address is what would matter if this log
+ * were ever read in anger.
  *
  * <p>Replacing this is what makes delivery real: an SMTP/provider adapter implements the same port
  * and this class is not touched (ADR-0012, ADR-0005 {@code EmailChannel}).
@@ -30,7 +31,8 @@ class LoggingAccountEmailSender implements AccountEmailSender {
 
   private final String baseUrl;
 
-  LoggingAccountEmailSender(@Value("${guardian.admin.base-url:http://localhost:8081}") String baseUrl) {
+  LoggingAccountEmailSender(
+      @Value("${guardian.admin.base-url:http://localhost:8081}") String baseUrl) {
     this.baseUrl = stripTrailingSlash(baseUrl);
   }
 
@@ -46,7 +48,8 @@ class LoggingAccountEmailSender implements AccountEmailSender {
   }
 
   @Override
-  public void sendPasswordResetCode(String email, String firstName, String code, Duration validFor) {
+  public void sendPasswordResetCode(
+      String email, String firstName, String code, Duration validFor) {
     // The code is printed because reading it is the entire purpose in development; the address is
     // masked. Same containment as the OTP sign-in code (LoggingOtpSender).
     log.warn(
@@ -58,8 +61,7 @@ class LoggingAccountEmailSender implements AccountEmailSender {
 
   @Override
   public void sendPasswordChangedNotice(String email, String firstName) {
-    log.warn(
-        "DEVELOPMENT password-changed notice for {}. No email was sent.", maskEmail(email));
+    log.warn("DEVELOPMENT password-changed notice for {}. No email was sent.", maskEmail(email));
   }
 
   /** {@code first@example.com} → {@code f***@example.com}, matching the identity use cases. */

@@ -7,17 +7,18 @@ import java.util.Objects;
 /**
  * The random secret carried in an invitation or password-reset link (ADR-0012).
  *
- * <p>256 bits from {@link SecureRandom}, URL-safe Base64 without padding so it drops straight into a
- * query string. Unlike an {@link OtpCode} — six digits, ~20 bits, only safe because a short lifetime
- * and an attempt limit hold the space closed — a link token's entropy <em>is</em> the control:
- * brute-forcing 256 bits is infeasible, which is why these carry no per-token attempt lockout.
+ * <p>256 bits from {@link SecureRandom}, URL-safe Base64 without padding so it drops straight into
+ * a query string. Unlike an {@link OtpCode} — six digits, ~20 bits, only safe because a short
+ * lifetime and an attempt limit hold the space closed — a link token's entropy <em>is</em> the
+ * control: brute-forcing 256 bits is infeasible, which is why these carry no per-token attempt
+ * lockout.
  *
  * <p>Because the entropy is this high, the stored form is a plain {@code SHA-256} (see {@code
  * TokenHasher}), not a salted password hash — deterministic, so the token can be looked up by its
  * hash, and still useless to anyone who reads the table.
  *
- * <p>The raw value exists only in memory and in the one email that carries it; it is never logged in
- * production and never persisted in the clear.
+ * <p>The raw value exists only in memory and in the one email that carries it; it is never logged
+ * in production and never persisted in the clear.
  */
 public record LinkToken(String value) {
 

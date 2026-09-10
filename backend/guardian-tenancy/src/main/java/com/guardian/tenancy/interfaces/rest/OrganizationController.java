@@ -128,8 +128,8 @@ public class OrganizationController {
   }
 
   /**
-   * {@code SUPER_ADMIN} only (PERMISSION_MATRIX.md) — blocks the organization's user access on
-   * the caller's next request without touching any data (BR-TEN-006). Idempotent: suspending an
+   * {@code SUPER_ADMIN} only (PERMISSION_MATRIX.md) — blocks the organization's user access on the
+   * caller's next request without touching any data (BR-TEN-006). Idempotent: suspending an
    * already-suspended organization returns 200 with its current state rather than an error.
    */
   @PostMapping("/{organizationId}/suspend")

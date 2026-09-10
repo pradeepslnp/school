@@ -112,7 +112,8 @@ class ReactivateOrganizationUseCaseTest {
   }
 
   @Test
-  @DisplayName("reactivating an already-active organization is idempotent and writes no duplicate audit entry")
+  @DisplayName(
+      "reactivating an already-active organization is idempotent and writes no duplicate audit entry")
   void reactivatingAlreadyActiveIsIdempotent() {
     when(organizationRepository.findById(ORG_ID))
         .thenReturn(Optional.of(organizationWithStatus(OrganizationStatus.ACTIVE)));

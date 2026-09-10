@@ -101,7 +101,12 @@ public class AccessTokenAuthenticationFilter extends OncePerRequestFilter {
     // The first role, for the audit trail's "role held at the time" (BR-AUD-003). A user with
     // several roles is recorded under one; permission checks, when they are built, resolve the
     // full set at the point of the check rather than relying on this.
-    CurrentActor actor = CurrentActor.of(claims.userId().value(), roles.get(0));
+    //
+    // The session id travels too, from the token's verified sessionId claim — a self-service
+    // endpoint (logout, "my sessions") then acts on the session the caller is calling from
+    // rather than one the request body names (IAM-004).
+    CurrentActor actor =
+        CurrentActor.of(claims.userId().value(), roles.get(0), claims.sessionId().value());
 
     UsernamePasswordAuthenticationToken authentication =
         UsernamePasswordAuthenticationToken.authenticated(

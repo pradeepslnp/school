@@ -3,6 +3,7 @@ package com.guardian.staff.application.port;
 import com.guardian.staff.domain.DutyAssignment;
 import com.guardian.staff.domain.DutyAssignmentId;
 import com.guardian.staff.domain.RouteId;
+import com.guardian.staff.domain.StaffId;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +18,13 @@ public interface DutyAssignmentRepository {
   Optional<DutyAssignment> findById(DutyAssignmentId id);
 
   List<DutyAssignment> findByRoute(RouteId routeId);
+
+  /**
+   * Every currently-active standing assignment for one staff member — what deactivating them must
+   * clear (BR-IAM-008). The standing roster only, not any in-progress trip's crew (that is MOD-08's
+   * {@code trip_staff}, and a trip already under way keeps the person who started it).
+   */
+  List<DutyAssignment> findActiveByStaff(StaffId staffId);
 
   DutyAssignment save(DutyAssignment assignment);
 }

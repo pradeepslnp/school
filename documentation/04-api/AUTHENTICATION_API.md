@@ -99,9 +99,11 @@ The legitimate user is logged out too. That is the correct trade: a stolen refre
 
 ---
 
+The three endpoints below act only on the caller's **own** sessions. They are authenticated but carry no permission from the matrix — ending your own session is identity, not authorisation, and the server answers `401` when no session is presented. In the code this is the `@SelfServiceEndpoint` marker, distinct from `@PublicEndpoint` (unauthenticated) and `@RequiresPermission`. Acting on **another** user's sessions is `DELETE /users/{id}/sessions` (`PERM-SESSION-REVOKE`), in the identity API.
+
 ## `POST /auth/logout`
 
-**Authenticated.** Revokes the current session immediately. The driver app additionally **wipes its encrypted local store** (ADR-0008) — a shared device must not retain a previous shift's child data.
+**Self-service.** Revokes the session this request was made from, immediately. The driver app additionally **wipes its encrypted local store** (ADR-0008) — a shared device must not retain a previous shift's child data.
 
 **`204`**
 
@@ -109,27 +111,31 @@ The legitimate user is logged out too. That is the correct trade: a stolen refre
 
 ## `GET /auth/sessions` — List own sessions
 
-**Feature:** IAM-004 · **Authenticated**
+**Feature:** IAM-004 · **Self-service**
 
 ```json
 {
   "data": [
     { "id": "…", "clientType": "PARENT_APP", "deviceIdentifier": "Pixel 8",
       "issuedAt": "2026-08-01T06:12:00Z", "expiresAt": "2026-09-01T06:12:00Z",
-      "isCurrent": true }
+      "status": "ACTIVE", "isCurrent": true }
   ]
 }
 ```
 
+`status` is `ACTIVE`, `REVOKED`, or `EXPIRED` — a rollup of the revoked flag and expiry, so a client does not re-derive lifecycle from timestamps. Revoked and expired rows are returned too: "this phone signed out yesterday" is what someone scanning for unfamiliar activity wants to see.
+
 ---
 
-## `DELETE /auth/sessions/{sessionId}`
+## `DELETE /auth/sessions/{sessionId}` — End one of your own
 
-**Feature:** IAM-004 · **Permission:** own session, or `PERM-SESSION-REVOKE` for others
+**Feature:** IAM-004 · **Self-service**
+
+Signs a specific one of your own devices out from the list. A `sessionId` that is not yours returns `404 SESSION_NOT_FOUND` — the endpoint does not confirm another person's session id exists.
 
 Revocation is immediate for refresh, and within the denylist window (≤15 min) for the access token (BR-IAM-007).
 
-Staff deactivation revokes **all** of that person's sessions (BR-IAM-008) — the control that matters when a driver leaves employment.
+Deactivating an account (`PATCH /users/{id}/deactivate`), and staff deactivation (`POST /transport-staff/{staffId}/deactivate`), revoke **all** of that person's sessions (BR-IAM-008) — the control that matters when a driver leaves employment.
 
 ---
 

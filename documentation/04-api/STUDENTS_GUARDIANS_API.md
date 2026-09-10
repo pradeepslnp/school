@@ -18,6 +18,7 @@ These endpoints govern **who may collect a child**. Every write here is audited.
 | `POST` | `/students/{id}/withdraw` | STU-004 | `PERM-STUDENT-EDIT` | BR-STU-005 |
 | `POST` | `/students/import` | STU-002 | `PERM-STUDENT-IMPORT` | BR-STU-003 |
 | `GET` | `/students/import/{jobId}` | STU-002 | `PERM-STUDENT-IMPORT` | |
+| `GET` | `/students/import/{jobId}/errors.csv` | STU-002 | `PERM-STUDENT-IMPORT` | BR-RPT-002 🔴 |
 | `POST` | `/students/{id}/transfer` | STU-005 | `PERM-STUDENT-EDIT` | BR-STU-006 |
 | `PUT` | `/students/{id}/photo` | STU-006 | `PERM-STUDENT-EDIT` | |
 | `GET` | `/students/{id}/photo` | STU-006 | `PERM-STUDENT-VIEW` | BR-IAM-012 |
@@ -45,7 +46,9 @@ Photos are served through this authorising endpoint, never as a public URL — `
 
 ### `POST /students/import`
 
-`multipart/form-data`, returns `202` with a job ID.
+`multipart/form-data` with two parts: `schoolId` (the school every row enrols into — a student
+belongs to one school, BR-STU-001) and `file` (the spreadsheet, exported as CSV). Returns `202`
+with a job.
 
 ```json
 {
@@ -54,14 +57,36 @@ Photos are served through this authorising endpoint, never as a public URL — `
     "totalRows": 412, "successCount": 408, "errorCount": 4,
     "errors": [
       { "row": 17, "field": "admissionNo", "code": "STUDENT_ADMISSION_NO_EXISTS",
-        "message": "Admission number GW-2024-0117 already exists" }
+        "message": "Admission number GW-2024-0117 already exists in this school" }
     ],
     "errorReportUrl": "/students/import/{jobId}/errors.csv"
   }
 }
 ```
 
-**Per-row validation; valid rows are imported.** The file is never rejected wholesale — Fatima imports several hundred students per term from spreadsheets of varying quality, and a single bad row must not discard 411 good ones ([`PERSONAS.md`](../01-product-discovery/PERSONAS.md)).
+**Columns.** The header is matched case-insensitively, ignoring spaces and underscores.
+Recognised: `admissionNo`, `firstName`, `lastName` (all required), `dateOfBirth`
+(`YYYY-MM-DD`, optional), `transportEligible` (`true`/`false`/`yes`/`no`/`1`/`0`, optional,
+defaults `true`). **An unrecognised column stops the whole file** with
+`STUDENT_IMPORT_UNSUPPORTED_COLUMN` — enrolling students while silently dropping a `guardian`
+or `stop` column the office believed it was providing is the more dangerous outcome. Guardian
+links and route assignment in the same upload are a documented follow-up, not in this version.
+
+**Per-row validation; valid rows are imported.** The file is never rejected wholesale for a bad
+row — Fatima imports several hundred students per term from spreadsheets of varying quality, and
+a single bad row must not discard 411 good ones ([`PERSONAS.md`](../01-product-discovery/PERSONAS.md)).
+It *is* rejected before any row is processed when it cannot be read at all — empty, binary, an
+unknown column, or above the synchronous row cap (5,000). Processing is synchronous; the job
+shape is kept so a later move to a background worker does not change the contract.
+
+`status` is `COMPLETED` for any file that was processed. Every enrolled student writes its own
+`STUDENT_CREATED` audit record, exactly as the single-student endpoint does, plus one
+`STUDENT_IMPORT_COMPLETED` record for the run.
+
+### `GET /students/import/{jobId}/errors.csv`
+
+The failed rows as `text/csv` (`row,field,code,message`), for the office to fix and re-upload.
+A data export of child identifiers, so it is audited with a record count (BR-RPT-002 🔴).
 
 ### `POST /students/{id}/withdraw`
 
@@ -256,9 +281,17 @@ Revocation is immediate (BR-GRD-007).
 }
 ```
 
+**Exactly one of `restrictedGuardianId` / `restrictedPersonName`** — a guardian on file, or a
+named non-guardian. Neither or both → `422 CUSTODY_RESTRICTION_SUBJECT_REQUIRED`. A
+`restrictedGuardianId` that resolves to nobody is the same error. `restrictionType` is
+`NO_HANDOVER` / `NO_VISIBILITY` / `FULL`. `effectiveFrom` defaults to now; `effectiveUntil` is
+optional (an open-ended restriction). `GET` returns active **and** lifted restrictions, newest
+first, so the screen shows the history. `DELETE` deactivates — an unknown id, or one not for
+the student in the path, is `404 CUSTODY_RESTRICTION_NOT_FOUND`.
+
 **Overrides every other permission.** A restriction beats an active guardian link granting `canAuthoriseHandover` (BR-HAND-006 🔴). A collection attempt by a restricted person is refused, recorded as a `HANDOVER_REFUSED` incident, and escalated (NTF-HAND-04).
 
-`reason` is required. Restrictions are visible only to holders of `PERM-CUSTODY-RESTRICTION-MANAGE` — never to the restricted person, and never exposed in any guardian-facing response.
+`reason` is required and stored on the audit record. Restrictions are visible only to holders of `PERM-CUSTODY-RESTRICTION-MANAGE` — never to the restricted person, and never exposed in any guardian-facing response.
 
 ---
 

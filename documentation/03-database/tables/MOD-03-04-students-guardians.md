@@ -170,6 +170,56 @@ Managed only by `PERM-CUSTODY-RESTRICTION-MANAGE`. Every change is audited.
 
 ---
 
+## `student_import_jobs` (V17)
+
+One row per bulk upload (STU-002, screen A-12). Append-only — written once when the file has
+finished processing, never updated.
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | `NOT NULL` → `schools`. Every row of the file enrols here (BR-STU-001) |
+| `uploaded_by` | `UUID` | `NOT NULL`, no FK — the operator, kept readable after deactivation |
+| `uploaded_role` | `VARCHAR(64)` | `NOT NULL`, the role held at upload time |
+| `file_name` | `VARCHAR(255)` | `NOT NULL`, a label shown back to the operator, never a path |
+| `status` | `VARCHAR(24)` | `NOT NULL`, `COMPLETED` / `FAILED` — `FAILED` reserved for a future async pipeline |
+| `total_rows`, `success_count`, `error_count` | `INTEGER` | `NOT NULL DEFAULT 0` |
+| `created_at`, `completed_at` | `TIMESTAMPTZ` | |
+
+```sql
+CONSTRAINT ck_student_import_jobs_status CHECK (status IN ('COMPLETED','FAILED')),
+CONSTRAINT ck_student_import_jobs_counts CHECK (
+    total_rows >= 0 AND success_count >= 0 AND error_count >= 0
+    AND success_count + error_count <= total_rows)
+```
+
+**Indexes:** `idx_student_import_jobs_school (tenant_id, school_id, created_at DESC)`
+
+**Grants:** `SELECT, INSERT` only — no update, no delete.
+
+---
+
+## `student_import_row_errors` (V17)
+
+One row per line of an upload that could not be enrolled. Append-only, written with its job.
+
+| Column | Type | Notes |
+|---|---|---|
+| `job_id` | `UUID` | `NOT NULL` → `student_import_jobs` |
+| `row_number` | `INTEGER` | `NOT NULL`, the spreadsheet line (header is 1, first student is 2) |
+| `field` | `VARCHAR(64)` | The offending column, or null when the whole line is malformed |
+| `error_code` | `VARCHAR(64)` | `NOT NULL`, a value from [`ERROR_CATALOG.md`](../../04-api/ERROR_CATALOG.md) |
+| `message` | `VARCHAR(500)` | `NOT NULL`, fallback text in the tenant's default locale |
+| `created_at` | `TIMESTAMPTZ` | |
+
+**Indexes:** `idx_student_import_row_errors_job (tenant_id, job_id, row_number)`
+
+**Grants:** `SELECT, INSERT` only.
+
+The downloadable error report (`GET /students/import/{jobId}/errors.csv`) is built from these
+rows and is audited as a child-data export (BR-RPT-002 🔴).
+
+---
+
 ## Verification
 
 1. A guardian link with no handover right anywhere for a student blocks route assignment (BR-GRD-002).

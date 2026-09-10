@@ -9,15 +9,7 @@ import '../../../core/network/rest_client.dart';
 /// This layer speaks endpoints and JSON. Deciding what a failure *means* is the repository's
 /// job, and keeping that split is what lets the repository be tested without a socket.
 ///
-/// Contract: [`AUTHENTICATION_API.md`].
-///
-/// > **Server gap, deliberate.** `POST /auth/login` is documented in AUTHENTICATION_API.md
-/// > but is not implemented in `guardian-backend` — `AuthController` currently exposes the
-/// > OTP path and `/auth/refresh` only. This client is written to the documented contract
-/// > because documentation is the source of truth (INSTRUCTIONS.md §Documentation Rule), not
-/// > to a shape invented to fit today's server. Sign-in returns
-/// > [ErrorCode.dependencyUnavailable] until the endpoint lands; nothing here changes when
-/// > it does.
+/// Contract: [`AUTHENTICATION_API.md`] — `POST /auth/login`, `/auth/refresh`, `/auth/logout`.
 class LoginDataProvider {
   LoginDataProvider({required this.client});
 

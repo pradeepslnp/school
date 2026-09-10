@@ -9,10 +9,10 @@ import java.util.UUID;
 /**
  * Persistence for invitation and password-reset link tokens (ADR-0012).
  *
- * <p>Tenant-scoped by row-level security like everything carrying {@code tenant_id}; these reads and
- * writes run inside the tenant established after the pre-auth {@link AccountTokenDirectory} lookup.
- * Accumulates one row per token issued (matching {@code OtpCredentialRepository}), so re-issuing an
- * invitation supersedes by recency rather than mutating the previous row.
+ * <p>Tenant-scoped by row-level security like everything carrying {@code tenant_id}; these reads
+ * and writes run inside the tenant established after the pre-auth {@link AccountTokenDirectory}
+ * lookup. Accumulates one row per token issued (matching {@code OtpCredentialRepository}), so
+ * re-issuing an invitation supersedes by recency rather than mutating the previous row.
  */
 public interface AccountTokenRepository {
 

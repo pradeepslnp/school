@@ -14,8 +14,8 @@ import java.util.UUID;
  * user always follows picking an organization and, for a school-scoped role, a school within it,
  * the same cascading picker already used by the Students/Drivers/Vehicles/Routes screens.
  *
- * <p>{@code email}, not {@code phone}, is the required identifier — administrative accounts sign
- * in through {@code StaffLoginUseCase} (email and password), never the guardian OTP path. {@code
+ * <p>{@code email}, not {@code phone}, is the required identifier — administrative accounts sign in
+ * through {@code StaffLoginUseCase} (email and password), never the guardian OTP path. {@code
  * phone} is optional contact information only.
  *
  * <p>{@code deliveryMode} chooses how the account gets a usable sign-in (ADR-0012):
@@ -29,9 +29,9 @@ import java.util.UUID;
  *       password is hashed immediately inside the use case and never stored or logged in the clear.
  * </ul>
  *
- * @param schoolId required for a school-scoped role (SCHOOL_ADMIN, PRINCIPAL,
- *     TRANSPORT_MANAGER), null for an organization-scoped one (ORG_ADMIN) — validated against
- *     {@code roleCode} inside the use case (BR-IAM-006).
+ * @param schoolId required for a school-scoped role (SCHOOL_ADMIN, PRINCIPAL, TRANSPORT_MANAGER),
+ *     null for an organization-scoped one (ORG_ADMIN) — validated against {@code roleCode} inside
+ *     the use case (BR-IAM-006).
  * @param initialPassword required only in {@code PASSWORD} mode; the use case enforces that.
  * @param deliveryMode {@code INVITE} or {@code PASSWORD}; null is treated as {@code INVITE}.
  */

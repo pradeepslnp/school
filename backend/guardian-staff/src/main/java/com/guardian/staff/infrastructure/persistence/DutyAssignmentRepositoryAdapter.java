@@ -4,6 +4,7 @@ import com.guardian.staff.application.port.DutyAssignmentRepository;
 import com.guardian.staff.domain.DutyAssignment;
 import com.guardian.staff.domain.DutyAssignmentId;
 import com.guardian.staff.domain.RouteId;
+import com.guardian.staff.domain.StaffId;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,13 @@ class DutyAssignmentRepositoryAdapter implements DutyAssignmentRepository {
   @Override
   public List<DutyAssignment> findByRoute(RouteId routeId) {
     return jpaRepository.findByRouteIdAndActiveTrue(routeId.value()).stream()
+        .map(mapper::toDomain)
+        .toList();
+  }
+
+  @Override
+  public List<DutyAssignment> findActiveByStaff(StaffId staffId) {
+    return jpaRepository.findByStaffIdAndActiveTrue(staffId.value()).stream()
         .map(mapper::toDomain)
         .toList();
   }

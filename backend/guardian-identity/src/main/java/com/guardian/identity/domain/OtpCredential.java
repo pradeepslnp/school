@@ -78,11 +78,11 @@ public final class OtpCredential {
   }
 
   /**
-   * Issues a new code with a caller-chosen lifetime — the phone sign-in code lives {@link #LIFETIME}
-   * (5 minutes), while the emailed password-reset code lives longer (10 minutes, ADR-0012) because
-   * email can lag and resetting a password is not a same-second action. Everything else about the
-   * credential — single use, the attempt limit, the lock — is identical, which is the whole reason
-   * the reset flow reuses this type rather than inventing a parallel one.
+   * Issues a new code with a caller-chosen lifetime — the phone sign-in code lives {@link
+   * #LIFETIME} (5 minutes), while the emailed password-reset code lives longer (10 minutes,
+   * ADR-0012) because email can lag and resetting a password is not a same-second action.
+   * Everything else about the credential — single use, the attempt limit, the lock — is identical,
+   * which is the whole reason the reset flow reuses this type rather than inventing a parallel one.
    */
   public static OtpCredential issue(
       UserId userId, String secretHash, Instant now, Duration lifetime) {

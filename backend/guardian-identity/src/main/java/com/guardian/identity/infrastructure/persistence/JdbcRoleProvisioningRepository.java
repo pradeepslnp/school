@@ -62,4 +62,23 @@ class JdbcRoleProvisioningRepository implements RoleProvisioningPort {
         userId.value(),
         roleId.value());
   }
+
+  @Override
+  public boolean revokeSystemRole(TenantId tenantId, UserId userId, String code) {
+    int deleted =
+        jdbcTemplate.update(
+            """
+            DELETE FROM user_roles ur
+            USING roles r
+            WHERE ur.role_id = r.id
+              AND ur.tenant_id = ?
+              AND ur.user_id = ?
+              AND r.code = ?
+              AND r.is_system_role = true
+            """,
+            tenantId.value(),
+            userId.value(),
+            code);
+    return deleted > 0;
+  }
 }

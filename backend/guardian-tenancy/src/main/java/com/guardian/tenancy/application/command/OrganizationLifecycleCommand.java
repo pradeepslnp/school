@@ -7,8 +7,8 @@ import java.util.UUID;
 /**
  * Input shared by {@link com.guardian.tenancy.application.usecase.SuspendOrganizationUseCase} and
  * {@link com.guardian.tenancy.application.usecase.ReactivateOrganizationUseCase} (BR-TEN-006) —
- * both need only the target organization and who is acting, so one command serves both rather
- * than two identical records.
+ * both need only the target organization and who is acting, so one command serves both rather than
+ * two identical records.
  */
 public record OrganizationLifecycleCommand(OrganizationId id, UUID actorId, String actorRole) {
 

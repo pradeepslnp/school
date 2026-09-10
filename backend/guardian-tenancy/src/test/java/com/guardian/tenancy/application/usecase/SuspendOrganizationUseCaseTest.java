@@ -112,7 +112,8 @@ class SuspendOrganizationUseCaseTest {
   }
 
   @Test
-  @DisplayName("suspending an already-suspended organization is idempotent and writes no duplicate audit entry")
+  @DisplayName(
+      "suspending an already-suspended organization is idempotent and writes no duplicate audit entry")
   void suspendingAlreadySuspendedIsIdempotent() {
     when(organizationRepository.findById(ORG_ID))
         .thenReturn(Optional.of(organizationWithStatus(OrganizationStatus.SUSPENDED)));

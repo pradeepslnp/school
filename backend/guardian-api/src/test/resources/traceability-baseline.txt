@@ -28,7 +28,9 @@ BR-RPT
 # (BR-GRD-005/006/007). What remains needs the parts of the module that are not built:
 #   001, 002, 003  guardian links are read, never written here yet — no link endpoint
 #   004            deactivation is honoured on read; nothing performs it
-#   008            custody restrictions have a table and no management endpoint
+#   008            A-14 record/list/lift endpoints are delivered (CustodyRestrictionController)
+#                  and write audited overrides with a reason; a citing test is outstanding
+#                  under the current no-test policy, so this stays listed until one lands
 BR-GRD-001
 BR-GRD-002
 BR-GRD-003
@@ -84,15 +86,27 @@ BR-AUD-005
 BR-AUD-006
 BR-AUD-007
 
-# MOD-02 Identity — guardian OTP sign-in, session rotation, and reuse detection are enforced
-# (BR-IAM-002/007/009/011). What remains needs the parts of the module that are not built:
-#   001       client-supplied identity is refused by CurrentActorArgumentResolver, but nothing
-#             yet tests that a forged actor parameter is ignored
-#   003       nothing prevents the same person existing in two organizations; the sign-in path
-#             refuses an ambiguous match, which is a guard, not enforcement
-#   006       staff scoping still has no module
-#   008       staff deactivation has no endpoint; refresh already refuses an inactive user
-#   010       needs both guardian and staff role paths
+# MOD-02 Identity — sign-in, session lifecycle, permission and scope assignment, and staff
+# deactivation are enforced (BR-IAM-001/002/003/004/005/006/007/008/009/011/012). What remains
+# is one behaviour with no single enforcement point:
+#   010  a person may hold both guardian and staff roles, with independent rights. The data model
+#        allows it (one users row, several user_roles; guardian rights from guardian_student_links,
+#        staff scope from user_scopes) but nothing asserts the two resolve independently — that
+#        needs a test exercising both role paths for one user, and under the current no-test policy
+#        it stays listed until one lands.
+#
+# BR-IAM-001 came off with CurrentActorArgumentResolver (@BusinessRule): a controller's
+# CurrentActor is the authenticated session's, and a client-supplied actor id is not consulted.
+#
+# BR-IAM-003/006 came off with role assignment (V3 user_roles, V15 user_scopes):
+# ChangeAdministrativeUserRoleUseCase and CreateAdministrativeUserUseCase hold an administrator to
+# one role within one organization and pair it with the scope that role permits. Enforcing the
+# read-time scope predicate across every consuming module (BR-IAM-006's other half) is per-module
+# work carried in each module's own rows, not here.
+#
+# BR-IAM-008 came off with SetAdministrativeUserStatusUseCase and DeactivateStaffUseCase:
+# deactivation revokes every session in the same transaction, and staff deactivation also clears
+# standing duty assignments.
 #
 # BR-IAM-004 came off this list with permission enforcement (V14): PermissionEnforcementInterceptor
 # resolves permissions from current role assignments on every request rather than from the token.
@@ -102,10 +116,6 @@ BR-AUD-007
 #
 # BR-IAM-005 came off this list with MOD-18: the parent dashboard scopes every read through
 # guardian_student_links, and ParentDashboardScopeIT holds it to that.
-BR-IAM-001
-BR-IAM-003
-BR-IAM-006
-BR-IAM-008
 BR-IAM-010
 
 # MOD-17 Configuration — school timezone (BR-CFG-006) and geofence defaults (BR-CFG-003)

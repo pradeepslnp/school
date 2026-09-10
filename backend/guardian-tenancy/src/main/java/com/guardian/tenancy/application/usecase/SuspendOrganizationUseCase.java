@@ -15,14 +15,14 @@ import org.springframework.stereotype.Service;
 /**
  * Suspends an organization (feature TEN-004, {@code PERM-ORG-SUSPEND}, BR-TEN-006).
  *
- * <p>Bootstraps to the target organization's own id, same as {@link UpdateOrganizationUseCase}
- * and for the same reason: {@code PERM-ORG-SUSPEND} is a platform-level permission held only by
- * {@code SUPER_ADMIN} (PERMISSION_MATRIX.md), and a platform operator suspending an organization
- * it does not itself belong to is exactly the shape this endpoint exists for.
+ * <p>Bootstraps to the target organization's own id, same as {@link UpdateOrganizationUseCase} and
+ * for the same reason: {@code PERM-ORG-SUSPEND} is a platform-level permission held only by {@code
+ * SUPER_ADMIN} (PERMISSION_MATRIX.md), and a platform operator suspending an organization it does
+ * not itself belong to is exactly the shape this endpoint exists for.
  *
- * <p>This use case only flips the status and records the audit trail. It does not by itself stop
- * or allow any request — that enforcement lives in {@code PermissionEnforcementInterceptor},
- * which checks every subsequent request's target organization against this status. Suspending an
+ * <p>This use case only flips the status and records the audit trail. It does not by itself stop or
+ * allow any request — that enforcement lives in {@code PermissionEnforcementInterceptor}, which
+ * checks every subsequent request's target organization against this status. Suspending an
  * organization takes effect on the caller's very next request, not this one.
  */
 @Service

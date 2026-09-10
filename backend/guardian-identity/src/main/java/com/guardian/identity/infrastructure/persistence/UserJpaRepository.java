@@ -31,13 +31,13 @@ interface UserJpaRepository extends JpaRepository<UserEntity, UUID> {
   Optional<UserEntity> findByEmailIgnoreCase(String email);
 
   /**
-   * Every user holding one of the four administrative (non-transport, non-guardian) system
-   * roles, for the Users screen (A-43, feature IAM-005, IAM-008).
+   * Every user holding one of the four administrative (non-transport, non-guardian) system roles,
+   * for the Users screen (A-43, feature IAM-005, IAM-008).
    *
    * <p>A native query, matching {@link #findRoleCodes}: {@code roles}/{@code user_roles} have no
-   * entity mapping here (see {@code RoleProvisioningPort}'s documentation), so joining through
-   * JPQL is not available and would not be clearer than SQL if it were. RLS still applies —
-   * this is an ordinary tenant-scoped read, just one expressed in SQL.
+   * entity mapping here (see {@code RoleProvisioningPort}'s documentation), so joining through JPQL
+   * is not available and would not be clearer than SQL if it were. RLS still applies — this is an
+   * ordinary tenant-scoped read, just one expressed in SQL.
    */
   @Query(
       value =

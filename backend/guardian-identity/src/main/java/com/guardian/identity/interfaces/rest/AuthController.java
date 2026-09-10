@@ -1,11 +1,15 @@
 package com.guardian.identity.interfaces.rest;
 
+import com.guardian.common.security.CurrentActor;
 import com.guardian.common.security.PublicEndpoint;
+import com.guardian.common.security.SelfServiceEndpoint;
 import com.guardian.identity.application.command.RequestOtpCommand;
 import com.guardian.identity.application.command.StaffLoginCommand;
 import com.guardian.identity.application.command.VerifyOtpCommand;
 import com.guardian.identity.application.result.IssuedSession;
 import com.guardian.identity.application.usecase.AcceptInvitationUseCase;
+import com.guardian.identity.application.usecase.EndMySessionUseCase;
+import com.guardian.identity.application.usecase.ListMySessionsUseCase;
 import com.guardian.identity.application.usecase.RefreshSessionUseCase;
 import com.guardian.identity.application.usecase.RequestOtpUseCase;
 import com.guardian.identity.application.usecase.RequestPasswordResetUseCase;
@@ -21,18 +25,24 @@ import com.guardian.identity.interfaces.rest.dto.PasswordResetConfirmRequest;
 import com.guardian.identity.interfaces.rest.dto.PasswordResetRequest;
 import com.guardian.identity.interfaces.rest.dto.RefreshRequest;
 import com.guardian.identity.interfaces.rest.dto.SessionResponse;
+import com.guardian.identity.interfaces.rest.dto.SessionSummaryResponse;
 import com.guardian.identity.interfaces.rest.dto.StaffLoginRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Authentication endpoints for every human client (features IAM-001, IAM-002, IAM-003). See
- * guardian-docs/04-api/AUTHENTICATION_API.md.
+ * Authentication endpoints for every human client (features IAM-001, IAM-002, IAM-003, IAM-004).
+ * See guardian-docs/04-api/AUTHENTICATION_API.md.
  *
  * <p>Two sign-in paths, one per credential kind: staff (admin console) authenticate by email and
  * password at {@link #login}; guardians (parent app) authenticate by phone and a one-time code at
@@ -40,11 +50,12 @@ import org.springframework.web.bind.annotation.RestController;
  * password submitted to {@code /otp/verify} is not a phone number and fails parsing, and an OTP
  * submitted to {@code /login} is not an email address for the same reason.
  *
- * <p>Every method here carries {@link PublicEndpoint} rather than a permission. That is the
- * deny-by-default rule (BR-IAM-002) being satisfied by an explicit, reviewable decision — the
- * architecture test accepts either annotation and fails the build for a method carrying neither, so
- * an unprotected endpoint cannot ship by omission. These four are unauthenticated because they are
- * how authentication is obtained; nothing else in the platform should ever be.
+ * <p>The sign-in and recovery methods carry {@link PublicEndpoint}: they are unauthenticated
+ * because they are how authentication is obtained, and nothing else in the platform should ever be.
+ * The session-management methods ({@link #mySessions}, {@link #logout}, {@link #revokeMySession})
+ * carry {@link SelfServiceEndpoint} instead — authenticated, but acting only on the caller's own
+ * identity, so no matrix permission applies. Either way the choice is explicit and the
+ * deny-by-default architecture test (BR-IAM-002) fails the build for a method carrying neither.
  *
  * <p>This layer only translates. Every decision about who may sign in, what a failure means, and
  * what an attacker is allowed to learn lives in the use cases.
@@ -60,6 +71,8 @@ public class AuthController {
   private final AcceptInvitationUseCase acceptInvitation;
   private final RequestPasswordResetUseCase requestPasswordReset;
   private final ResetPasswordUseCase resetPassword;
+  private final ListMySessionsUseCase listMySessions;
+  private final EndMySessionUseCase endMySession;
 
   public AuthController(
       StaffLoginUseCase staffLogin,
@@ -68,7 +81,9 @@ public class AuthController {
       RefreshSessionUseCase refreshSession,
       AcceptInvitationUseCase acceptInvitation,
       RequestPasswordResetUseCase requestPasswordReset,
-      ResetPasswordUseCase resetPassword) {
+      ResetPasswordUseCase resetPassword,
+      ListMySessionsUseCase listMySessions,
+      EndMySessionUseCase endMySession) {
     this.staffLogin = staffLogin;
     this.requestOtp = requestOtp;
     this.verifyOtp = verifyOtp;
@@ -76,6 +91,8 @@ public class AuthController {
     this.acceptInvitation = acceptInvitation;
     this.requestPasswordReset = requestPasswordReset;
     this.resetPassword = resetPassword;
+    this.listMySessions = listMySessions;
+    this.endMySession = endMySession;
   }
 
   /**
@@ -156,7 +173,8 @@ public class AuthController {
    */
   @PostMapping("/invitations/accept")
   @PublicEndpoint(reason = "an invitee has a link, not a session, until they set their password")
-  public ResponseEntity<Void> acceptInvitation(@Valid @RequestBody AcceptInvitationRequest request) {
+  public ResponseEntity<Void> acceptInvitation(
+      @Valid @RequestBody AcceptInvitationRequest request) {
     acceptInvitation.execute(request.token(), request.password());
     return ResponseEntity.noContent().build();
   }
@@ -169,8 +187,10 @@ public class AuthController {
    * report; see {@code RequestPasswordResetUseCase}.
    */
   @PostMapping("/password-reset/request")
-  @PublicEndpoint(reason = "a person who forgot their password cannot authenticate to ask for a reset")
-  public ResponseEntity<Void> requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
+  @PublicEndpoint(
+      reason = "a person who forgot their password cannot authenticate to ask for a reset")
+  public ResponseEntity<Void> requestPasswordReset(
+      @Valid @RequestBody PasswordResetRequest request) {
     requestPasswordReset.execute(request.email());
     return ResponseEntity.accepted().build();
   }
@@ -182,10 +202,50 @@ public class AuthController {
    * cannot be used to enumerate accounts (ADR-0012).
    */
   @PostMapping("/password-reset/confirm")
-  @PublicEndpoint(reason = "the emailed code is the credential; the old password may be compromised")
+  @PublicEndpoint(
+      reason = "the emailed code is the credential; the old password may be compromised")
   public ResponseEntity<Void> confirmPasswordReset(
       @Valid @RequestBody PasswordResetConfirmRequest request) {
     resetPassword.execute(request.email(), request.otp(), request.password());
+    return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * The caller's own signed-in sessions, current one flagged (IAM-004). Authenticated but carries
+   * no matrix permission — a person may always see their own sessions; reviewing someone else's is
+   * a {@code PERM-SESSION-REVOKE} action on {@code /users/{id}/sessions}.
+   */
+  @GetMapping("/sessions")
+  @SelfServiceEndpoint(reason = "a person may always list their own signed-in devices (IAM-004)")
+  public List<SessionSummaryResponse> mySessions(CurrentActor actor) {
+    return listMySessions.execute(actor.userId(), actor.sessionId()).stream()
+        .map(SessionSummaryResponse::from)
+        .toList();
+  }
+
+  /**
+   * Ends the session this request was made from (IAM-004). The refresh token stops working at once;
+   * the access token lasts out its ≤15-minute life (BR-IAM-007). The driver app also wipes its
+   * encrypted local store on the client side (ADR-0008).
+   */
+  @PostMapping("/logout")
+  @SelfServiceEndpoint(reason = "a person may always end the session they are calling from")
+  public ResponseEntity<Void> logout(CurrentActor actor) {
+    endMySession.execute(
+        actor.sessionId(), actor.userId(), actor.role(), EndMySessionUseCase.Trigger.LOGOUT);
+    return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Signs a specific one of the caller's own devices out from the sessions list (IAM-004). A {@code
+   * sessionId} that is not the caller's own answers {@code 404} — the endpoint does not confirm
+   * another person's session id exists.
+   */
+  @DeleteMapping("/sessions/{sessionId}")
+  @SelfServiceEndpoint(reason = "a person may always end one of their own sessions")
+  public ResponseEntity<Void> revokeMySession(@PathVariable UUID sessionId, CurrentActor actor) {
+    endMySession.execute(
+        sessionId, actor.userId(), actor.role(), EndMySessionUseCase.Trigger.USER_REVOKED);
     return ResponseEntity.noContent().build();
   }
 

@@ -33,6 +33,13 @@ dependencies:
   # never package:http directly (PROJECT_STRUCTURE.md §core/network).
   http: ^1.5.0
 
+  # Browser APIs for the one thing a Flutter Web build cannot do without them: let the
+  # operator choose a spreadsheet to upload, and hand back a corrected error file to save
+  # (bulk student import, STU-002 / screen A-12). First-party, and the modern replacement for
+  # dart:html — kept behind `features/students/import/data_provider` so nothing else in the
+  # console touches a browser type. ADR-0003 already fixes this client to the web.
+  web: ^1.1.0
+
   # Localisation (ADR-0013 — interim client-bundled English/Kannada, ahead of the
   # backend-driven CFG-006 design in ADR-0007). `intl` backs the generated
   # `AppLocalizations`; `flutter_localizations` supplies the framework's own delegates

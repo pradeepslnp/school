@@ -10,9 +10,9 @@ import org.springframework.stereotype.Component;
 /**
  * {@link TokenHasher} as an unsalted SHA-256, rendered lowercase hex.
  *
- * <p>Deterministic on purpose — the public accept/reset endpoints look a token up by this hash. Safe
- * despite being fast because the input is 256 bits of randomness ({@code LinkToken}); see the port's
- * documentation for why this is correct here and Argon2 is not.
+ * <p>Deterministic on purpose — the public accept/reset endpoints look a token up by this hash.
+ * Safe despite being fast because the input is 256 bits of randomness ({@code LinkToken}); see the
+ * port's documentation for why this is correct here and Argon2 is not.
  */
 @Component
 class Sha256TokenHasher implements TokenHasher {

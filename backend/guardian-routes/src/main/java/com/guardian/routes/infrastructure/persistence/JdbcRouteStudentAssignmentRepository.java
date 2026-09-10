@@ -12,8 +12,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
 /**
- * JDBC adapter for {@code route_student_assignments} (MOD-07) — matching {@code StopJdbcRepository}'s
- * plain-JDBC style in this module rather than JPA.
+ * JDBC adapter for {@code route_student_assignments} (MOD-07) — matching {@code
+ * StopJdbcRepository}'s plain-JDBC style in this module rather than JPA.
  *
  * <p>Runs under row-level security, so tenant scoping is absent from the SQL by design; the {@code
  * tenant_id} written on insert comes from the session setting the RLS policy itself reads.

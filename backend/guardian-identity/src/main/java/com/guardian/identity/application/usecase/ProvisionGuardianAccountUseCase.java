@@ -83,8 +83,7 @@ public class ProvisionGuardianAccountUseCase {
             .actor(command.actorId(), AuditRecord.ActorType.USER, command.actorRole())
             .action("GUARDIAN_ACCOUNT_PROVISIONED")
             .subject("User", user.id().value())
-            .after(
-                Map.<String, Object>of("roleCode", GUARDIAN_ROLE_CODE, "phone", phone.masked()))
+            .after(Map.<String, Object>of("roleCode", GUARDIAN_ROLE_CODE, "phone", phone.masked()))
             .build());
 
     return user.id();

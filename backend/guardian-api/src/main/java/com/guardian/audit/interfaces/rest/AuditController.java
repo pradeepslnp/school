@@ -55,9 +55,7 @@ public class AuditController {
   public List<AuditRecordResponse> overrides(
       @RequestParam(required = false, defaultValue = "100") int limit) {
 
-    return listAuditRecords
-        .execute(new AuditQuery(null, null, null, true, limit))
-        .stream()
+    return listAuditRecords.execute(new AuditQuery(null, null, null, true, limit)).stream()
         .map(AuditRecordResponse::from)
         .toList();
   }

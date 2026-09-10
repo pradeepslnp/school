@@ -45,6 +45,14 @@ spring:
     # default in-order check once V900 has already been applied.
     out-of-order: true
 
+  servlet:
+    multipart:
+      # Bulk student import (STU-002) is the only multipart surface. A 5,000-row CSV — the
+      # synchronous ceiling — is well under a megabyte; these bounds leave headroom for wide
+      # files without letting an upload hold a request thread on megabytes of body.
+      max-file-size: 5MB
+      max-request-size: 6MB
+
   jackson:
     default-property-inclusion: non_null
     serialization:

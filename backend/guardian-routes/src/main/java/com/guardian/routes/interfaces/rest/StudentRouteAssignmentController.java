@@ -74,9 +74,7 @@ public class StudentRouteAssignmentController {
   @GetMapping("/api/v1/students/{studentId}/route-assignments")
   @RequiresPermission("PERM-STUDENT-VIEW")
   public List<RouteAssignmentResponse> list(@PathVariable UUID studentId) {
-    return listAssignments.execute(studentId).stream()
-        .map(RouteAssignmentResponse::from)
-        .toList();
+    return listAssignments.execute(studentId).stream().map(RouteAssignmentResponse::from).toList();
   }
 
   @DeleteMapping("/api/v1/route-assignments/{assignmentId}")

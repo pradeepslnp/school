@@ -220,7 +220,12 @@ class StaffLoginUseCaseTest {
             "refresh-token",
             900,
             new IssuedSession.AuthenticatedUserView(
-                USER.value().toString(), "Anil", "Kumar", "en", List.of("TRANSPORT_MANAGER")));
+                USER.value().toString(),
+                "Anil",
+                "Kumar",
+                "en",
+                List.of("TRANSPORT_MANAGER"),
+                List.of()));
     when(sessionFactory.startSession(any(), eq(TENANT), eq(ClientType.ADMIN_WEB), any(), any()))
         .thenReturn(new SessionFactory.Issued(session, response));
 

@@ -1,5 +1,6 @@
 package com.guardian.identity.infrastructure.persistence;
 
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -8,6 +9,12 @@ import org.springframework.data.repository.query.Param;
 
 /** Spring Data repository for {@code sessions}. Package-private. */
 interface SessionJpaRepository extends JpaRepository<SessionEntity, UUID> {
+
+  /**
+   * One user's sessions, newest first (IAM-004). Row-level security scopes this to the current
+   * tenant, so it never needs a {@code tenant_id} predicate of its own.
+   */
+  List<SessionEntity> findByUserIdOrderByIssuedAtDesc(UUID userId);
 
   /**
    * Revokes every live session in a rotation family in one statement (BR-IAM-009).

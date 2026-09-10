@@ -5,17 +5,21 @@ Users, credentials, sessions, roles, permissions, and scope resolution. Implemen
 
 ## Status
 
-**Build wiring only.** No production code yet — the module is registered so its dependencies and
-layering are fixed before implementation begins, and so the architecture tests apply from the first
-commit.
+**Delivered**, with one documented gap.
 
-This is deliberate scaffolding, not a placeholder: there are no stub classes, no
-`UnsupportedOperationException`, and nothing that looks implemented but is not
-([ENGINEERING_PRINCIPLES.md](../../documentation/ENGINEERING_PRINCIPLES.md) §15).
+Sign-in — staff email + password (IAM-001), guardian phone + OTP (IAM-002) — plus token refresh
+with rotation and reuse detection (IAM-003), self-service and administrator session management
+(IAM-004), administrative user CRUD and invitations, role and scope assignment over the nine fixed
+system-role templates (IAM-005, IAM-007), password reset (IAM-009), staff deactivation with session
+and duty revocation (IAM-008), per-request permission resolution (BR-IAM-004 → V14), and child
+data-access logging (IAM-010, enforced in MOD-03's `GetStudentUseCase`).
 
-## Before implementing
+Not built: **IAM-006** (a tenant defining its own roles and choosing their permissions — the nine
+templates resolve from `SystemRolePermissions` in code, and `role_permissions` exists only for
+custom roles that no flow yet creates); **IAM-011** (school SSO — needs its own ADR); and the
+read-time scope predicate for BR-IAM-006 across consuming modules, which is per-module work.
 
-Read, in order:
+## Key references
 
 1. [ADR-0006](../../documentation/00-governance/adr/ADR-0006-authentication-model.md) — token model and why
    permissions are **not** embedded in tokens
@@ -24,8 +28,8 @@ Read, in order:
 3. [MOD-02-identity.md](../../documentation/03-database/tables/MOD-02-identity.md) — table specifications
 4. [AUTHENTICATION_API.md](../../documentation/04-api/AUTHENTICATION_API.md) — endpoint contracts
 
-Then copy the structure of [`guardian-tenancy`](../guardian-tenancy/) — `domain/` → `application/`
-→ `infrastructure/` → `interfaces/`. Do not invent a different layout.
+Layout follows [`guardian-tenancy`](../guardian-tenancy/) — `domain/` → `application/` →
+`infrastructure/` → `interfaces/`.
 
 ## Rules this module owns
 
@@ -39,7 +43,8 @@ BR-IAM-001 … BR-IAM-012. Three carry particular weight:
 
 ## Definition of done
 
-Remove `BR-IAM` from
-[`traceability-baseline.txt`](../guardian-api/src/test/resources/traceability-baseline.txt) as part
-of delivering this module. The traceability test will then require every `BR-IAM` rule to have a
-test referencing it.
+`BR-IAM` is off
+[`traceability-baseline.txt`](../guardian-api/src/test/resources/traceability-baseline.txt) except
+**BR-IAM-010**, which has no single enforcement point and needs a test exercising one user holding
+both a guardian and a staff role — deferred under the current no-test policy, listed rather than
+dropped.

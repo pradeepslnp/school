@@ -52,6 +52,9 @@ Envelope format: [`API_STANDARDS.md`](API_STANDARDS.md).
 | `USER_NOT_PENDING` | 409 | ADR-0012 | Cannot resend an invitation to an account that is already active |
 | `USER_NOT_ACTIVE` | 409 | ADR-0012 | Cannot send a reset link to an account that cannot sign in |
 | `PASSWORD_TOO_WEAK` | 422 | BR-IAM-013 | Password below policy: under 12 characters, or a known-common password |
+| `SESSION_NOT_FOUND` | 404 | BR-IAM-007 | Session id does not resolve for this caller — already gone, or (self-service path) belongs to someone else; 404 rather than 403 so the endpoint cannot confirm another person's session id |
+| `ROLE_NOT_ASSIGNABLE` | 422 | BR-IAM-003 | Role code is not one the console assigns — a driver/attendant system role, or a code absent from the permission matrix |
+| `USER_SCOPE_NOT_PERMITTED_FOR_ROLE` | 422 | BR-IAM-006 | Scope in the request is not one this role may carry — a `SCHOOL` scope for an org-wide role, or a `ROUTE` scope for a role that is not route-bound |
 
 ---
 
@@ -95,7 +98,27 @@ Envelope format: [`API_STANDARDS.md`](API_STANDARDS.md).
 | `PICKUP_PERSON_OUTSIDE_VALIDITY` | 422 | BR-GRD-005 | Nomination expired or not yet valid |
 | `PICKUP_PERSON_REVOKED` | 422 | BR-GRD-007 | |
 | `CUSTODY_RESTRICTION_ACTIVE` | 403 | BR-GRD-008 🔴 | **Blocks handover and visibility** |
+| `CUSTODY_RESTRICTION_NOT_FOUND` | 404 | BR-GRD-008 | Unknown id, or not for the student in the path |
+| `CUSTODY_RESTRICTION_SUBJECT_REQUIRED` | 422 | BR-GRD-008 | Names neither a guardian nor a person |
 | `GUARDIAN_NOT_AUTHORISED_FOR_HANDOVER` | 403 | BR-GRD-006 | Lacks `can_authorise_handover`; cannot request a release code |
+
+---
+
+## Bulk Student Import (STU-002)
+
+| Code | HTTP | Rule | Meaning |
+|---|---|---|---|
+| `STUDENT_IMPORT_NOT_FOUND` | 404 | | No import job with that id in the caller's tenant |
+| `STUDENT_IMPORT_FILE_EMPTY` | 400 | | Upload missing, or no data rows below the header |
+| `STUDENT_IMPORT_FILE_UNREADABLE` | 400 | | Not the CSV it claimed to be |
+| `STUDENT_IMPORT_UNSUPPORTED_COLUMN` | 400 | | Header names a column this version cannot process; `details[].column` identifies it |
+| `STUDENT_IMPORT_TOO_MANY_ROWS` | 422 | | Above the synchronous row cap; split the file (`details[].maxRows`) |
+| `STUDENT_IMPORT_DUPLICATE_ROW` | 422 | BR-STU-003 | Per-row: the same admission number appears twice in the file; neither row is enrolled |
+
+Per-row failures inside a processed file are reported in `data.errors[]`, not as an error
+response — the valid rows are still enrolled. Each row error's `code` is drawn from this
+catalogue (`STUDENT_ADMISSION_NO_EXISTS`, `VALIDATION_INVALID_FORMAT`,
+`VALIDATION_REQUIRED_FIELD_MISSING`, `STUDENT_IMPORT_DUPLICATE_ROW`).
 
 ---
 

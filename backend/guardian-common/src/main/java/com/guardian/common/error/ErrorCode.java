@@ -46,6 +46,17 @@ public enum ErrorCode {
   // A well-formed password refused by policy (BR-IAM-013). 422, not 400: the request parsed fine,
   // the value is simply too weak — thrown as a BusinessRuleViolationException.
   PASSWORD_TOO_WEAK(422),
+  // A session id in a path does not resolve for this caller: it is already gone, or — on the
+  // self-service path — belongs to someone else. 404 rather than 403 so the endpoint cannot be
+  // used to confirm another person's session id exists (IAM-004).
+  SESSION_NOT_FOUND(404),
+  // The account holds no role assignable through the console — a system role provisioned for a
+  // driver/attendant, or a role code the matrix does not list. Blocks assigning or removing it
+  // from the Users screen (BR-IAM-003, A-43).
+  ROLE_NOT_ASSIGNABLE(422),
+  // The scope in the request is not one this role may carry: a SCHOOL scope for an org-wide role,
+  // or a ROUTE scope for a role that is not route-bound (BR-IAM-006).
+  USER_SCOPE_NOT_PERMITTED_FOR_ROLE(422),
 
   // --- Validation ---------------------------------------------------------------------
   VALIDATION_FAILED(400),
@@ -80,6 +91,29 @@ public enum ErrorCode {
   // BR-GRD-006) but a distinct code: this guards *requesting a release code*, not nominating
   // a pickup person, and a client should never have to infer which action a shared code means.
   GUARDIAN_NOT_AUTHORISED_FOR_HANDOVER(403),
+  // A custody restriction id in a path does not resolve within the caller's tenant, or does not
+  // belong to the student in the path (GRD-006 / A-14).
+  CUSTODY_RESTRICTION_NOT_FOUND(404),
+  // The request names neither a guardian nor a person — ck_custody_subject requires exactly one
+  // (BR-GRD-008).
+  CUSTODY_RESTRICTION_SUBJECT_REQUIRED(422),
+
+  // --- Bulk student import (STU-002, screen A-12) ---------------------------------------
+  STUDENT_IMPORT_NOT_FOUND(404),
+  // The whole upload is rejected before any row is processed: nothing to enrol, or a byte
+  // stream that is not the CSV it claimed to be. 400 — the request itself is malformed.
+  STUDENT_IMPORT_FILE_EMPTY(400),
+  STUDENT_IMPORT_FILE_UNREADABLE(400),
+  // The header names a column this version does not process (e.g. a guardian or stop column).
+  // Rejected wholesale rather than silently ignored — enrolling students while dropping data
+  // the office believed it was providing is the more dangerous outcome.
+  STUDENT_IMPORT_UNSUPPORTED_COLUMN(400),
+  // 422: the file is well-formed but larger than one synchronous request should process. The
+  // office splits it; a future asynchronous job lifts the limit (STUDENTS_GUARDIANS_API.md).
+  STUDENT_IMPORT_TOO_MANY_ROWS(422),
+  // A per-row code: the same admission number appears twice in the uploaded file. Neither row
+  // is enrolled, because the platform cannot tell which one the office meant (BR-STU-003).
+  STUDENT_IMPORT_DUPLICATE_ROW(422),
 
   // --- Fleet (MOD-05) -------------------------------------------------------------------
   VEHICLE_REGISTRATION_EXISTS(409),
