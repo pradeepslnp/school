@@ -20,8 +20,10 @@ import org.springframework.stereotype.Component;
  * masked, because the pair of a working link and a named address is what would matter if this log
  * were ever read in anger.
  *
- * <p>Replacing this is what makes delivery real: an SMTP/provider adapter implements the same port
- * and this class is not touched (ADR-0012, ADR-0005 {@code EmailChannel}).
+ * <p>Replacing this is what makes delivery real: {@link SmtpAccountEmailSender} implements the same
+ * port and this class is not touched (ADR-0014, and later ADR-0005 {@code EmailChannel}). When a
+ * mail host is configured in development both beans exist and the SMTP one is {@code @Primary}, so
+ * mail is genuinely sent; with no mail host this stays the only implementation.
  */
 @Component
 @Profile("!prod & !production")

@@ -54,6 +54,11 @@ dependencies:
   # outside this app.
   screen_brightness: ^2.1.11
 
+  # P-04 Live Trip Map (docs/05-ui/PARENT_APP.md, CLAUDE.md §11 — Google Maps is the adopted
+  # mapping provider). Renders the vehicle marker; needs a Maps API key supplied at build time
+  # per platform, never committed — see docs/06-development/LOCAL_SETUP.md.
+  google_maps_flutter: ^2.18.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -28,6 +28,7 @@ An ADR records a decision that is expensive to reverse: why it was made, what wa
 | [ADR-0011](ADR-0011-flutter-monorepo-consolidation.md) | Consolidate the Flutter/Dart clients into a single Melos-managed monorepo | Proposed |
 | [ADR-0012](ADR-0012-admin-account-invitation-and-password-reset.md) | Administrative account invitations and self-service password reset | Accepted |
 | [ADR-0013](ADR-0013-interim-client-bundled-flutter-localisation.md) | Interim client-bundled localisation for the Flutter apps (English/Kannada) | Accepted |
+| [ADR-0014](ADR-0014-platform-email-delivery-smtp.md) | Platform email delivery over SMTP | Accepted |
 
 ## Writing a new ADR
 

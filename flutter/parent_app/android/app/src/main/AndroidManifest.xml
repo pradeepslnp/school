@@ -52,6 +52,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- P-04 Live Trip Map (docs/05-ui/PARENT_APP.md). The value is a Gradle manifest
+             placeholder, not a literal key (see app/build.gradle.kts) — it resolves from
+             MAPS_API_KEY, sourced from an environment variable or android/local.properties,
+             neither of which is committed (docs/06-development/LOCAL_SETUP.md, CLAUDE.md §7).
+             Empty when unset: the app still builds and runs, the map just renders no tiles. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

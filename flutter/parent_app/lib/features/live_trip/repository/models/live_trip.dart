@@ -14,6 +14,8 @@ class LiveTrip {
     required this.tripId,
     required this.vehicleDisplayName,
     required this.stopName,
+    this.latitude,
+    this.longitude,
     this.headingDeg,
     this.positionFreshness,
     this.isPositionStaleReported,
@@ -28,6 +30,18 @@ class LiveTrip {
 
   /// The guardian's own stop — never another family's (BR-NTF-007 🔴).
   final String stopName;
+
+  /// Vehicle position from `GET /trips/{id}/position`. Null until a position has ever been
+  /// reported; both are set together, never one without the other.
+  ///
+  /// Nothing else in this screen's data carries coordinates: `GET /trips/{id}/eta`
+  /// (docs/04-api/TRACKING_NOTIFICATION_API.md) has no stop latitude/longitude for a
+  /// guardian's `PERM-TRACKING-LIVE-VIEW` scope — only `PERM-ROUTE-VIEW`
+  /// (`GET /routes/{id}/stops`, fleet/staff) carries route/stop coordinates. So P-04 renders
+  /// the vehicle marker only; the stop marker and route polyline the UI spec describes stay
+  /// unbuilt until that API gap is closed (flagged in TRACKING_NOTIFICATION_API.md).
+  final double? latitude;
+  final double? longitude;
 
   /// Compass heading of travel, for the vehicle marker.
   final double? headingDeg;

@@ -1,1 +1,5 @@
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
+// P-04 Live Trip Map's Maps API key. Optional include: works whether or not a developer has
+// copied Secrets.xcconfig.example to Secrets.xcconfig (docs/06-development/LOCAL_SETUP.md).
+#include? "Secrets.xcconfig"

@@ -58,6 +58,30 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+  mail:
+    # SMTP for the account-lifecycle emails — invitation, reset code, password-changed notice
+    # (ADR-0014). `host` is deliberately absent here: while spring.mail.host is unset,
+    # SmtpAccountEmailSender is not registered — development falls back to the logging adapter,
+    # and prod/production (where the logging adapter is excluded by profile) fails to start
+    # rather than silently not sending. Set the host to turn on real delivery, e.g. for a
+    # Google Workspace / Gmail account:
+    #   SPRING_MAIL_HOST=smtp.gmail.com
+    #   GUARDIAN_SMTP_USERNAME=no-reply@yourschooldomain.com
+    #   GUARDIAN_SMTP_PASSWORD=<16-char app password>   (not the account password)
+    port: ${GUARDIAN_SMTP_PORT:587}
+    username: ${GUARDIAN_SMTP_USERNAME:}
+    password: ${GUARDIAN_SMTP_PASSWORD:}
+    properties:
+      # Authentication turns itself on when a username/password is supplied, so it is not forced
+      # here — a local catcher (MailHog) with no credentials still works. STARTTLS is offered,
+      # not required, so port 587 (Gmail) upgrades and a plain local sink does not.
+      mail.smtp.starttls.enable: true
+      # A slow or unreachable SMTP host must fail fast — the send runs after the request's
+      # transaction has committed, so a hang here holds a response, not data.
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
+
 server:
   port: ${GUARDIAN_PORT:8080}
   error:
@@ -67,6 +91,12 @@ server:
 guardian:
   auth:
     magic-otp: ${GUARDIAN_MAGIC_OTP:}
+
+  email:
+    # The From address on account-lifecycle email (ADR-0014). Platform-wide for now — per-tenant
+    # sender identity is ADR-0005's EmailChannel. Note: some providers (Gmail included) rewrite
+    # From to the authenticated mailbox unless this is a verified alias of it.
+    from: ${GUARDIAN_EMAIL_FROM:Guardian Platform <no-reply@localhost>}
 
   web:
     # Origins permitted to call this API from a browser — the admin console (ADR-0003) only;

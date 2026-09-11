@@ -50,6 +50,8 @@ class LiveTripRepository {
         tripId: tripId,
         vehicleDisplayName: vehicleDisplayName,
         stopName: stopName,
+        latitude: (positionData['latitude'] as num?)?.toDouble(),
+        longitude: (positionData['longitude'] as num?)?.toDouble(),
         headingDeg: (positionData['headingDeg'] as num?)?.toDouble(),
         positionFreshness: _age(from: receivedAt, to: now),
         isPositionStaleReported: positionData['isStale'] as bool?,

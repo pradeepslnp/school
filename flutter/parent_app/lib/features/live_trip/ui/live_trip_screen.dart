@@ -89,7 +89,11 @@ class LiveTripScreen extends StatelessWidget {
               isStale: trip.isPositionStaleReported,
             ),
             const SizedBox(height: GuardianSpacing.md),
-            VehicleMapSurface(headingDeg: trip.headingDeg),
+            VehicleMapSurface(
+              latitude: trip.latitude,
+              longitude: trip.longitude,
+              headingDeg: trip.headingDeg,
+            ),
             const SizedBox(height: GuardianSpacing.md),
             Text(
               _etaCaption(context, trip),

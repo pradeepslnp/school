@@ -58,35 +58,69 @@ Starts PostgreSQL 16 (`localhost:5432`) and Redis 7 (`localhost:6379`).
 ```bash
 cd backend
 ./gradlew build          # compile + unit + architecture tests
+
+SPRING_PROFILES_ACTIVE=demo \
+GUARDIAN_DB_MIGRATION_PASSWORD=local_owner \
+GUARDIAN_DB_PASSWORD=local_app \
 ./gradlew :guardian-api:bootRun
 ```
 
 Flyway applies migrations on startup. The API listens on `http://localhost:8080`; OpenAPI at `/swagger-ui.html`.
 
+### The `demo` profile
+
+**`SPRING_PROFILES_ACTIVE=demo` is not optional for a usable local backend.** It is the only thing that adds `classpath:db/seed` to `spring.flyway.locations` (`application-demo.yml`), and without it Flyway runs `db/migration` only — an empty schema with no accounts, so nothing can sign in. The profile also sets the fixed OTP (`123123`) and raises the OTP/email logger so codes and links are readable in the log. It is refused structurally by any deployment that does not name it.
+
 ### Configuration
 
-`application-local.yml` is committed with local defaults. **Secrets never are.** Override via environment:
+Local defaults live in `application.yml` itself; there is no `application-local.yml`. **Secrets never are committed.** The two database passwords above match `infrastructure/db/init/01-roles.sql` (`local_app`) and the compose default (`local_owner`); override anything via environment, e.g. `GUARDIAN_DB_PASSWORD`, `GUARDIAN_PORT`.
 
-```bash
-export GUARDIAN_DB_PASSWORD=…
-export GUARDIAN_JWT_PRIVATE_KEY_PATH=…
-```
-
-A local RSA keypair is generated on first run into `backend/.local/` (gitignored) — no shared development signing key.
+The JWT signing key is **ephemeral in development** — generated per run, with a startup warning; every restart invalidates outstanding tokens. A real key (`guardian.security.jwt.private-key`) is required only under the `prod`/`production` profile.
 
 ---
 
 ## 3. Seed Data
 
+There is no separate seed command — the `demo` profile applies it. On top of the schema, Flyway runs:
+
+- **`V900__demo_data.sql`** — the parent- and driver-app fixtures (phone `8050602046`, OTP `123123`) plus two console accounts on `.example` addresses.
+- **`V901__role_login_accounts.sql`** — one admin-console login per role, on real Gmail addresses, so each role's authorisation can be exercised.
+
+Console logins, password **`Guardian!Demo2026`** for all:
+
+| Email | Role |
+|---|---|
+| `pradeepslnp7@gmail.com` | `SUPER_ADMIN` |
+| `pradeepslnp07@gmail.com` | `ORG_ADMIN` |
+| `akshay5632@gmail.com` | `SCHOOL_ADMIN` |
+| `reelsatdesk@gmail.com` | `PRINCIPAL` |
+| `7625055445l@gmail.com` | `TRANSPORT_MANAGER` |
+
+Self-service password reset (`/forgot-password`) and the invitation set-password flow both work locally: on the `demo` profile the emailed 6-digit reset code is always `123123`, and — with no mail host configured (below) — the invite link is written to the backend log rather than sent.
+
+---
+
+## 3a. Email (invitation / reset) — optional
+
+By default account-lifecycle email is written to the log (`LoggingAccountEmailSender`). To send it for real in development (ADR-0014), run a local catcher and point the backend at it:
+
 ```bash
-./gradlew :guardian-api:seedDevelopmentData
+docker run -d --name guardian-mailhog -p 1025:1025 -p 8025:8025 mailhog/mailhog
+# then add to the bootRun environment:
+SPRING_MAIL_HOST=127.0.0.1 GUARDIAN_SMTP_PORT=1025
 ```
 
-Creates a realistic dataset: **two organizations under different region profiles**, several schools, ~200 students with guardians, vehicles with documents at varying expiry, staff with credentials, routes and stops, and trips across several days including exceptions.
+Mail then appears at `http://localhost:8025`. For a real relay (Google Workspace / Gmail):
 
-Two region profiles is deliberate — it exercises ADR-0007 continuously, so region-specific behaviour leaking into code surfaces during development rather than at the first international customer.
+```bash
+SPRING_MAIL_HOST=smtp.gmail.com
+GUARDIAN_SMTP_PORT=587
+GUARDIAN_SMTP_USERNAME=no-reply@yourdomain.com
+GUARDIAN_SMTP_PASSWORD=<16-char app password>     # not the account password
+GUARDIAN_EMAIL_FROM=Guardian Platform <no-reply@yourdomain.com>
+```
 
-Development logins are printed on completion. They exist only in the `local` profile and are refused in any other.
+With `SPRING_MAIL_HOST` set, real delivery takes over automatically. Under `prod`/`production` it is mandatory — the context fails to start without it.
 
 ---
 

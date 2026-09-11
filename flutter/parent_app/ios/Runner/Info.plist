@@ -8,6 +8,12 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Guardian Parent</string>
+	<!-- P-04 Live Trip Map's Maps API key, read by AppDelegate.swift. Sourced from the
+	     MAPS_API_KEY xcconfig build setting (ios/Flutter/Secrets.xcconfig, gitignored — see
+	     Secrets.xcconfig.example and docs/06-development/LOCAL_SETUP.md), never a literal
+	     value here. -->
+	<key>GuardianMapsAPIKey</key>
+	<string>$(MAPS_API_KEY)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

@@ -1,8 +1,25 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// P-04 Live Trip Map's Maps API key (AndroidManifest.xml). Never committed: an environment
+// variable takes priority (CI, or a developer's shell profile), falling back to
+// local.properties — already gitignored for the Flutter SDK path, so it is the natural place
+// to add one more machine-local, non-secret-in-the-Anthropic-sense-but-still-not-public value
+// (docs/06-development/LOCAL_SETUP.md, CLAUDE.md §7). Empty when neither is set, which is a
+// valid build: the map just renders no tiles.
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+val mapsApiKey: String =
+    (System.getenv("MAPS_API_KEY") ?: localProperties.getProperty("MAPS_API_KEY") ?: "")
 
 android {
     namespace = "com.guardian.guardian_parent"
@@ -23,6 +40,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     flavorDimensions += "env"
