@@ -141,6 +141,20 @@ flutter run --dart-define=API_BASE_URL=http://localhost:8080/api/v1
 
 Android emulator uses `http://10.0.2.2:8080`; a physical device needs your machine's LAN address.
 
+**parent_app's P-04 Live Trip Map** needs a Google Maps API key, per platform, never committed (CLAUDE.md §7):
+
+```bash
+# Android — one of:
+export MAPS_API_KEY=<your key>                        # picked up by app/build.gradle.kts
+echo "MAPS_API_KEY=<your key>" >> flutter/parent_app/android/local.properties   # already gitignored
+
+# iOS
+cp flutter/parent_app/ios/Flutter/Secrets.xcconfig.example flutter/parent_app/ios/Flutter/Secrets.xcconfig
+# then edit Secrets.xcconfig and fill in MAPS_API_KEY=<your key>
+```
+
+Without a key the app still builds and runs — P-04's text summary is complete either way (docs/05-ui/PARENT_APP.md); the map beneath it just renders no tiles.
+
 ---
 
 ## 5. Tests

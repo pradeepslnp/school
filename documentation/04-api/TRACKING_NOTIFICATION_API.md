@@ -58,6 +58,8 @@ Guardians see only trips carrying one of their children (BR-TRACK-002) → `403`
 
 **`calculatedAt` and `confidence` are always returned** (BR-TRACK-006). An ETA is an estimate; a parent who leaves the house on a stale one and misses the bus is a product failure. `confidence` drops to `LOW` when routing is unavailable and straight-line fallback is used.
 
+**Known gap (P-04, docs/05-ui/PARENT_APP.md):** neither this endpoint nor `GET /trips/{id}/position` carries a stop's coordinates, so a guardian's `PERM-TRACKING-LIVE-VIEW` scope has no data source for the "parent's stop emphasised" marker or a route polyline the UI spec describes — only `PERM-ROUTE-VIEW` (`GET /routes/{id}/stops`, fleet/staff) carries route/stop coordinates, and that permission is not, and should not become, guardian-held (over-broad for BR-NTF-007's boundary). The client (parent_app) currently renders the vehicle marker only. Closing this gap means adding this stop's own `latitude`/`longitude` to this response — never the full route — which stays within what a guardian is already authorised to know (their own stop).
+
 ## WebSocket
 
 ```
