@@ -71,3 +71,29 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+
+  # Bundled rather than loaded from fonts.googleapis.com at runtime. A web console that
+  # fetches its typeface from a third party renders in a fallback face whenever that host is
+  # slow, blocked by a school network, or unreachable — and the console is the surface an
+  # operator opens during an incident. Bundling also keeps the build reproducible.
+  #
+  # Barlow carries the UI (its slightly squared, signage-derived shapes suit a transport
+  # tool); Archivo sets headings and the numerals on the operations counts, where the extra
+  # width reads at a glance. Both ship only the weights actually used.
+  fonts:
+    - family: Barlow
+      fonts:
+        - asset: assets/fonts/Barlow-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Barlow-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Barlow-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Barlow-Bold.ttf
+          weight: 700
+    - family: Archivo
+      fonts:
+        - asset: assets/fonts/Archivo-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Archivo-Bold.ttf
+          weight: 700

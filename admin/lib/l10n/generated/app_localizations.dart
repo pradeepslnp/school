@@ -674,6 +674,18 @@ abstract class AppLocalizations {
   /// **'Could not load your organizations or schools.'**
   String get schoolScopeLoadError;
 
+  /// No description provided for @schoolScopeNoSchoolsNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'This organization has no schools yet. Add a school before enrolling students or registering vehicles, staff and routes.'**
+  String get schoolScopeNoSchoolsNotice;
+
+  /// No description provided for @schoolScopeCrossTenantNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'A platform operator cannot open another organization\'s schools. To manage students, staff, vehicles or routes, sign in with an account belonging to that organization.'**
+  String get schoolScopeCrossTenantNotice;
+
   /// No description provided for @commonCancelButton.
   ///
   /// In en, this message translates to:
@@ -2385,6 +2397,34 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Geofence radius (metres, 20–2000)'**
   String get schoolFieldGeofenceLabel;
+
+  /// No description provided for @schoolFieldPlusCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Plus Code'**
+  String get schoolFieldPlusCodeLabel;
+
+  /// No description provided for @schoolFieldPlusCodeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a Plus Code from Google Maps (for example 7J4VXMQ5+8F) and the coordinates below fill in. You can still type them directly.'**
+  String get schoolFieldPlusCodeHelp;
+
+  /// No description provided for @schoolFieldPlusCodeResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved to {latitude}, {longitude} — accurate to about {metres} m'**
+  String schoolFieldPlusCodeResolved(
+    String latitude,
+    String longitude,
+    String metres,
+  );
+
+  /// No description provided for @schoolFieldPlusCodeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a complete Plus Code. A short code like 8F+6W needs a town name, which this field cannot resolve — use the full code.'**
+  String get schoolFieldPlusCodeInvalid;
 
   /// No description provided for @createSchoolStepTitle.
   ///

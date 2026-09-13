@@ -3,6 +3,23 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations_extension.dart';
 import '../../l10n/generated/app_localizations.dart';
 
+/// The band of the navigation rail a destination sits in.
+///
+/// Nine flat entries make an operator read the whole list to find one module. Grouping them
+/// by *what the operator is doing* — running today's transport, administering the school,
+/// operating the platform — turns that into one glance at a heading. The order here is the
+/// order the bands render in.
+enum ConsoleGroup {
+  /// Today's transport: the work an operator does during a school run.
+  operations,
+
+  /// Setting the console up: who may use it, and how the school is configured.
+  administration,
+
+  /// Cross-tenant work, visible only to platform operators.
+  platform,
+}
+
 /// One entry in the console's navigation.
 ///
 /// A plain description, not a screen: the shell renders these and knows nothing about what
@@ -17,6 +34,7 @@ class ConsoleDestination {
     required this.selectedIcon,
     required this.location,
     required this.availableOnNarrowLayout,
+    this.group = ConsoleGroup.operations,
     this.requiredAnyRole,
   });
 
@@ -41,6 +59,9 @@ class ConsoleDestination {
 
   /// The URL this destination owns, e.g. `/alerts`.
   final String location;
+
+  /// Which band of the rail this destination renders in. See [ConsoleGroup].
+  final ConsoleGroup group;
 
   /// Whether this destination appears below 768 px.
   ///
@@ -87,6 +108,7 @@ class ConsoleDestinations {
   static const List<ConsoleDestination> all = <ConsoleDestination>[
     ConsoleDestination(
       id: 'A-40',
+      group: ConsoleGroup.platform,
       labelBuilder: _organizationsLabel,
       icon: Icons.apartment_outlined,
       selectedIcon: Icons.apartment,
@@ -99,6 +121,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-41',
+      group: ConsoleGroup.administration,
       labelBuilder: _schoolLabel,
       icon: Icons.school_outlined,
       selectedIcon: Icons.school,
@@ -114,6 +137,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-10',
+      group: ConsoleGroup.operations,
       labelBuilder: _studentsLabel,
       icon: Icons.school_outlined,
       selectedIcon: Icons.school,
@@ -136,6 +160,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-23',
+      group: ConsoleGroup.operations,
       labelBuilder: _driversLabel,
       icon: Icons.badge_outlined,
       selectedIcon: Icons.badge,
@@ -149,6 +174,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-20',
+      group: ConsoleGroup.operations,
       labelBuilder: _vehiclesLabel,
       icon: Icons.directions_bus_outlined,
       selectedIcon: Icons.directions_bus,
@@ -159,6 +185,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-30',
+      group: ConsoleGroup.operations,
       labelBuilder: _routesLabel,
       icon: Icons.alt_route_outlined,
       selectedIcon: Icons.alt_route,
@@ -169,6 +196,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-43',
+      group: ConsoleGroup.administration,
       labelBuilder: _usersLabel,
       icon: Icons.manage_accounts_outlined,
       selectedIcon: Icons.manage_accounts,
@@ -182,6 +210,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-44',
+      group: ConsoleGroup.administration,
       labelBuilder: _rolesLabel,
       icon: Icons.rule_folder_outlined,
       selectedIcon: Icons.rule_folder,
@@ -194,6 +223,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-62',
+      group: ConsoleGroup.platform,
       labelBuilder: _platformHealthLabel,
       icon: Icons.monitor_heart_outlined,
       selectedIcon: Icons.monitor_heart,
@@ -206,6 +236,7 @@ class ConsoleDestinations {
     ),
     ConsoleDestination(
       id: 'A-54',
+      group: ConsoleGroup.administration,
       labelBuilder: _auditTrailLabel,
       icon: Icons.fact_check_outlined,
       selectedIcon: Icons.fact_check,

@@ -371,30 +371,42 @@ class _StudentListScreenState extends State<StudentListScreen> {
         if (state.error != null)
           StudentErrorText(code: state.error!, messageKey: state.errorMessageKey),
         Expanded(
-          // ListView.builder, not a Column in a scroll view: the register is thousands of rows
-          // and only the visible ones should be built (CODING_STANDARDS_FLUTTER.md).
-          child: ListView.builder(
-            controller: _scroll,
-            itemCount: students.length + (state.isLoadingMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index >= students.length) {
-                return Padding(
-                  padding: const EdgeInsets.all(AdminSpacing.lg),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      semanticsLabel: context.l10n.studentListLoadingMoreLabel,
+          // The register sits on a panel rather than loose on the canvas: a table of two
+          // thousand rows needs an edge, or the rows read as floating text.
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: context.livery.panel,
+              border: Border.all(color: context.livery.border),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            // ListView.builder, not a Column in a scroll view: the register is thousands of
+            // rows and only the visible ones should be built
+            // (CODING_STANDARDS_FLUTTER.md).
+            child: ListView.builder(
+              controller: _scroll,
+              padding: EdgeInsets.zero,
+              itemCount: students.length + (state.isLoadingMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index >= students.length) {
+                  return Padding(
+                    padding: const EdgeInsets.all(AdminSpacing.lg),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        semanticsLabel: context.l10n.studentListLoadingMoreLabel,
+                      ),
                     ),
-                  ),
+                  );
+                }
+                return _StudentRow(
+                  student: students[index],
+                  canEdit: canEdit,
+                  onOpen: () => _openDetail(context, students[index]),
+                  onEdit: () => _openForm(context, existing: students[index]),
+                  onWithdraw: () => _confirmWithdraw(context, students[index]),
                 );
-              }
-              return _StudentRow(
-                student: students[index],
-                canEdit: canEdit,
-                onOpen: () => _openDetail(context, students[index]),
-                onEdit: () => _openForm(context, existing: students[index]),
-                onWithdraw: () => _confirmWithdraw(context, students[index]),
-              );
-            },
+              },
+            ),
           ),
         ),
         if (!state.hasMore && _searchQuery.isEmpty)
@@ -472,49 +484,171 @@ class _StudentRow extends StatelessWidget {
   final VoidCallback onWithdraw;
   final VoidCallback onOpen;
 
+  /// The row's accent, as a (fill, ink) pair.
+  ///
+  /// **Deliberately not the safety palette.** `GuardianStatusColors` means *the child is
+  /// accounted for* / *something is wrong on a journey*; enrolment is a registry state, and
+  /// painting "on roll" green would spend the one signal that has to stay unambiguous on a
+  /// row that says nothing about where a child is. Active rows take the brand's navy
+  /// container, everything else is neutral.
+  (Color, Color) _accent(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    if (student.isWithdrawn || !student.transportEligible) {
+      return (context.livery.panelSubtle, scheme.onSurfaceVariant);
+    }
+    return (scheme.primaryContainer, scheme.onPrimaryContainer);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final livery = context.livery;
+    final (fill, ink) = _accent(context);
+    final muted = student.isWithdrawn;
 
-    return ListTile(
+    return InkWell(
       key: Key('student_list_row_${student.id}'),
       onTap: onOpen,
-      leading: CircleAvatar(
-        child: Icon(student.hasPhoto ? Icons.face : Icons.person_outline),
-      ),
-      title: Text(student.displayName),
-      subtitle: Text(
-        context.l10n.studentListRowSubtitle(student.admissionNo, _statusLabel(context)),
-      ),
-      trailing: canEdit
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  key: Key('student_list_edit_${student.id}'),
-                  icon: const Icon(Icons.edit_outlined),
-                  tooltip: context.l10n.studentListEditTooltip(student.displayName),
-                  onPressed: onEdit,
-                ),
-                if (!student.isWithdrawn)
-                  IconButton(
-                    key: Key('student_list_withdraw_${student.id}'),
-                    icon: const Icon(Icons.person_remove_outlined),
-                    tooltip: context.l10n.studentListWithdrawTooltip(student.displayName),
-                    onPressed: onWithdraw,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 58),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AdminSpacing.md,
+          vertical: AdminSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: livery.border)),
+        ),
+        child: Row(
+          children: [
+            // Initials rather than a generic person glyph: at a glance down a column of
+            // two thousand rows, a repeated identical icon carries no information.
+            Container(
+              width: 34,
+              height: 34,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
+              child: ExcludeSemantics(
+                child: student.hasPhoto
+                    ? Icon(Icons.face, size: 19, color: ink)
+                    : Text(
+                        _initials(),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: ink,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    student.displayName,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: muted ? theme.colorScheme.onSurfaceVariant : null,
+                    ),
                   ),
-              ],
-            )
-          : null,
-      // The status is spelled out in the subtitle as well as implied by the icon — colour and
-      // shape are never the only signal (DESIGN_SYSTEM.md).
-      textColor: student.isWithdrawn ? theme.colorScheme.onSurfaceVariant : null,
+                  Text(
+                    student.admissionNo,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
+                      color: livery.placeholder,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AdminSpacing.md),
+            // The status is a word, not only a tint — colour and shape are never the only
+            // signal (DESIGN_SYSTEM.md §Principles).
+            _StatusChip(label: _statusLabel(context), fill: fill, ink: ink),
+            if (canEdit) ...[
+              const SizedBox(width: AdminSpacing.sm),
+              IconButton(
+                key: Key('student_list_edit_${student.id}'),
+                icon: const Icon(Icons.edit_outlined, size: 19),
+                tooltip: context.l10n.studentListEditTooltip(student.displayName),
+                onPressed: onEdit,
+              ),
+              if (!student.isWithdrawn)
+                IconButton(
+                  key: Key('student_list_withdraw_${student.id}'),
+                  icon: const Icon(Icons.person_remove_outlined, size: 19),
+                  tooltip: context.l10n.studentListWithdrawTooltip(student.displayName),
+                  onPressed: onWithdraw,
+                ),
+            ],
+          ],
+        ),
+      ),
     );
+  }
+
+  /// First letters of the displayed name, at most two.
+  String _initials() {
+    final parts = student.displayName
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+    return (parts.first.characters.first + parts.last.characters.first)
+        .toUpperCase();
   }
 
   String _statusLabel(BuildContext context) {
     if (student.isWithdrawn) return context.l10n.studentStatusWithdrawn;
     if (!student.transportEligible) return context.l10n.studentStatusOnRollNoTransport;
     return context.l10n.studentStatusOnRollTransport;
+  }
+}
+
+/// A registry state, spelled out, on its own tint.
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({
+    required this.label,
+    required this.fill,
+    required this.ink,
+  });
+
+  final String label;
+  final Color fill;
+  final Color ink;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: ink, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 7),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: ink,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

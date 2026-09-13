@@ -1,5 +1,6 @@
 package com.guardian.infrastructure.security;
 
+import com.guardian.infrastructure.tenant.PlatformElevation;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -64,8 +65,19 @@ public class CorsConfig {
     // Idempotency-Key is here because retried writes carry it (API_STANDARDS.md), and
     // X-Client-Type because the server refuses an unknown client rather than defaulting
     // (AUTHENTICATION_API.md).
+    //
+    // PlatformElevation.HEADER is referenced rather than spelled out: a custom header the
+    // server reads but the browser is not permitted to send fails as an opaque CORS error at
+    // the preflight, with nothing in the server log to explain it. Naming the constant means
+    // adding or renaming that header cannot leave this list behind.
     configuration.setAllowedHeaders(
-        List.of("Accept", "Authorization", "Content-Type", "Idempotency-Key", "X-Client-Type"));
+        List.of(
+            "Accept",
+            "Authorization",
+            "Content-Type",
+            "Idempotency-Key",
+            "X-Client-Type",
+            PlatformElevation.HEADER));
 
     // See the class comment. Not a value to flip without reading it.
     configuration.setAllowCredentials(false);

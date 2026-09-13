@@ -334,6 +334,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not load your organizations or schools.';
 
   @override
+  String get schoolScopeNoSchoolsNotice =>
+      'This organization has no schools yet. Add a school before enrolling students or registering vehicles, staff and routes.';
+
+  @override
+  String get schoolScopeCrossTenantNotice =>
+      'A platform operator cannot open another organization\'s schools. To manage students, staff, vehicles or routes, sign in with an account belonging to that organization.';
+
+  @override
   String get commonCancelButton => 'Cancel';
 
   @override
@@ -1343,6 +1351,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get schoolFieldGeofenceLabel => 'Geofence radius (metres, 20–2000)';
+
+  @override
+  String get schoolFieldPlusCodeLabel => 'Plus Code';
+
+  @override
+  String get schoolFieldPlusCodeHelp =>
+      'Paste a Plus Code from Google Maps (for example 7J4VXMQ5+8F) and the coordinates below fill in. You can still type them directly.';
+
+  @override
+  String schoolFieldPlusCodeResolved(
+    String latitude,
+    String longitude,
+    String metres,
+  ) {
+    return 'Resolved to $latitude, $longitude — accurate to about $metres m';
+  }
+
+  @override
+  String get schoolFieldPlusCodeInvalid =>
+      'Not a complete Plus Code. A short code like 8F+6W needs a town name, which this field cannot resolve — use the full code.';
 
   @override
   String get createSchoolStepTitle => 'Step 2 of 2 — First school';

@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/geo/plus_code.dart';
 import '../../../l10n/app_localizations_extension.dart';
 import '../domain/onboarding_models.dart';
 import 'onboarding_button_spinner.dart';
 
 /// Step 2: the organization's first school (TEN-002).
 ///
-/// Latitude, longitude, and geofence radius are entered as plain numbers rather than a map
-/// picker — this console has no mapping dependency yet, and ADMIN_WEB.md does not require
-/// one for this screen. The server still owns the real validation (`-90..90`, `-180..180`,
-/// `20..2000`); this form only stops an obviously unparseable value from being submitted.
+/// The location can be entered either as a **Plus Code** or as raw coordinates. A Plus Code is
+/// what an operator can actually copy out of Google Maps for a school, and it decodes to the
+/// same latitude/longitude the API has always taken — nothing downstream changes, and the
+/// geofence that drives arrival notifications (BR-ALERT-001) is set from a real coordinate
+/// either way.
+///
+/// The coordinates are **shown, not typed**: a Plus Code is the single source of the school's
+/// location, and the decoded latitude/longitude is displayed beneath it so the operator can see
+/// what will actually be stored before submitting.
+///
+/// Still no map picker — this console has no mapping dependency, and ADMIN_WEB.md does not
+/// require one here. The server owns the real validation (`-90..90`, `-180..180`, `20..2000`);
+/// this form only stops an obviously unparseable value from being submitted.
 class CreateSchoolForm extends StatefulWidget {
   const CreateSchoolForm({
     super.key,
@@ -43,23 +53,63 @@ class _CreateSchoolFormState extends State<CreateSchoolForm> {
   final _code = TextEditingController();
   final _name = TextEditingController();
   final _timezone = TextEditingController(text: 'Asia/Kolkata');
-  final _latitude = TextEditingController();
-  final _longitude = TextEditingController();
   final _geofenceRadiusM = TextEditingController(text: '150');
+  final _plusCode = TextEditingController();
+
+  /// What the typed Plus Code resolved to, or null when the field is empty or incomplete.
+  PlusCodeLocation? _resolved;
+
+  /// True once the operator has typed something that is not yet a usable full code — used to
+  /// explain the most common mistake (a short code) rather than leaving the field silent.
+  bool _plusCodeRejected = false;
 
   @override
   void dispose() {
     _code.dispose();
     _name.dispose();
     _timezone.dispose();
-    _latitude.dispose();
-    _longitude.dispose();
     _geofenceRadiusM.dispose();
+    _plusCode.dispose();
     super.dispose();
+  }
+
+  /// Decodes the Plus Code and fills the coordinate fields from it.
+  ///
+  /// Writes into the same controllers the operator can edit by hand, so what is submitted is
+  /// always exactly what is on screen — there is no hidden second source of the location.
+  void _onPlusCodeChanged(String value) {
+    final trimmed = value.trim();
+
+    if (trimmed.isEmpty) {
+      setState(() {
+        _resolved = null;
+        _plusCodeRejected = false;
+      });
+      return;
+    }
+
+    final decoded = PlusCode.decode(trimmed);
+    setState(() {
+      _resolved = decoded;
+      // Only complain once the code is long enough to be a full one; every code is
+      // incomplete while it is still being typed.
+      _plusCodeRejected = decoded == null && trimmed.length >= 9;
+    });
+
   }
 
   void _submit() {
     if (widget.isSubmitting) return;
+
+    // No resolved location, no submission. Before this, an empty coordinate field parsed to
+    // 0 and the server accepted it: 0, 0 is a valid coordinate in the Gulf of Guinea, so a
+    // school created that way got a geofence in the Atlantic and would never fire an arrival
+    // notification (BR-ALERT-001). A missing location must fail loudly here, not silently
+    // succeed as a wrong one.
+    if (_resolved == null) {
+      setState(() => _plusCodeRejected = true);
+      return;
+    }
     widget.onSubmit(
       code: _code.text,
       name: _name.text,
@@ -68,8 +118,8 @@ class _CreateSchoolFormState extends State<CreateSchoolForm> {
       // rejects an out-of-range value with the specific field it did not like
       // (VALIDATION_INVALID_FORMAT), which is a better answer than a form that silently
       // refuses to enable a button.
-      latitude: double.tryParse(_latitude.text.trim()) ?? 0,
-      longitude: double.tryParse(_longitude.text.trim()) ?? 0,
+      latitude: _resolved?.latitude ?? 0,
+      longitude: _resolved?.longitude ?? 0,
       geofenceRadiusM: int.tryParse(_geofenceRadiusM.text.trim()) ?? 0,
     );
   }
@@ -128,43 +178,53 @@ class _CreateSchoolFormState extends State<CreateSchoolForm> {
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                key: const Key('org_onboarding_school_latitude_field'),
-                controller: _latitude,
-                enabled: !widget.isSubmitting,
-                keyboardType: const TextInputType.numberWithOptions(
-                  signed: true,
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: context.l10n.schoolFieldLatitudeLabel,
-                  border: const OutlineInputBorder(),
-                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-                ),
-              ),
-            ),
-            const SizedBox(width: AdminSpacing.md),
-            Expanded(
-              child: TextField(
-                key: const Key('org_onboarding_school_longitude_field'),
-                controller: _longitude,
-                enabled: !widget.isSubmitting,
-                keyboardType: const TextInputType.numberWithOptions(
-                  signed: true,
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: context.l10n.schoolFieldLongitudeLabel,
-                  border: const OutlineInputBorder(),
-                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-                ),
-              ),
-            ),
-          ],
+        TextField(
+          key: const Key('org_onboarding_school_plus_code_field'),
+          controller: _plusCode,
+          enabled: !widget.isSubmitting,
+          textCapitalization: TextCapitalization.characters,
+          onChanged: _onPlusCodeChanged,
+          decoration: InputDecoration(
+            labelText: context.l10n.schoolFieldPlusCodeLabel,
+            helperText: context.l10n.schoolFieldPlusCodeHelp,
+            helperMaxLines: 3,
+            errorText: _plusCodeRejected
+                ? context.l10n.schoolFieldPlusCodeInvalid
+                : null,
+            errorMaxLines: 3,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
+          ),
         ),
+        if (_resolved != null) ...[
+          const SizedBox(height: AdminSpacing.sm),
+          // The coordinates are shown, not typed. They are what actually reaches the API and
+          // what the geofence is built from, so the operator sees the consequence of the code
+          // they entered rather than trusting it silently.
+          Row(
+            children: [
+              Icon(
+                Icons.place_outlined,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: AdminSpacing.sm),
+              Expanded(
+                child: Text(
+                  context.l10n.schoolFieldPlusCodeResolved(
+                    _resolved!.latitude.toStringAsFixed(6),
+                    _resolved!.longitude.toStringAsFixed(6),
+                    _resolved!.precisionMetres.toString(),
+                  ),
+                  key: const Key('org_onboarding_school_plus_code_resolved'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: AdminSpacing.md),
         TextField(
           key: const Key('org_onboarding_school_geofence_field'),

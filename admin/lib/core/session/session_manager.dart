@@ -108,9 +108,16 @@ class SessionManager {
 
   /// Reads any stored session and publishes the starting state.
   ///
-  /// With [InMemorySessionStore] this always resolves to signed out on a fresh page load.
-  /// The step is not redundant: it is the seam the durable store slots into, and it is what
-  /// keeps [AuthUnknown] a real state rather than a state the console skips.
+  /// **A stored session is never trusted on its own.** It is re-validated against the server
+  /// before the console shows anything, by rotating it through `/auth/refresh` — which looks
+  /// the token up against its `Session` row, so a session revoked while the tab was closed
+  /// (staff deactivated, signed out elsewhere, token family burned on reuse — BR-IAM-007,
+  /// BR-IAM-009) cannot be resurrected from local storage.
+  ///
+  /// That check is what makes a durable store defensible at all (ADR-0015): local storage
+  /// says what the browser last saw, and only the server knows whether it is still true.
+  /// The console stays in [AuthUnknown] — its splash, not a sign-in screen — until the
+  /// answer comes back.
   Future<void> restore() async {
     final stored = await _store.read();
     if (stored == null) {
@@ -119,11 +126,62 @@ class SessionManager {
     }
 
     _session = stored;
-    _emit(AuthSignedIn(stored));
 
-    if (stored.isExpiringWithin(refreshWindow, now: _now())) {
-      unawaited(_refresh());
+    // A refresh token is single-use. When several tabs share one durable store they all hold
+    // the same token, so exactly one may rotate it — the others wait for its result. Two
+    // tabs refreshing the same token is indistinguishable from theft and revokes the whole
+    // family (BR-IAM-009), which would sign the operator out of every tab at once.
+    final store = _store;
+    final shared = store is ConcurrentSessionStore
+        ? store as ConcurrentSessionStore
+        : null;
+    if (shared != null && !await shared.tryClaimRefresh()) {
+      final rotated = await _awaitPeerRefresh(stored);
+      _session = rotated ?? stored;
+      _emit(AuthSignedIn(_session!));
+      return;
     }
+
+    try {
+      // Awaited, not fire-and-forget: the point is to have the server's answer before the
+      // operator sees the console.
+      final validated = await _refresh();
+      if (validated != null) return; // _refresh -> adopt already emitted AuthSignedIn.
+
+      // A rejected token has already signed out and emitted. Still [AuthUnknown] means
+      // _performRefresh took its "an unreachable API is not a dead session" path: keep the
+      // stored session rather than forcing a sign-in the operator cannot complete while the
+      // API is down. Every subsequent request re-checks it, and a 401 ends it then.
+      if (_status is AuthUnknown) _emit(AuthSignedIn(stored));
+    } finally {
+      await shared?.releaseRefresh();
+    }
+  }
+
+  /// Waits for the tab that holds the refresh claim to publish a rotated session.
+  ///
+  /// Polls rather than listening: `SessionStore` is a plain port with no change feed, and
+  /// adding one for this would put a browser concern into `core/`. Returns null if nothing
+  /// new appears in time — the caller then proceeds on the session it already read, whose
+  /// access token is independently verified on the next request anyway.
+  Future<Session?> _awaitPeerRefresh(
+    Session current, {
+    Duration timeout = const Duration(seconds: 10),
+    Duration interval = const Duration(milliseconds: 200),
+  }) async {
+    final deadline = _now().add(timeout);
+
+    while (_now().isBefore(deadline)) {
+      await Future<void>.delayed(interval);
+      final latest = await _store.read();
+
+      // Cleared means the other tab's refresh was rejected and it signed out. Follow it
+      // rather than carrying on with a token the server has already refused.
+      if (latest == null) return null;
+      if (latest.refreshToken != current.refreshToken) return latest;
+    }
+
+    return null;
   }
 
   /// Adopts a session produced by the login feature.

@@ -179,7 +179,7 @@ Non-negotiable ([`ACCESSIBILITY.md`](../05-ui/ACCESSIBILITY.md)):
 
 ## Security
 
-- Tokens in platform secure storage, never in shared preferences.
+- Tokens in platform secure storage, never in shared preferences. **One recorded exception:** the `admin` web console persists its session in `localStorage` and re-validates it against the server on every restore — [ADR-0015](../00-governance/adr/ADR-0015-admin-web-session-persistence.md) states the accepted risk and the exit. The exception is scoped to that client; it is not precedent for the parent or driver apps, where secure storage is actually available.
 - Screenshots suppressed on screens showing child personal data.
 - No child data in device logs.
 - Certificate pinning on mobile.

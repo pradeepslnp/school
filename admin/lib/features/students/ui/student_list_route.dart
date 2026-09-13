@@ -36,6 +36,7 @@ class StudentListRoute extends StatelessWidget {
           BlocProvider<SchoolScopeBloc>(
             create: (_) => SchoolScopeBloc(
               repository: dependencies.organizationOnboardingRepository,
+              actingOrganization: dependencies.actingOrganization,
             )..add(SchoolScopeStarted(organizationScopeId: initialOrganizationId)),
           ),
       ],

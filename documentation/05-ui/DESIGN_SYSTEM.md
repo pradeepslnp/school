@@ -22,6 +22,8 @@ One design system, three clients with sharply different conditions of use. Share
 
 Semantic tokens, never raw values in components.
 
+> **One documented deviation.** The `admin` console adds a school-bus-yellow navigation livery on a warm neutral work surface — see [`ADMIN_WEB.md`](ADMIN_WEB.md) §Console Livery. It is scoped to that client (a `ThemeExtension`, not a `guardian_theme` change), and it does **not** touch the status colors below, which stay identical across all three clients.
+
 | Token | Light | Dark | Use |
 |---|---|---|---|
 | `surface` | `#FFFFFF` | `#121417` | Page background |
@@ -49,6 +51,8 @@ All pairs meet WCAG AA (4.5:1) against their surfaces in both themes. **`statusC
 ## Typography
 
 Roboto / Noto Sans, with Noto covering the scripts the platform's locales require. Metrics-compatible fallbacks so translated strings do not reflow layouts.
+
+> **One documented deviation.** The `admin` console sets Barlow / Archivo — see [`ADMIN_WEB.md`](ADMIN_WEB.md) §Console Livery §Typography. The parent and driver apps, which is where the "read while moving" rules below matter, are unchanged.
 
 | Token | Size / weight | Use |
 |---|---|---|

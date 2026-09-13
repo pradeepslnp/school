@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../l10n/app_localizations_extension.dart';
+import '../../../app/acting_organization.dart';
+import '../../../app/dependencies.dart';
 import '../bloc/organization_onboarding_bloc.dart';
 import '../bloc/organization_onboarding_event.dart';
 import '../bloc/organization_onboarding_state.dart';
@@ -40,9 +42,35 @@ class _OrganizationOnboardingScreenState
   /// went back to false" is not enough to know *which* action just finished.
   bool _savingOrganization = false;
 
+  /// Captured in [didChangeDependencies] so [dispose] can clear the elevation without
+  /// touching `context`, which is no longer safe to read by then.
+  ActingOrganization? _actingOrganization;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _actingOrganization = DependencyScope.of(context).actingOrganization;
+  }
+
+  @override
+  void dispose() {
+    // Leaving this screen leaves the organization. An elevation that outlived the screen that
+    // established it would silently apply to the next thing the operator opened (ADR-0016).
+    _actingOrganization?.leave();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<OrganizationOnboardingBloc, OrganizationOnboardingState>(
+      // A platform operator working on an organization must act *inside* it: the school they
+      // add belongs to that organization, and creating it from their own tenant is what
+      // produced schools stamped to the wrong tenant and then hidden by row-level security.
+      listenWhen: (previous, current) =>
+          previous.organization?.id != current.organization?.id,
+      listener: (context, state) =>
+          _actingOrganization?.enter(state.organization?.id),
+      child: BlocListener<OrganizationOnboardingBloc, OrganizationOnboardingState>(
       listenWhen: (previous, current) =>
           _savingOrganization && previous.isSubmitting && !current.isSubmitting,
       listener: (context, state) {
@@ -53,7 +81,7 @@ class _OrganizationOnboardingScreenState
           Navigator.of(context).pop();
         }
       },
-      child: BlocBuilder<OrganizationOnboardingBloc, OrganizationOnboardingState>(
+        child: BlocBuilder<OrganizationOnboardingBloc, OrganizationOnboardingState>(
         builder: (context, state) {
           return OnboardingScaffold(
             title: context.l10n.consoleDestinationOrganizations,
@@ -187,6 +215,7 @@ class _OrganizationOnboardingScreenState
             ),
           );
         },
+        ),
       ),
     );
   }

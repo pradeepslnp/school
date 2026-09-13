@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/geo/plus_code.dart';
 import '../../../l10n/app_localizations_extension.dart';
 import '../domain/onboarding_models.dart';
 import 'onboarding_button_spinner.dart';
@@ -294,6 +295,7 @@ class _OrganizationEditFormState extends State<_OrganizationEditForm> {
 
   void _submit() {
     if (widget.isSubmitting) return;
+
     widget.onSave(
       name: _name.text,
       regionProfileCode: _regionProfileCode.text,
@@ -409,29 +411,61 @@ class _AddSchoolPromptState extends State<_AddSchoolPrompt> {
   final _code = TextEditingController();
   final _name = TextEditingController();
   final _timezone = TextEditingController(text: 'Asia/Kolkata');
-  final _latitude = TextEditingController();
-  final _longitude = TextEditingController();
   final _geofenceRadiusM = TextEditingController(text: '150');
+  final _plusCode = TextEditingController();
+
+  /// See `CreateSchoolForm` — the same Plus Code entry, because this is the same form reached
+  /// from a different place. The duplication is pre-existing; what must not differ is how a
+  /// school's location gets set, so both are changed together.
+  PlusCodeLocation? _resolved;
+  bool _plusCodeRejected = false;
 
   @override
   void dispose() {
     _code.dispose();
     _name.dispose();
     _timezone.dispose();
-    _latitude.dispose();
-    _longitude.dispose();
     _geofenceRadiusM.dispose();
+    _plusCode.dispose();
     super.dispose();
+  }
+
+  void _onPlusCodeChanged(String value) {
+    final trimmed = value.trim();
+
+    if (trimmed.isEmpty) {
+      setState(() {
+        _resolved = null;
+        _plusCodeRejected = false;
+      });
+      return;
+    }
+
+    final decoded = PlusCode.decode(trimmed);
+    setState(() {
+      _resolved = decoded;
+      _plusCodeRejected = decoded == null && trimmed.length >= 9;
+    });
   }
 
   void _submit() {
     if (widget.isSubmitting) return;
+
+    // No resolved location, no submission. Before this, an empty coordinate field parsed to
+    // 0 and the server accepted it: 0, 0 is a valid coordinate in the Gulf of Guinea, so a
+    // school created that way got a geofence in the Atlantic and would never fire an arrival
+    // notification (BR-ALERT-001). A missing location must fail loudly here, not silently
+    // succeed as a wrong one.
+    if (_resolved == null) {
+      setState(() => _plusCodeRejected = true);
+      return;
+    }
     widget.onAddSchool(
       code: _code.text,
       name: _name.text,
       timezone: _timezone.text.trim(),
-      latitude: double.tryParse(_latitude.text.trim()) ?? 0,
-      longitude: double.tryParse(_longitude.text.trim()) ?? 0,
+      latitude: _resolved?.latitude ?? 0,
+      longitude: _resolved?.longitude ?? 0,
       geofenceRadiusM: int.tryParse(_geofenceRadiusM.text.trim()) ?? 0,
     );
   }
@@ -485,43 +519,50 @@ class _AddSchoolPromptState extends State<_AddSchoolPrompt> {
           ),
         ),
         const SizedBox(height: AdminSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                key: const Key('org_details_add_school_latitude_field'),
-                controller: _latitude,
-                enabled: !widget.isSubmitting,
-                keyboardType: const TextInputType.numberWithOptions(
-                  signed: true,
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: context.l10n.schoolFieldLatitudeLabel,
-                  border: const OutlineInputBorder(),
-                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-                ),
-              ),
-            ),
-            const SizedBox(width: AdminSpacing.md),
-            Expanded(
-              child: TextField(
-                key: const Key('org_details_add_school_longitude_field'),
-                controller: _longitude,
-                enabled: !widget.isSubmitting,
-                keyboardType: const TextInputType.numberWithOptions(
-                  signed: true,
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: context.l10n.schoolFieldLongitudeLabel,
-                  border: const OutlineInputBorder(),
-                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-                ),
-              ),
-            ),
-          ],
+        TextField(
+          key: const Key('org_details_add_school_plus_code_field'),
+          controller: _plusCode,
+          enabled: !widget.isSubmitting,
+          textCapitalization: TextCapitalization.characters,
+          onChanged: _onPlusCodeChanged,
+          decoration: InputDecoration(
+            labelText: context.l10n.schoolFieldPlusCodeLabel,
+            helperText: context.l10n.schoolFieldPlusCodeHelp,
+            helperMaxLines: 3,
+            errorText: _plusCodeRejected
+                ? context.l10n.schoolFieldPlusCodeInvalid
+                : null,
+            errorMaxLines: 3,
+            border: const OutlineInputBorder(),
+            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
+          ),
         ),
+        if (_resolved != null) ...[
+          const SizedBox(height: AdminSpacing.sm),
+          Row(
+            children: [
+              Icon(
+                Icons.place_outlined,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: AdminSpacing.sm),
+              Expanded(
+                child: Text(
+                  context.l10n.schoolFieldPlusCodeResolved(
+                    _resolved!.latitude.toStringAsFixed(6),
+                    _resolved!.longitude.toStringAsFixed(6),
+                    _resolved!.precisionMetres.toString(),
+                  ),
+                  key: const Key('org_details_add_school_plus_code_resolved'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: AdminSpacing.md),
         TextField(
           key: const Key('org_details_add_school_geofence_field'),

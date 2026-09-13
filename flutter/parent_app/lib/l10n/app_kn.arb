@@ -592,7 +592,7 @@
   "otpEntryChangeNumberButton": "Change number",
   "otpEntrySendNewCodeButton": "Send a new code",
   "loginHeading": "Sign in",
-  "simpleLoginParentHeading": "Parent sign in",
+  "simpleLoginParentHeading": "Parent sign in", 
   "loginInstructions": "Enter the mobile number registered with your school.",
   "loginMobileNumberLabel": "Mobile number",
   "loginSendCodeButton": "Send code",

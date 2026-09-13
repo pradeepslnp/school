@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/domain.dart';
 import '../../organizations/domain/onboarding_models.dart';
+import '../../../app/acting_organization.dart';
 import '../../organizations/repository/organization_onboarding_repository.dart';
 import 'school_scope_event.dart';
 import 'school_scope_state.dart';
@@ -16,8 +17,11 @@ import 'school_scope_state.dart';
 /// `SchoolSettingsBloc`'s own reasoning: that repository already owns every organization/school
 /// read this console makes, and this bloc writes nothing.
 class SchoolScopeBloc extends Bloc<SchoolScopeEvent, SchoolScopeState> {
-  SchoolScopeBloc({required OrganizationOnboardingRepository repository})
-      : _repository = repository,
+  SchoolScopeBloc({
+    required OrganizationOnboardingRepository repository,
+    ActingOrganization? actingOrganization,
+  })  : _repository = repository,
+        _actingOrganization = actingOrganization,
         super(const SchoolScopeState()) {
     on<SchoolScopeStarted>(_onStarted);
     on<SchoolScopeOrganizationSelected>(_onOrganizationSelected);
@@ -25,6 +29,11 @@ class SchoolScopeBloc extends Bloc<SchoolScopeEvent, SchoolScopeState> {
   }
 
   final OrganizationOnboardingRepository _repository;
+
+  /// Set whenever the operator chooses an organization, so every later request in the console
+  /// is made inside it (ADR-0016). Null for the screens and tests that do not wire one — the
+  /// picker still works, the console simply stays in the session's own organization.
+  final ActingOrganization? _actingOrganization;
 
   Future<void> _onStarted(SchoolScopeStarted event, Emitter<SchoolScopeState> emit) async {
     final organizationId = event.organizationScopeId;
@@ -60,6 +69,10 @@ class SchoolScopeBloc extends Bloc<SchoolScopeEvent, SchoolScopeState> {
     SchoolScopeOrganizationSelected event,
     Emitter<SchoolScopeState> emit,
   ) async {
+    // Before the fetch, not after: the schools list for another organization is itself a
+    // cross-organization read, and must be made inside the organization being opened.
+    _actingOrganization?.enter(event.organizationId);
+
     await _loadSchools(event.organizationId, emit, showOrganizationPicker: true);
   }
 

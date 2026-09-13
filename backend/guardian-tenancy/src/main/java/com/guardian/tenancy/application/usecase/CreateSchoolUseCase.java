@@ -41,6 +41,26 @@ public class CreateSchoolUseCase {
   public School execute(CreateSchoolCommand command) {
     TenantId tenantId = TenantContext.require();
 
+    // BR-TEN-001/BR-TEN-003: the school belongs to exactly one organization, and it is the one
+    // the caller is acting in. These two values used to be assumed equal and never checked —
+    // for a caller acting in its own organization they always are. They diverge for a platform
+    // operator (ADR-0016), and the row that resulted claimed one organization in
+    // `organization_id` while being tenant-stamped to another. Row-level security then hid it
+    // from the organization that supposedly owned it, so a school could be created and
+    // immediately vanish.
+    //
+    // Refused rather than reconciled. Silently preferring either value would write a row that
+    // disagrees with itself, and "which of these two did the caller mean" is not a question
+    // this use case can answer safely.
+    if (!tenantId.value().equals(command.organizationId().value())) {
+      throw new BusinessRuleViolationException(
+          ErrorCode.VALIDATION_FAILED,
+          "BR-TEN-001",
+          Map.of(
+              "organizationId", command.organizationId().value().toString(),
+              "actingOrganizationId", tenantId.value().toString()));
+    }
+
     // BR-TEN-007: school codes are unique within their organization.
     if (schoolRepository.existsByCode(command.organizationId(), command.code())) {
       throw new BusinessRuleViolationException(

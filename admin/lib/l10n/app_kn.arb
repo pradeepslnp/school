@@ -96,6 +96,8 @@
   "schoolScopeSelectOrganizationFirstHint": "Select an organization first",
   "schoolScopeSelectSchoolHint": "Select a school",
   "schoolScopeLoadError": "Could not load your organizations or schools.",
+  "schoolScopeNoSchoolsNotice": "This organization has no schools yet. Add a school before enrolling students or registering vehicles, staff and routes.",
+  "schoolScopeCrossTenantNotice": "A platform operator cannot open another organization's schools. To manage students, staff, vehicles or routes, sign in with an account belonging to that organization.",
   "commonCancelButton": "Cancel",
   "commonSaveButton": "Save",
   "commonCloseButton": "Close",
@@ -380,6 +382,23 @@
   "schoolFieldLatitudeLabel": "Latitude",
   "schoolFieldLongitudeLabel": "Longitude",
   "schoolFieldGeofenceLabel": "Geofence radius (metres, 20–2000)",
+  "schoolFieldPlusCodeLabel": "Plus Code",
+  "schoolFieldPlusCodeHelp": "Paste a Plus Code from Google Maps (for example 7J4VXMQ5+8F) and the coordinates below fill in. You can still type them directly.",
+  "schoolFieldPlusCodeResolved": "Resolved to {latitude}, {longitude} — accurate to about {metres} m",
+  "@schoolFieldPlusCodeResolved": {
+    "placeholders": {
+      "latitude": {
+        "type": "String"
+      },
+      "longitude": {
+        "type": "String"
+      },
+      "metres": {
+        "type": "String"
+      }
+    }
+  },
+  "schoolFieldPlusCodeInvalid": "Not a complete Plus Code. A short code like 8F+6W needs a town name, which this field cannot resolve — use the full code.",
   "createSchoolStepTitle": "Step 2 of 2 — First school",
   "createSchoolIntro": "{orgName} ({orgCode}) was created. An organization needs at least one school before it can be used day to day (BR-TEN-002) — add one now, or come back to it later.",
   "createSchoolCodeLabel": "School code",
@@ -468,7 +487,6 @@
   "stopFormErrorGeofenceRange": "Geofence radius must be between 20 and 500 metres.",
   "stopFormErrorTimeFormat": "Times must be in 24-hour HH:mm form, e.g. 07:40.",
   "schoolSettingsLoadingLabel": "Loading school",
-
   "studentListImportButton": "Import",
   "studentImportTitle": "Import students",
   "studentImportIntro": "Upload a spreadsheet of students, saved as CSV. Rows that are ready are enrolled straight away; anything that needs fixing is listed for you to correct and upload again.",
@@ -491,7 +509,6 @@
   "studentImportErrorUnsupportedColumn": "One of the columns in that file is not supported yet. Keep only admissionNo, firstName, lastName, dateOfBirth and transportEligible, then upload again.",
   "studentImportErrorTooManyRows": "That file has too many rows for one upload. Split it into smaller files and import them one at a time.",
   "studentImportErrorNoFile": "No file was chosen. Pick a CSV file to upload.",
-
   "custodyPanelTitle": "Custody restrictions",
   "custodyAddButton": "Add restriction",
   "custodyPanelWarning": "A restriction takes effect immediately and overrides every parent right — the person named cannot collect or see this child while it is in force. Every restriction is recorded with its reason.",

@@ -1,10 +1,11 @@
 import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/network/rest_client.dart';
 import '../core/session/session_manager.dart';
-import '../core/session/session_store.dart';
+import '../core/session/shared_preferences_session_store.dart';
 import '../features/audit/data_provider/audit_data_provider.dart';
 import '../features/audit/repository/audit_repository.dart';
 import '../features/custody_restrictions/data_provider/custody_restriction_data_provider.dart';
@@ -36,6 +37,7 @@ import '../features/users/data_provider/user_data_provider.dart';
 import '../features/users/repository/user_repository.dart';
 import '../features/vehicles/data_provider/vehicle_data_provider.dart';
 import '../features/vehicles/repository/vehicle_repository.dart';
+import 'acting_organization.dart';
 import 'app_config.dart';
 import 'locale_controller.dart';
 import 'workspace_context.dart';
@@ -69,6 +71,7 @@ class AppDependencies {
     required this.auditRepository,
     required this.authRecoveryRepository,
     required this.workspaceContext,
+    required this.actingOrganization,
     required this.localeController,
   });
 
@@ -146,6 +149,10 @@ class AppDependencies {
   /// session — see `WorkspaceContext`.
   final WorkspaceContext workspaceContext;
 
+  /// The organization a platform operator is acting in, or null in the ordinary case — see
+  /// [ActingOrganization].
+  final ActingOrganization actingOrganization;
+
   /// The operator's chosen console language, persisted across sessions (ADR-0013). See
   /// `LocaleController`.
   final LocaleController localeController;
@@ -162,10 +169,16 @@ class AppDependencies {
     // up with a mutable field that could be repointed later.
     late final SessionManager sessionManager;
 
+    final actingOrganization = ActingOrganization();
+
     final restClient = RestClient(
       baseUrl: config.apiBaseUrl,
       clientType: LoginDataProvider.clientType,
       accessTokenProvider: () => sessionManager.accessToken(),
+      // Sends X-Guardian-Organization while a platform operator is working inside another
+      // organization (ADR-0016). The server authorizes and audits it; this only reports where
+      // the console currently is.
+      actingOrganizationProvider: () => actingOrganization.value,
       onUnauthorized: () => sessionManager.handleUnauthorized(),
     );
 
@@ -243,8 +256,18 @@ class AppDependencies {
     );
 
     sessionManager = SessionManager(
-      store: InMemorySessionStore(),
+      // Durable across reloads, and re-validated against the server on every restore —
+      // ADR-0015, which records why this overrides CODING_STANDARDS_FLUTTER.md §Security and
+      // what would replace it. `InMemorySessionStore` remains the safe default for any
+      // client that has not accepted that trade.
+      store: SharedPreferencesSessionStore(
+        preferences: await SharedPreferences.getInstance(),
+      ),
       refresher: loginRepository,
+      // An elevation belongs to the operator who entered it, never to the next person at a
+      // shared workstation (ADR-0016). Cleared however the session ends — sign-out, a
+      // revoked token, or a refresh that failed.
+      onSessionEnded: () async => actingOrganization.leave(),
     );
 
     final dependencies = AppDependencies._(
@@ -268,6 +291,7 @@ class AppDependencies {
       auditRepository: auditRepository,
       authRecoveryRepository: authRecoveryRepository,
       workspaceContext: workspaceContext,
+      actingOrganization: actingOrganization,
       localeController: localeController,
     );
 

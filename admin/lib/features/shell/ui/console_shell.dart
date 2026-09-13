@@ -86,6 +86,10 @@ class ConsoleShell extends StatelessWidget {
             isSigningOut: isSigningOut,
             // The drawer button is only meaningful when there is something in the drawer.
             showMenuButton: isNarrow && showNavigation,
+            // The wordmark lives on the rail. Where there is no rail — narrow, or a console
+            // with nothing to navigate between — the header carries it instead, so the
+            // product is never unnamed.
+            showBrand: isNarrow || !showNavigation,
           ),
           drawer: isNarrow && showNavigation
               ? _ConsoleDrawer(
@@ -96,16 +100,15 @@ class ConsoleShell extends StatelessWidget {
               : null,
           body: Row(
             children: [
-              if (!isNarrow && showNavigation) ...[
+              if (!isNarrow && showNavigation)
                 ConsoleNavigation(
                   destinations: visible,
                   selectedIndex: selectedIndex,
                   extended: width >= wideBreakpoint,
+                  header: _RailBrand(extended: width >= wideBreakpoint),
                   onDestinationSelected: (destination) =>
                       onDestinationSelected?.call(destination),
                 ),
-                const VerticalDivider(width: 1, thickness: 1),
-              ],
               Expanded(child: content),
             ],
           ),
@@ -124,6 +127,83 @@ class ConsoleShell extends StatelessWidget {
   }
 }
 
+/// The product mark, at the head of the livery rail.
+///
+/// Set in the display face on the rail's own ink — the one place in the console where the
+/// brand is stated rather than implied. Collapsed, the bus mark carries it alone: the
+/// wordmark would truncate at 88px and a truncated wordmark reads as a bug.
+class _RailBrand extends StatelessWidget {
+  const _RailBrand({required this.extended});
+
+  final bool extended;
+
+  @override
+  Widget build(BuildContext context) {
+    final livery = context.livery;
+
+    if (!extended) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: AdminSpacing.md),
+        child: Semantics(
+          label: context.l10n.consoleHeaderBrand,
+          child: Icon(
+            Icons.directions_bus_filled_outlined,
+            size: 26,
+            color: livery.railInk,
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        20,
+        AdminSpacing.lg,
+        20,
+        AdminSpacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.directions_bus_filled_outlined,
+                size: 26,
+                color: livery.railInk,
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  context.l10n.consoleHeaderBrand.toUpperCase(),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: kAdminDisplayFontFamily,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                    color: livery.railInk,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          Text(
+            'Transport Console'.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.0,
+              color: livery.railMutedInk,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// The console header: product mark, and who is signed in.
 class _ConsoleHeader extends StatelessWidget implements PreferredSizeWidget {
   const _ConsoleHeader({
@@ -131,43 +211,52 @@ class _ConsoleHeader extends StatelessWidget implements PreferredSizeWidget {
     required this.onSignOut,
     required this.isSigningOut,
     required this.showMenuButton,
+    required this.showBrand,
   });
 
   final AuthenticatedUser user;
   final VoidCallback onSignOut;
   final bool isSigningOut;
   final bool showMenuButton;
+  final bool showBrand;
 
   @override
-  Size get preferredSize => const Size.fromHeight(56);
+  Size get preferredSize => const Size.fromHeight(62);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final livery = context.livery;
 
     return AppBar(
       automaticallyImplyLeading: showMenuButton,
       titleSpacing: showMenuButton ? 0 : AdminSpacing.md,
-      backgroundColor: theme.colorScheme.surfaceContainerLowest,
+      backgroundColor: livery.panel,
       surfaceTintColor: Colors.transparent,
-      shape: Border(
-        bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Semantics(
-            excludeSemantics: true,
-            child: Icon(
-              Icons.shield_outlined,
-              size: 22,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: AdminSpacing.sm),
-          Text(context.l10n.consoleHeaderBrand, style: theme.textTheme.titleLarge),
-        ],
-      ),
+      shape: Border(bottom: BorderSide(color: livery.border)),
+      title: showBrand
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Semantics(
+                  excludeSemantics: true,
+                  child: Icon(
+                    Icons.directions_bus_filled_outlined,
+                    size: 22,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: AdminSpacing.sm),
+                Text(
+                  context.l10n.consoleHeaderBrand,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontFamily: kAdminDisplayFontFamily,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            )
+          : null,
       actions: [
         const LanguageSwitcher(),
         const SizedBox(width: AdminSpacing.sm),

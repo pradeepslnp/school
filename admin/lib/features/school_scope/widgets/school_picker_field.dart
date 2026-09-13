@@ -67,9 +67,77 @@ class SchoolPickerField extends StatelessWidget {
                 Expanded(child: _SchoolDropdown(state: state)),
               ],
             ),
+            if (_isDeadEnd(state))
+              Padding(
+                padding: const EdgeInsets.only(top: AdminSpacing.sm),
+                child: _NoSchoolsNotice(
+                  // An operator who had to pick an organization is reaching across tenants;
+                  // one who did not is simply looking at an organization with no schools yet.
+                  crossTenant: state.showOrganizationPicker,
+                ),
+              ),
           ],
         );
       },
+    );
+  }
+}
+
+/// Whether the picker has finished and produced nothing to choose.
+///
+/// The screens behind this picker gate every write on a selected school, so an empty school
+/// list is a dead end: the operator sees disabled buttons and no reason for them. Saying why
+/// is the whole point — silence here is what makes the console look broken.
+///
+/// Deliberately excludes the loading and error paths: neither is final, and a "no schools"
+/// message over a failed request would be wrong as well as unhelpful.
+bool _isDeadEnd(SchoolScopeState state) =>
+    !state.isLoadingOrganizations &&
+    !state.isLoadingSchools &&
+    state.error == null &&
+    state.selectedOrganizationId != null &&
+    state.schools.isEmpty;
+
+/// Explains an empty school list, and what to do about it.
+///
+/// **The cross-tenant case is not a bug and not a permission the operator is missing.**
+/// Schools are read under row-level security scoped to the caller's tenant (ADR-0001), while
+/// organizations are listed through the deliberately cross-tenant `list_organizations()`
+/// function added by `V12__organization_listing.sql` for platform operators. So a
+/// `SUPER_ADMIN` can name every organization on the platform and open the schools of none of
+/// them — including their own tenant's, because the platform organization owns no schools.
+///
+/// Rather than widen the tenant boundary to close the gap, the picker states it.
+class _NoSchoolsNotice extends StatelessWidget {
+  const _NoSchoolsNotice({required this.crossTenant});
+
+  final bool crossTenant;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.info_outline,
+          size: 18,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: AdminSpacing.sm),
+        Expanded(
+          child: Text(
+            crossTenant
+                ? context.l10n.schoolScopeCrossTenantNotice
+                : context.l10n.schoolScopeNoSchoolsNotice,
+            key: const Key('school_scope_no_schools_notice'),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

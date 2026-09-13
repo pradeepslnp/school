@@ -16,6 +16,35 @@ abstract interface class SessionStore {
   Future<void> clear();
 }
 
+/// Implemented by a store that more than one tab can reach at the same time.
+///
+/// ## Why this exists
+///
+/// A refresh token is **single-use**: presenting a consumed one is read as theft and revokes
+/// the entire token family (BR-IAM-009), signing the operator out everywhere. With an
+/// in-memory store that could not happen, because each tab held its own session. A durable
+/// store changes that — every tab reads the *same* token, and `ADMIN_WEB.md` §Design Brief
+/// describes a desk tool used with several tabs open.
+///
+/// Without coordination, two tabs restoring at once both rotate the same token, the slower
+/// one is correctly read as a replay, and both operators are signed out. `SessionManager`'s
+/// `_refreshInFlight` guard cannot help: it de-duplicates within one tab, and these are
+/// different tabs sharing one browser origin.
+///
+/// So a store that is visible to several tabs must let exactly one of them rotate the stored
+/// token, and let the others wait for the result.
+abstract interface class ConcurrentSessionStore {
+  /// Claims the exclusive right to rotate the stored token.
+  ///
+  /// Returns false when another tab holds the claim — the caller must then wait for that tab
+  /// to publish the rotated session rather than refreshing itself. A claim expires on its
+  /// own, so a tab closed mid-restore cannot lock the console out.
+  Future<bool> tryClaimRefresh();
+
+  /// Releases a claim taken by [tryClaimRefresh].
+  Future<void> releaseRefresh();
+}
+
 /// Holds the session in memory, for the lifetime of the browser tab.
 ///
 /// ## Why not `localStorage` or `sessionStorage`

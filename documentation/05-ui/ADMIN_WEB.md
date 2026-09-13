@@ -18,6 +18,42 @@
 
 ---
 
+## Console Livery
+
+**This section is a deliberate, console-only deviation from [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) §Colour and §Typography.** It applies to the `admin` client and to nothing else — the parent and driver apps continue to render `guardian_theme` unchanged. Implemented as `AdminLivery`, a `ThemeExtension` in `admin/lib/app/theme.dart`; the yellow is **not** in `guardian_theme`, because a color added there would repaint all three clients.
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `rail` | `#FAD35E` | `#E8BE4A` | Navigation rail |
+| `railInk` | `#171310` | `#171310` | Everything drawn on `rail` |
+| `railMutedInk` | `#5C4B12` | `#54430E` | Band headings on `rail` |
+| `canvas` | `#F6F4F0` | `#15181C` | Work surface behind panels |
+| `panel` | `#FFFFFF` | `#1C2026` | Cards, tables, header bar |
+| `panelSubtle` | `#FAF8F4` | `#232830` | Table headings, stat tiles |
+| `border` | `#E4E0D8` | `#2E343D` | Row hairlines |
+| `borderStrong` | `#D8D3C8` | `#444C57` | Control outlines (3:1) |
+
+### Yellow is identity, never status, and never carries text
+
+School-bus yellow is the most recognisable color in child transport — real buses use it because drivers catch it in peripheral vision faster than any other hue, which is exactly what a navigation rail wants. It is unusable for almost everything else, for two independent reasons, and both are load-bearing:
+
+1. **Contrast.** Yellow cannot reach 3:1 against white at any usable saturation, so yellow text fails and white-on-yellow fails every contrast test including at large sizes. Black on yellow reaches ~19:1 — which is why real buses carry black lettering. Everything on `rail` is therefore `railInk`, never white, and **no button is ever filled yellow**: primary actions keep `colorScheme.primary` navy. ([`ACCESSIBILITY.md`](ACCESSIBILITY.md) §Contrast.)
+2. **Semantics.** `GuardianColors.warning` (`#9A6200`) already spends amber on *delayed, expiring, no-show*. A yellow that also meant "brand" would weaken the one signal that has to stay unambiguous. Yellow appears only as chrome — rail, wordmark, selected destination — and never as the state of anything.
+
+**The status palette is untouched.** `safe` / `info` / `warning` / `critical` / `neutral` keep the values in `DESIGN_SYSTEM.md` §Status colors, so green still means *the child is accounted for* on every surface of the platform. Registry states that are not safety states — enrolment, transport eligibility — take the navy `primaryContainer` or a neutral, never the safety palette.
+
+### Typography
+
+The console sets **Barlow** (UI) and **Archivo** (screen titles, operations counts) rather than the platform's Roboto / Noto Sans. Both are bundled in `admin/pubspec.yaml`, not fetched from `fonts.googleapis.com`: a console an operator opens during an incident must not render in a fallback face because a school network blocks a font host.
+
+Noto's script coverage still governs anything the localisation work adds — see the open item in §Verification.
+
+### Navigation
+
+Nine flat destinations make an operator read the whole rail to find one module. They are banded by `ConsoleGroup` — **Operations**, **Administration**, **Platform** — under quiet headings, in the order `ConsoleDestinations.all` already defines. The selected destination inverts to an ink pill with yellow text: a shape difference as well as a color one, per `DESIGN_SYSTEM.md` §Principles.
+
+---
+
 ## A-01 — Operations Dashboard
 
 The landing screen. Exceptions first, statistics second.

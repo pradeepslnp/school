@@ -15,6 +15,7 @@ import com.guardian.tenancy.domain.OrganizationId;
 import com.guardian.tenancy.domain.OrganizationStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -125,7 +126,7 @@ public class PermissionEnforcementInterceptor implements HandlerInterceptor {
       throw new PermissionDeniedException(required.value());
     }
 
-    Set<String> granted = permissionResolver.resolve(UserId.of(principal.actor().userId()));
+    Set<String> granted = resolveInHomeTenant(principal);
     if (!granted.contains(required.value())) {
       throw new PermissionDeniedException(required.value());
     }
@@ -133,6 +134,39 @@ public class PermissionEnforcementInterceptor implements HandlerInterceptor {
     rejectIfOrganizationSuspended(required.value());
 
     return true;
+  }
+
+  /**
+   * Resolves the caller's permissions against the tenant their account lives in, which is not
+   * necessarily the tenant the request is acting in.
+   *
+   * <p>{@code user_roles} is itself tenant-scoped. Ordinarily that is invisible, because a session
+   * acts in its own organization and its role rows are right there. Under a platform elevation
+   * ({@link com.guardian.infrastructure.tenant.PlatformElevation}) the ambient tenant is the
+   * <em>target</em> organization, where a platform operator has no rows at all — so resolving there
+   * would find no roles, grant no permissions, and refuse every elevated request. The permission
+   * question is "what may this account do", and that is answered where the account lives.
+   *
+   * <p>The switch is confined to this lookup and restored immediately, so nothing downstream can
+   * observe the home tenant: the request's data access stays scoped to the target organization,
+   * which is the whole point of the elevation. The organization-suspension check below deliberately
+   * keeps using the ambient tenant — whether the organization being acted in is suspended is a
+   * question about the target, not about the operator.
+   */
+  private Set<String> resolveInHomeTenant(GuardianPrincipal principal) {
+    Optional<TenantId> ambient = TenantContext.current();
+    TenantId home = principal.tenantId();
+
+    if (ambient.isPresent() && ambient.get().equals(home)) {
+      return permissionResolver.resolve(UserId.of(principal.actor().userId()));
+    }
+
+    TenantContext.set(home);
+    try {
+      return permissionResolver.resolve(UserId.of(principal.actor().userId()));
+    } finally {
+      ambient.ifPresentOrElse(TenantContext::set, TenantContext::clear);
+    }
   }
 
   private void rejectIfOrganizationSuspended(String requiredPermission) {

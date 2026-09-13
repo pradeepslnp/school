@@ -12,6 +12,13 @@ import 'api_response.dart';
 /// every request to one specific auth implementation (ENGINEERING_PRINCIPLES.md §5).
 typedef AccessTokenProvider = Future<String?> Function();
 
+/// Supplies the organization a platform operator is currently acting in, or null when the
+/// session is acting in its own (the ordinary case for every role but `SUPER_ADMIN`).
+///
+/// Synchronous: this is read from in-memory app state on every request, and an async hop per
+/// call would add latency to every request in the console for a value that is already known.
+typedef ActingOrganizationProvider = String? Function();
+
 /// Called when the server rejects the access token.
 ///
 /// Lets the app refresh and retry, or end the session, without the client knowing which.
@@ -40,11 +47,13 @@ class RestClient {
     required this.clientType,
     http.Client? httpClient,
     AccessTokenProvider? accessTokenProvider,
+    ActingOrganizationProvider? actingOrganizationProvider,
     this.onUnauthorized,
     this.timeout = const Duration(seconds: 30),
     this.maxRetries = 2,
   })  : _http = httpClient ?? http.Client(),
-        _accessToken = accessTokenProvider;
+        _accessToken = accessTokenProvider,
+        _actingOrganization = actingOrganizationProvider;
 
   /// Root of the API, including version — `https://host/api/v1`.
   final String baseUrl;
@@ -67,11 +76,20 @@ class RestClient {
 
   final http.Client _http;
   final AccessTokenProvider? _accessToken;
+  final ActingOrganizationProvider? _actingOrganization;
 
   static const String _acceptHeader = 'accept';
   static const String _contentTypeHeader = 'content-type';
   static const String _authorizationHeader = 'authorization';
   static const String _jsonContentType = 'application/json; charset=utf-8';
+
+  /// Names the organization a platform operator is acting in (ADR-0016).
+  ///
+  /// The server honours it only for a token proving the `SUPER_ADMIN` role and audits every
+  /// request that carries it; for anyone else the request is refused outright. So this is a
+  /// request to act somewhere, never a claim to be allowed to — sending it from here grants
+  /// nothing that the token does not already carry.
+  static const String _actingOrganizationHeader = 'X-Guardian-Organization';
 
   Future<ApiResponse> get(
     String path, {
@@ -308,6 +326,13 @@ class RestClient {
       final token = await _accessToken?.call();
       if (token != null && token.isNotEmpty) {
         headers[_authorizationHeader] = 'Bearer $token';
+      }
+
+      // Only on authenticated calls: an elevation is meaningless without a token to
+      // authorize it against, and sending it on sign-in would be refused.
+      final organizationId = _actingOrganization?.call();
+      if (organizationId != null && organizationId.isNotEmpty) {
+        headers[_actingOrganizationHeader] = organizationId;
       }
     }
 
