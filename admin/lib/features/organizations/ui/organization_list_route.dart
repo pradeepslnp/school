@@ -16,11 +16,19 @@ import 'organization_onboarding_route.dart';
 /// location today, and both destinations here return to this same list, so there is nothing a
 /// URL would add that a back button does not already give the operator.
 class OrganizationListRoute extends StatelessWidget {
-  const OrganizationListRoute({super.key, required this.actorRoles});
+  const OrganizationListRoute({
+    super.key,
+    required this.actorRoles,
+    required this.actorOrganizationId,
+  });
 
   /// Passed straight through to `OrganizationOnboardingRoute` when the operator opens an
   /// organization — see `OrganizationDetailsView._canManageLifecycle`.
   final List<String> actorRoles;
+
+  /// Passed straight through alongside [actorRoles] — see
+  /// `OrganizationDetailsView.actorOrganizationId`.
+  final String? actorOrganizationId;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +55,7 @@ class OrganizationListRoute extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => OrganizationOnboardingRoute(
           actorRoles: actorRoles,
+          actorOrganizationId: actorOrganizationId,
           viewingOrganization: viewing,
         ),
       ),

@@ -259,6 +259,10 @@ class AppLocalizationsKn extends AppLocalizations {
       'That organization code is already in use. Choose another — codes cannot be changed once operational data exists (BR-TEN-007).';
 
   @override
+  String get onboardingErrorCannotSuspendOwnOrganization =>
+      'You cannot suspend the organization your own account belongs to — it would lock out every account able to reactivate it.';
+
+  @override
   String get onboardingErrorSchoolCodeExists =>
       'That school code is already used within this organization. Choose another.';
 
@@ -911,6 +915,9 @@ class AppLocalizationsKn extends AppLocalizations {
   String get commonSaveChangesButton => 'Save changes';
 
   @override
+  String get commonChangesSavedSnackbar => 'Changes saved';
+
+  @override
   String get createStaffFormTitle => 'Add driver or attendant';
 
   @override
@@ -1300,13 +1307,6 @@ class AppLocalizationsKn extends AppLocalizations {
       'That could not be loaded right now. Try again shortly.';
 
   @override
-  String get createOrgStepTitle => 'Step 1 of 2 — Organization details';
-
-  @override
-  String get createOrgIntro =>
-      'This becomes a new tenant. The code is immutable once the organization has any schools or staff (BR-TEN-007).';
-
-  @override
   String get createOrgCodeLabel => 'Organization code';
 
   @override
@@ -1322,10 +1322,6 @@ class AppLocalizationsKn extends AppLocalizations {
   String get createOrgRegionLabel => 'Region profile code';
 
   @override
-  String get createOrgRegionHint =>
-      'e.g. IN — supplies phone, document, and retention defaults (ADR-0007)';
-
-  @override
   String get createOrgContactEmailLabel => 'Contact email (optional)';
 
   @override
@@ -1333,9 +1329,6 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get createOrgCreatingSpinnerLabel => 'Creating organization';
-
-  @override
-  String get createOrgSubmitButton => 'Create organization';
 
   @override
   String get schoolFieldNameLabel => 'School name';
@@ -1356,10 +1349,6 @@ class AppLocalizationsKn extends AppLocalizations {
   String get schoolFieldPlusCodeLabel => 'Plus Code';
 
   @override
-  String get schoolFieldPlusCodeHelp =>
-      'Paste a Plus Code from Google Maps (for example 7J4VXMQ5+8F) and the coordinates below fill in. You can still type them directly.';
-
-  @override
   String schoolFieldPlusCodeResolved(
     String latitude,
     String longitude,
@@ -1373,14 +1362,6 @@ class AppLocalizationsKn extends AppLocalizations {
       'Not a complete Plus Code. A short code like 8F+6W needs a town name, which this field cannot resolve — use the full code.';
 
   @override
-  String get createSchoolStepTitle => 'Step 2 of 2 — First school';
-
-  @override
-  String createSchoolIntro(String orgName, String orgCode) {
-    return '$orgName ($orgCode) was created. An organization needs at least one school before it can be used day to day (BR-TEN-002) — add one now, or come back to it later.';
-  }
-
-  @override
   String get createSchoolCodeLabel => 'School code';
 
   @override
@@ -1390,16 +1371,10 @@ class AppLocalizationsKn extends AppLocalizations {
   String get createSchoolNameHint => 'e.g. Greenwood Main Campus';
 
   @override
-  String get createSchoolTimezoneHint => 'e.g. Asia/Kolkata';
-
-  @override
   String get createSchoolAddingSpinnerLabel => 'Adding school';
 
   @override
   String get createSchoolSubmitButton => 'Add school';
-
-  @override
-  String get createSchoolSkipButton => 'Finish without adding a school';
 
   @override
   String get schoolDetailsIdLabel => 'School ID';
@@ -1440,9 +1415,6 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get onboardingStartAnotherButton => 'Onboard another organization';
-
-  @override
-  String get backButtonTooltip => 'Back';
 
   @override
   String get orgDetailsSectionTitle => 'Organization details';
@@ -1491,7 +1463,7 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String addSchoolPromptIntro(String orgName) {
-    return 'No school has been added yet. $orgName needs at least one before it can be used day to day (BR-TEN-002).';
+    return 'No school has been added yet. $orgName needs at least one before it can be used day to day.';
   }
 
   @override
@@ -1857,4 +1829,130 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get custodyErrorNotFound =>
       'That restriction could not be found. It may already have been lifted.';
+
+  @override
+  String get onboardingAddOrganizationTitle => 'Add organization';
+
+  @override
+  String get onboardingAddOrganizationSubtitle =>
+      'Create the organization, then add its first school.';
+
+  @override
+  String get onboardingStepOrganizationLabel => 'Organization';
+
+  @override
+  String get onboardingStepFirstSchoolLabel => 'First school';
+
+  @override
+  String onboardingStepSemanticLabel(
+    int number,
+    int total,
+    String label,
+    String status,
+  ) {
+    return 'Step $number of $total: $label, $status';
+  }
+
+  @override
+  String get onboardingStepStatusDone => 'completed';
+
+  @override
+  String get onboardingStepStatusCurrent => 'current step';
+
+  @override
+  String get onboardingStepStatusUpcoming => 'not started';
+
+  @override
+  String get createOrgSectionIdentityTitle => 'Identity';
+
+  @override
+  String get createOrgSectionIdentityDescription =>
+      'How this organization is named and identified across the platform.';
+
+  @override
+  String get createOrgCodeHelper =>
+      'Short and unique. Fixed once the organization has schools or staff.';
+
+  @override
+  String get createOrgSectionRegionTitle => 'Region';
+
+  @override
+  String get createOrgSectionRegionDescription =>
+      'Supplies phone, document, and data-retention defaults.';
+
+  @override
+  String get createOrgRegionHelper => 'e.g. IN';
+
+  @override
+  String get createOrgSectionContactTitle => 'Contact';
+
+  @override
+  String get createOrgSectionContactDescription =>
+      'Who the platform team reaches about this organization.';
+
+  @override
+  String get createOrgContinueButton => 'Create and continue';
+
+  @override
+  String createSchoolCreatedBannerTitle(String orgName, String orgCode) {
+    return '$orgName ($orgCode) created';
+  }
+
+  @override
+  String get createSchoolCreatedBannerBody =>
+      'An organization needs at least one school before it can be used day to day. Add it now, or skip and add it later.';
+
+  @override
+  String get createSchoolSectionSchoolTitle => 'Identity';
+
+  @override
+  String get createSchoolSectionSchoolDescription =>
+      'The campus buses travel to and from.';
+
+  @override
+  String get createSchoolCodeHelper =>
+      'Unique within this organization. Fixed once the school is in use.';
+
+  @override
+  String get createSchoolSectionLocationTitle => 'Location';
+
+  @override
+  String get createSchoolSectionLocationDescription =>
+      'Arrival alerts are measured from this point.';
+
+  @override
+  String get createSchoolPlusCodeHint => 'e.g. 7J4VXMQ5+8F';
+
+  @override
+  String get createSchoolPlusCodeGuide =>
+      'Paste the school\'s full Plus Code from Google Maps. The latitude and longitude are worked out from it and shown here before you save.';
+
+  @override
+  String get createSchoolLocationFoundTitle => 'Location found';
+
+  @override
+  String get createSchoolGeofenceLabel => 'Geofence radius';
+
+  @override
+  String get createSchoolGeofenceHelper =>
+      'Between 20 and 2000 metres around the school.';
+
+  @override
+  String get unitMetresSuffix => 'm';
+
+  @override
+  String get createSchoolSectionTimeTitle => 'Local time';
+
+  @override
+  String get createSchoolSectionTimeDescription =>
+      'Every time shown for this school uses its time zone.';
+
+  @override
+  String get createSchoolTimezoneLabel => 'Time zone';
+
+  @override
+  String get createSchoolTimezoneHelper => 'IANA name, e.g. Asia/Kolkata';
+
+  @override
+  String get createSchoolSkipForNowButton => 'Skip for now';
 }

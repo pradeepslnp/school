@@ -82,6 +82,7 @@ class AuthenticatedUser extends Equatable {
     required this.preferredLocale,
     this.roles = const [],
     this.scopes = const [],
+    this.organizationId,
   });
 
   final String id;
@@ -93,6 +94,15 @@ class AuthenticatedUser extends Equatable {
   /// Held on the user rather than the browser: an operator signing in from a shared
   /// workstation should not inherit the last person's language.
   final String preferredLocale;
+
+  /// The organization this account belongs to, or null for a session stored before the
+  /// server sent it (ADR-0015).
+  ///
+  /// Not the same as [organizationScopeId]: a `SUPER_ADMIN` holds no organization *scope* but
+  /// still belongs to one — the platform organization. Affordance only, like [roles]: used to
+  /// withhold Suspend on the operator's own organization, which the server refuses regardless
+  /// (BR-TEN-006).
+  final String? organizationId;
 
   /// Server-supplied roles — **UI affordances only** (BR-IAM-001, BR-IAM-004).
   ///
@@ -165,6 +175,7 @@ class AuthenticatedUser extends Equatable {
         'firstName': firstName,
         'lastName': lastName,
         'preferredLocale': preferredLocale,
+        'organizationId': organizationId,
         'roles': roles,
         'scopes': [for (final scope in scopes) scope.toJson()],
       };
@@ -178,6 +189,7 @@ class AuthenticatedUser extends Equatable {
       firstName: json['firstName'] as String? ?? '',
       lastName: json['lastName'] as String? ?? '',
       preferredLocale: json['preferredLocale'] as String? ?? 'en',
+      organizationId: json['organizationId'] as String?,
       roles: (json['roles'] as List<Object?>? ?? const [])
           .whereType<String>()
           .toList(growable: false),
@@ -191,7 +203,7 @@ class AuthenticatedUser extends Equatable {
 
   @override
   List<Object?> get props =>
-      [id, firstName, lastName, preferredLocale, roles, scopes];
+      [id, firstName, lastName, preferredLocale, organizationId, roles, scopes];
 }
 
 /// One `{ level, refId }` pair from the login response — the reach of a role.

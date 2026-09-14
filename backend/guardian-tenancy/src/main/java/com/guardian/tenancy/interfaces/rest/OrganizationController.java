@@ -137,7 +137,7 @@ public class OrganizationController {
   public OrganizationResponse suspend(@PathVariable UUID organizationId, CurrentActor actor) {
     OrganizationLifecycleCommand command =
         new OrganizationLifecycleCommand(
-            OrganizationId.of(organizationId), actor.userId(), actor.role());
+            OrganizationId.of(organizationId), actor.userId(), actor.role(), actor.homeTenantId());
 
     return OrganizationResponse.from(suspendOrganization.execute(command));
   }
@@ -151,7 +151,7 @@ public class OrganizationController {
   public OrganizationResponse reactivate(@PathVariable UUID organizationId, CurrentActor actor) {
     OrganizationLifecycleCommand command =
         new OrganizationLifecycleCommand(
-            OrganizationId.of(organizationId), actor.userId(), actor.role());
+            OrganizationId.of(organizationId), actor.userId(), actor.role(), actor.homeTenantId());
 
     return OrganizationResponse.from(reactivateOrganization.execute(command));
   }

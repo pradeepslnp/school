@@ -274,7 +274,10 @@ class ConsoleRouterDelegate extends RouterDelegate<AdminRoutePath>
 
     if (location == '/organizations' &&
         visible.any((destination) => destination.location == '/organizations')) {
-      return OrganizationListRoute(actorRoles: session.user.roles);
+      return OrganizationListRoute(
+        actorRoles: session.user.roles,
+        actorOrganizationId: session.user.organizationId,
+      );
     }
     final schoolId = session.user.schoolScopeId;
     // Only reaches `SchoolPickerField` when `schoolId` is null (ORG_ADMIN or SUPER_ADMIN) —

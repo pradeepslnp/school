@@ -111,6 +111,8 @@ enum ErrorCode {
   // ErrorCode's own documentation about when a domain code is added.
   orgCodeAlreadyExists,
   schoolCodeAlreadyExists,
+  // First met by the organization details view's Suspend control (TEN-004, BR-TEN-006).
+  orgCannotSuspendOwnOrganization,
 
   // --- Identity & Access ---
   // First met by the Users screen's operator actions (IAM-009/010, ADR-0012): resend only
@@ -182,6 +184,7 @@ enum ErrorCode {
         'USER_NOT_ACTIVE' => userNotActive,
         'ORG_CODE_ALREADY_EXISTS' => orgCodeAlreadyExists,
         'SCHOOL_CODE_ALREADY_EXISTS' => schoolCodeAlreadyExists,
+        'ORG_CANNOT_SUSPEND_OWN_ORGANIZATION' => orgCannotSuspendOwnOrganization,
         'STAFF_EMPLOYEE_CODE_EXISTS' => staffEmployeeCodeExists,
         'STUDENT_NOT_FOUND' => studentNotFound,
         'STUDENT_ADMISSION_NO_EXISTS' => studentAdmissionNoExists,

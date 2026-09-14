@@ -22,12 +22,20 @@ import '../widgets/onboarding_scaffold.dart';
 /// piece of navigation that belongs here rather than in the bloc: leaving this screen once an
 /// edit to the organization's own details has saved. See [_savingOrganization].
 class OrganizationOnboardingScreen extends StatefulWidget {
-  const OrganizationOnboardingScreen({super.key, required this.actorRoles});
+  const OrganizationOnboardingScreen({
+    super.key,
+    required this.actorRoles,
+    required this.actorOrganizationId,
+  });
 
   /// The signed-in operator's own roles — passed straight through to
   /// `OrganizationDetailsView` to gate the suspend/reactivate control. See that widget's
   /// `_canManageLifecycle`.
   final List<String> actorRoles;
+
+  /// The organization the operator's own account belongs to — passed straight through to
+  /// `OrganizationDetailsView`, which withholds Suspend on it.
+  final String? actorOrganizationId;
 
   @override
   State<OrganizationOnboardingScreen> createState() =>
@@ -83,19 +91,40 @@ class _OrganizationOnboardingScreenState
       },
         child: BlocBuilder<OrganizationOnboardingBloc, OrganizationOnboardingState>(
         builder: (context, state) {
+          final l10n = context.l10n;
+          // The page names what the operator is doing: adding an organization while either
+          // create step is open, and the organization itself once it exists.
+          final viewing = state.step == OnboardingStep.complete ? state.organization : null;
+          // This screen is pushed over the console shell by `OrganizationListRoute`, so
+          // popping is what returns the operator to the Organizations list.
+          final leave = Navigator.of(context).canPop()
+              ? () => Navigator.of(context).maybePop()
+              : null;
+
           return OnboardingScaffold(
-            title: context.l10n.consoleDestinationOrganizations,
-            // This screen is pushed over the console shell by `OrganizationListRoute`, so
-            // popping is what returns the operator to the Organizations list.
-            onBack: Navigator.of(context).canPop()
-                ? () => Navigator.of(context).maybePop()
-                : null,
+            backLabel: l10n.consoleDestinationOrganizations,
+            title: viewing != null ? viewing.name : l10n.onboardingAddOrganizationTitle,
+            subtitle: viewing != null
+                ? l10n.orgListRowSubtitle(viewing.code, viewing.regionProfileCode)
+                : l10n.onboardingAddOrganizationSubtitle,
+            stepLabels: viewing != null
+                ? null
+                : [l10n.onboardingStepOrganizationLabel, l10n.onboardingStepFirstSchoolLabel],
+            currentStep: state.step == OnboardingStep.schoolDetails ? 1 : 0,
+            onBack: leave,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
               switch (state.step) {
                 OnboardingStep.organizationDetails => CreateOrganizationForm(
                     isSubmitting: state.isSubmitting,
+                    onCancel: leave,
+                    error: state.error == null
+                        ? null
+                        : OnboardingErrorText(
+                            code: state.error!,
+                            messageKey: state.errorMessageKey,
+                          ),
                     onSubmit: ({
                       required String code,
                       required String name,
@@ -118,6 +147,12 @@ class _OrganizationOnboardingScreenState
                     // step 2 — see OrganizationOnboardingState.organization.
                     organization: state.organization!,
                     isSubmitting: state.isSubmitting,
+                    error: state.error == null
+                        ? null
+                        : OnboardingErrorText(
+                            code: state.error!,
+                            messageKey: state.errorMessageKey,
+                          ),
                     onSubmit: ({
                       required String code,
                       required String name,
@@ -145,6 +180,7 @@ class _OrganizationOnboardingScreenState
                     school: state.school,
                     isSubmitting: state.isSubmitting,
                     actorRoles: widget.actorRoles,
+                    actorOrganizationId: widget.actorOrganizationId,
                     onOrganizationSave: ({
                       required String name,
                       required String regionProfileCode,
@@ -209,7 +245,8 @@ class _OrganizationOnboardingScreenState
                         .add(const OrganizationReactivateRequested()),
                   ),
               },
-              if (state.error != null)
+              // The two create steps show their error inside the form, above its actions.
+              if (state.error != null && state.step == OnboardingStep.complete)
                 OnboardingErrorText(code: state.error!, messageKey: state.errorMessageKey),
               ],
             ),

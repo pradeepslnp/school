@@ -19,7 +19,7 @@ Rules marked 🔴 are **safety-critical**: they may not be disabled by configura
 | BR-TEN-003 | A school belongs to exactly one organization and cannot be moved between organizations. |
 | BR-TEN-004 | 🔴 No request may read or write data belonging to an organization other than the one in its authenticated context, except through an explicitly permissioned platform-operations path, which is always audited. The path is [ADR-0016](../00-governance/adr/ADR-0016-platform-operator-organization-elevation.md) — `SUPER_ADMIN` elevation into one named organization per request. |
 | BR-TEN-005 | Branches are optional. A null branch on a school-scoped record means "school-wide" and is valid. |
-| BR-TEN-006 | Suspending an organization blocks all user access except platform operations, but destroys no data and stops no in-flight safety recording for trips already started. |
+| BR-TEN-006 | Suspending an organization blocks all user access except platform operations, but destroys no data and stops no in-flight safety recording for trips already started. An operator cannot suspend the organization their own account belongs to: the suspension would block their reactivation request too, locking out the only accounts able to undo it. |
 | BR-TEN-007 | Organization and school codes are unique within their parent scope and immutable once operational data exists. |
 
 ---

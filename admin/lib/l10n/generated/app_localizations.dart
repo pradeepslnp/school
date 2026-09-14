@@ -554,6 +554,12 @@ abstract class AppLocalizations {
   /// **'That organization code is already in use. Choose another — codes cannot be changed once operational data exists (BR-TEN-007).'**
   String get onboardingErrorOrgCodeExists;
 
+  /// No description provided for @onboardingErrorCannotSuspendOwnOrganization.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot suspend the organization your own account belongs to — it would lock out every account able to reactivate it.'**
+  String get onboardingErrorCannotSuspendOwnOrganization;
+
   /// No description provided for @onboardingErrorSchoolCodeExists.
   ///
   /// In en, this message translates to:
@@ -1650,6 +1656,12 @@ abstract class AppLocalizations {
   /// **'Save changes'**
   String get commonSaveChangesButton;
 
+  /// No description provided for @commonChangesSavedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes saved'**
+  String get commonChangesSavedSnackbar;
+
   /// No description provided for @createStaffFormTitle.
   ///
   /// In en, this message translates to:
@@ -2296,18 +2308,6 @@ abstract class AppLocalizations {
   /// **'That could not be loaded right now. Try again shortly.'**
   String get orgListLoadError;
 
-  /// No description provided for @createOrgStepTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Step 1 of 2 — Organization details'**
-  String get createOrgStepTitle;
-
-  /// No description provided for @createOrgIntro.
-  ///
-  /// In en, this message translates to:
-  /// **'This becomes a new tenant. The code is immutable once the organization has any schools or staff (BR-TEN-007).'**
-  String get createOrgIntro;
-
   /// No description provided for @createOrgCodeLabel.
   ///
   /// In en, this message translates to:
@@ -2338,12 +2338,6 @@ abstract class AppLocalizations {
   /// **'Region profile code'**
   String get createOrgRegionLabel;
 
-  /// No description provided for @createOrgRegionHint.
-  ///
-  /// In en, this message translates to:
-  /// **'e.g. IN — supplies phone, document, and retention defaults (ADR-0007)'**
-  String get createOrgRegionHint;
-
   /// No description provided for @createOrgContactEmailLabel.
   ///
   /// In en, this message translates to:
@@ -2361,12 +2355,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Creating organization'**
   String get createOrgCreatingSpinnerLabel;
-
-  /// No description provided for @createOrgSubmitButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Create organization'**
-  String get createOrgSubmitButton;
 
   /// No description provided for @schoolFieldNameLabel.
   ///
@@ -2404,12 +2392,6 @@ abstract class AppLocalizations {
   /// **'Plus Code'**
   String get schoolFieldPlusCodeLabel;
 
-  /// No description provided for @schoolFieldPlusCodeHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Paste a Plus Code from Google Maps (for example 7J4VXMQ5+8F) and the coordinates below fill in. You can still type them directly.'**
-  String get schoolFieldPlusCodeHelp;
-
   /// No description provided for @schoolFieldPlusCodeResolved.
   ///
   /// In en, this message translates to:
@@ -2425,18 +2407,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not a complete Plus Code. A short code like 8F+6W needs a town name, which this field cannot resolve — use the full code.'**
   String get schoolFieldPlusCodeInvalid;
-
-  /// No description provided for @createSchoolStepTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Step 2 of 2 — First school'**
-  String get createSchoolStepTitle;
-
-  /// No description provided for @createSchoolIntro.
-  ///
-  /// In en, this message translates to:
-  /// **'{orgName} ({orgCode}) was created. An organization needs at least one school before it can be used day to day (BR-TEN-002) — add one now, or come back to it later.'**
-  String createSchoolIntro(String orgName, String orgCode);
 
   /// No description provided for @createSchoolCodeLabel.
   ///
@@ -2456,12 +2426,6 @@ abstract class AppLocalizations {
   /// **'e.g. Greenwood Main Campus'**
   String get createSchoolNameHint;
 
-  /// No description provided for @createSchoolTimezoneHint.
-  ///
-  /// In en, this message translates to:
-  /// **'e.g. Asia/Kolkata'**
-  String get createSchoolTimezoneHint;
-
   /// No description provided for @createSchoolAddingSpinnerLabel.
   ///
   /// In en, this message translates to:
@@ -2473,12 +2437,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add school'**
   String get createSchoolSubmitButton;
-
-  /// No description provided for @createSchoolSkipButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Finish without adding a school'**
-  String get createSchoolSkipButton;
 
   /// No description provided for @schoolDetailsIdLabel.
   ///
@@ -2551,12 +2509,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Onboard another organization'**
   String get onboardingStartAnotherButton;
-
-  /// No description provided for @backButtonTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Back'**
-  String get backButtonTooltip;
 
   /// No description provided for @orgDetailsSectionTitle.
   ///
@@ -2633,7 +2585,7 @@ abstract class AppLocalizations {
   /// No description provided for @addSchoolPromptIntro.
   ///
   /// In en, this message translates to:
-  /// **'No school has been added yet. {orgName} needs at least one before it can be used day to day (BR-TEN-002).'**
+  /// **'No school has been added yet. {orgName} needs at least one before it can be used day to day.'**
   String addSchoolPromptIntro(String orgName);
 
   /// No description provided for @addSchoolPromptSkipButton.
@@ -3271,6 +3223,221 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That restriction could not be found. It may already have been lifted.'**
   String get custodyErrorNotFound;
+
+  /// No description provided for @onboardingAddOrganizationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add organization'**
+  String get onboardingAddOrganizationTitle;
+
+  /// No description provided for @onboardingAddOrganizationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create the organization, then add its first school.'**
+  String get onboardingAddOrganizationSubtitle;
+
+  /// No description provided for @onboardingStepOrganizationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get onboardingStepOrganizationLabel;
+
+  /// No description provided for @onboardingStepFirstSchoolLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'First school'**
+  String get onboardingStepFirstSchoolLabel;
+
+  /// No description provided for @onboardingStepSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {number} of {total}: {label}, {status}'**
+  String onboardingStepSemanticLabel(
+    int number,
+    int total,
+    String label,
+    String status,
+  );
+
+  /// No description provided for @onboardingStepStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'completed'**
+  String get onboardingStepStatusDone;
+
+  /// No description provided for @onboardingStepStatusCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'current step'**
+  String get onboardingStepStatusCurrent;
+
+  /// No description provided for @onboardingStepStatusUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'not started'**
+  String get onboardingStepStatusUpcoming;
+
+  /// No description provided for @createOrgSectionIdentityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get createOrgSectionIdentityTitle;
+
+  /// No description provided for @createOrgSectionIdentityDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'How this organization is named and identified across the platform.'**
+  String get createOrgSectionIdentityDescription;
+
+  /// No description provided for @createOrgCodeHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Short and unique. Fixed once the organization has schools or staff.'**
+  String get createOrgCodeHelper;
+
+  /// No description provided for @createOrgSectionRegionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Region'**
+  String get createOrgSectionRegionTitle;
+
+  /// No description provided for @createOrgSectionRegionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplies phone, document, and data-retention defaults.'**
+  String get createOrgSectionRegionDescription;
+
+  /// No description provided for @createOrgRegionHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. IN'**
+  String get createOrgRegionHelper;
+
+  /// No description provided for @createOrgSectionContactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get createOrgSectionContactTitle;
+
+  /// No description provided for @createOrgSectionContactDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Who the platform team reaches about this organization.'**
+  String get createOrgSectionContactDescription;
+
+  /// No description provided for @createOrgContinueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create and continue'**
+  String get createOrgContinueButton;
+
+  /// No description provided for @createSchoolCreatedBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{orgName} ({orgCode}) created'**
+  String createSchoolCreatedBannerTitle(String orgName, String orgCode);
+
+  /// No description provided for @createSchoolCreatedBannerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'An organization needs at least one school before it can be used day to day. Add it now, or skip and add it later.'**
+  String get createSchoolCreatedBannerBody;
+
+  /// No description provided for @createSchoolSectionSchoolTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get createSchoolSectionSchoolTitle;
+
+  /// No description provided for @createSchoolSectionSchoolDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The campus buses travel to and from.'**
+  String get createSchoolSectionSchoolDescription;
+
+  /// No description provided for @createSchoolCodeHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Unique within this organization. Fixed once the school is in use.'**
+  String get createSchoolCodeHelper;
+
+  /// No description provided for @createSchoolSectionLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get createSchoolSectionLocationTitle;
+
+  /// No description provided for @createSchoolSectionLocationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival alerts are measured from this point.'**
+  String get createSchoolSectionLocationDescription;
+
+  /// No description provided for @createSchoolPlusCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 7J4VXMQ5+8F'**
+  String get createSchoolPlusCodeHint;
+
+  /// No description provided for @createSchoolPlusCodeGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the school\'s full Plus Code from Google Maps. The latitude and longitude are worked out from it and shown here before you save.'**
+  String get createSchoolPlusCodeGuide;
+
+  /// No description provided for @createSchoolLocationFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Location found'**
+  String get createSchoolLocationFoundTitle;
+
+  /// No description provided for @createSchoolGeofenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Geofence radius'**
+  String get createSchoolGeofenceLabel;
+
+  /// No description provided for @createSchoolGeofenceHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Between 20 and 2000 metres around the school.'**
+  String get createSchoolGeofenceHelper;
+
+  /// No description provided for @unitMetresSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'m'**
+  String get unitMetresSuffix;
+
+  /// No description provided for @createSchoolSectionTimeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local time'**
+  String get createSchoolSectionTimeTitle;
+
+  /// No description provided for @createSchoolSectionTimeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Every time shown for this school uses its time zone.'**
+  String get createSchoolSectionTimeDescription;
+
+  /// No description provided for @createSchoolTimezoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time zone'**
+  String get createSchoolTimezoneLabel;
+
+  /// No description provided for @createSchoolTimezoneHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'IANA name, e.g. Asia/Kolkata'**
+  String get createSchoolTimezoneHelper;
+
+  /// No description provided for @createSchoolSkipForNowButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get createSchoolSkipForNowButton;
 }
 
 class _AppLocalizationsDelegate

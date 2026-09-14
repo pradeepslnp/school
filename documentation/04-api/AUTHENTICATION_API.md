@@ -24,7 +24,7 @@ Base path `/api/v1/auth`. These endpoints are **unauthenticated** except where n
     "expiresIn": 900,
     "tokenType": "Bearer",
     "user": {
-      "id": "…", "firstName": "Anil", "lastName": "Kumar",
+      "id": "…", "organizationId": "…", "firstName": "Anil", "lastName": "Kumar",
       "preferredLocale": "en-IN",
       "roles": ["TRANSPORT_MANAGER"],
       "scopes": [{ "level": "SCHOOL", "refId": "…" }]
@@ -33,7 +33,9 @@ Base path `/api/v1/auth`. These endpoints are **unauthenticated** except where n
 }
 ```
 
-`roles` and `scopes` are returned **for UI affordances only**. They are never trusted for authorisation — every request re-resolves permissions server-side (BR-IAM-001, BR-IAM-004).
+`roles`, `scopes`, and `organizationId` are returned **for UI affordances only**. They are never trusted for authorisation — every request re-resolves permissions server-side (BR-IAM-001, BR-IAM-004).
+
+`organizationId` is the organization the account belongs to, which is not the same as an `ORG` scope: a `SUPER_ADMIN` holds no organization scope but still belongs to the platform organization. The admin console uses it to withhold Suspend on the operator's own organization (BR-TEN-006).
 
 **Errors:** `AUTH_CREDENTIALS_INVALID` (401) · `AUTH_ACCOUNT_LOCKED` (401) · `RATE_LIMIT_EXCEEDED` (429)
 

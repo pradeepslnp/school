@@ -64,7 +64,7 @@ class SuspendOrganizationUseCaseTest {
   }
 
   private static OrganizationLifecycleCommand command() {
-    return new OrganizationLifecycleCommand(ORG_ID, ACTOR, "SUPER_ADMIN");
+    return new OrganizationLifecycleCommand(ORG_ID, ACTOR, "SUPER_ADMIN", UUID.randomUUID());
   }
 
   @Test

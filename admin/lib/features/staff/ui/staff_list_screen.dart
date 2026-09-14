@@ -122,8 +122,10 @@ class _StaffListScreenState extends State<StaffListScreen> {
 
   Future<void> _openEditForm(BuildContext context, CreatedStaff staff) async {
     final bloc = context.read<StaffListBloc>();
+    final messenger = ScaffoldMessenger.of(context);
+    final savedMessage = context.l10n.commonChangesSavedSnackbar;
 
-    await showDialog<void>(
+    final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => Dialog(
         child: ConstrainedBox(
@@ -168,6 +170,12 @@ class _StaffListScreenState extends State<StaffListScreen> {
         ),
       ),
     );
+
+    // `true` only when the listener in [build] closed the dialog after the update succeeded — a
+    // cancel or a dismissed dialog returns null, and a failed save keeps the dialog open.
+    if (saved ?? false) {
+      messenger.showSnackBar(SnackBar(content: Text(savedMessage)));
+    }
   }
 
   /// Instant, client-side, over whatever roster is already loaded — no server round trip. See
@@ -193,9 +201,10 @@ class _StaffListScreenState extends State<StaffListScreen> {
       listenWhen: (previous, current) =>
           previous.isSubmitting && !current.isSubmitting && current.error == null,
       listener: (context, state) {
-        // The add dialog is still open until the create succeeds — close it here rather than
-        // from inside CreateStaffForm, which has no reason to know it is inside a dialog.
-        if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+        // The add or edit dialog is still open until the write succeeds — close it here rather
+        // than from inside the form, which has no reason to know it is inside a dialog. Closed
+        // with `true` so [_openEditForm] can confirm the save.
+        if (Navigator.of(context).canPop()) Navigator.of(context).pop(true);
       },
       child: Padding(
         padding: const EdgeInsets.all(AdminSpacing.xl),

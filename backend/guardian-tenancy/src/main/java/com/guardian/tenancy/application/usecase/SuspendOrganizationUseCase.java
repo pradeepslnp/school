@@ -42,6 +42,16 @@ public class SuspendOrganizationUseCase {
   }
 
   public Organization execute(OrganizationLifecycleCommand command) {
+    // BR-TEN-006: a suspension blocks every non-safety request made from inside the organization,
+    // the reactivate call included. Suspending the organization the operator's own account belongs
+    // to would lock out the only accounts able to undo it, with no recovery short of editing the
+    // database. Checked before any transaction opens — it needs nothing but the command.
+    if (command.id().value().equals(command.actorHomeTenantId())) {
+      throw new BusinessRuleViolationException(
+          ErrorCode.ORG_CANNOT_SUSPEND_OWN_ORGANIZATION,
+          "BR-TEN-006",
+          Map.of("organizationId", command.id().toString()));
+    }
     return tenantScoped.execute(command.id().asTenantId(), () -> applySuspend(command));
   }
 

@@ -177,6 +177,36 @@ Capacity is shown live against the vehicle's seating (BR-FLEET-005). Assignment 
 
 ---
 
+## A-40 — Add Organization
+
+Creating an organization and then its first school is a focused two-step flow, pushed over the console shell by `OrganizationListRoute`. Because it covers the navigation, it carries its own page frame (`OnboardingScaffold`): the console canvas, a labelled way back, a title that names the task, and a step indicator whose steps show a number or check **and** a label — never color alone.
+
+```
+← Organizations
+Add organization
+Create the organization, then add its first school.
+(1) Organization ──── (2) First school
+┌───────────────────────────────────────────────────────┐
+│ Identity        │ Organization name                   │
+│ purpose line    │ Organization code   (fixed once …)  │
+│─────────────────┼─────────────────────────────────────│
+│ Region          │ Region profile code                 │
+│─────────────────┼─────────────────────────────────────│
+│ Contact         │ Contact email · Contact phone       │
+│───────────────────────────────────────────────────────│
+│ Cancel                          Create and continue → │
+└───────────────────────────────────────────────────────┘
+```
+
+- **Sections, not one long column.** Fields are grouped under a titled section (`OnboardingFormSection`) with a one-line purpose on the start side and the fields beside it; the section stacks when its own width is under 600 px. Short values (codes, radius, time zone) take a narrower field that hints at their length.
+- **Name before code.** The order an operator thinks in; the immutable code carries its constraint in helper text.
+- **Actions.** Primary action at the end of the footer, the way out as a text button at the start (`OnboardingFormFooter`). Errors render directly above the footer, beside the button the operator will press again.
+- **Step 2 confirms step 1** in a `primaryContainer` banner. Creating an organization is a registry event, so it never borrows the status palette.
+- **Location** is a Plus Code with a status tile beneath it: guidance while empty, the resolved coordinates and precision once decoded, so the operator sees what will be stored before saving. The same `CreateSchoolForm` is reused when a skipped school is added later from the organization's details, and that view's organization form uses the same sections.
+- **Copy** in labels and helper text is plain language — no rule or ADR identifiers.
+
+---
+
 ## A-45 / A-47 — Configuration & Alert Rules
 
 ```

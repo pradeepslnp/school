@@ -140,21 +140,17 @@ Every key below is `pending-kn-translation` in `app_kn.arb` (English-fallback pl
 | `schoolFieldLatitudeLabel` | Latitude | pending-kn-translation |
 | `schoolFieldLongitudeLabel` | Longitude | pending-kn-translation |
 | `schoolFieldGeofenceLabel` | Geofence radius (metres, 20–2000) | pending-kn-translation |
-| `createSchoolStepTitle` | Step 2 of 2 — First school | pending-kn-translation |
-| `createSchoolIntro` | {orgName} ({orgCode}) was created. An organization needs at least one school before it can be used day to day (BR-TEN-002) — add one now, or come back to it later. | pending-kn-translation |
 | `createSchoolCodeLabel` | School code | pending-kn-translation |
 | `createSchoolCodeHint` | e.g. GW-MAIN | pending-kn-translation |
 | `createSchoolNameHint` | e.g. Greenwood Main Campus | pending-kn-translation |
-| `createSchoolTimezoneHint` | e.g. Asia/Kolkata | pending-kn-translation |
 | `createSchoolAddingSpinnerLabel` | Adding school | pending-kn-translation |
 | `createSchoolSubmitButton` | Add school | pending-kn-translation |
-| `createSchoolSkipButton` | Finish without adding a school | pending-kn-translation |
 | `schoolDetailsIdLabel` | School ID | pending-kn-translation |
 | `schoolDetailsIdHelper` | Give this to whoever registers staff, vehicles, or routes for this school. | pending-kn-translation |
 | `schoolDetailsCodeFixedLabel` | School code (fixed) | pending-kn-translation |
 | `schoolDetailsSavingSpinnerLabel` | Saving school | pending-kn-translation |
 | `schoolDetailsSaveButton` | Save school changes | pending-kn-translation |
-| `addSchoolPromptIntro` | No school has been added yet. {orgName} needs at least one before it can be used day to day (BR-TEN-002). | pending-kn-translation |
+| `addSchoolPromptIntro` | No school has been added yet. {orgName} needs at least one before it can be used day to day. | pending-kn-translation |
 | `addSchoolPromptSkipButton` | Not now | pending-kn-translation |
 | `schoolSettingsLoadingLabel` | Loading school | pending-kn-translation |
 ### Shared error copy
@@ -348,10 +344,10 @@ Every key below is `pending-kn-translation` in `app_kn.arb` (English-fallback pl
 | `lastNameLabel` | Last name | pending-kn-translation |
 | `commonSavingSpinnerLabel` | Saving | pending-kn-translation |
 | `commonSaveChangesButton` | Save changes | pending-kn-translation |
+| `commonChangesSavedSnackbar` | Changes saved | pending-kn-translation |
 | `copyTooltip` | Copy | pending-kn-translation |
 | `copiedSnackbar` | {label} copied | pending-kn-translation |
 | `copiedToClipboardSnackbar` | Copied to clipboard | pending-kn-translation |
-| `backButtonTooltip` | Back | pending-kn-translation |
 | `noneOptionLabel` | None | pending-kn-translation |
 ### Drivers / staff (A-23)
 
@@ -555,6 +551,7 @@ table at the top).
 | Key | English value | Kannada status |
 |---|---|---|
 | `onboardingErrorOrgCodeExists` | That organization code is already in use. Choose another — codes cannot be changed once operational data exists (BR-TEN-007). | pending-kn-translation |
+| `onboardingErrorCannotSuspendOwnOrganization` | You cannot suspend the organization your own account belongs to — it would lock out every account able to reactivate it. | pending-kn-translation |
 | `onboardingErrorSchoolCodeExists` | That school code is already used within this organization. Choose another. | pending-kn-translation |
 | `onboardingErrorStaffEmployeeCodeExists` | That employee code is already used at this school. Choose another. | pending-kn-translation |
 | `onboardingErrorPermissionDenied` | Your account does not have permission to create organizations. | pending-kn-translation |
@@ -564,18 +561,14 @@ table at the top).
 | `orgListRowSubtitle` | {code} · {regionProfile} | pending-kn-translation |
 | `orgSuspendedChip` | Suspended | pending-kn-translation |
 | `orgListLoadError` | That could not be loaded right now. Try again shortly. | pending-kn-translation |
-| `createOrgStepTitle` | Step 1 of 2 — Organization details | pending-kn-translation |
-| `createOrgIntro` | This becomes a new tenant. The code is immutable once the organization has any schools or staff (BR-TEN-007). | pending-kn-translation |
 | `createOrgCodeLabel` | Organization code | pending-kn-translation |
 | `createOrgCodeHint` | e.g. GREENWOOD | pending-kn-translation |
 | `createOrgNameLabel` | Organization name | pending-kn-translation |
 | `createOrgNameHint` | e.g. Greenwood Education Group | pending-kn-translation |
 | `createOrgRegionLabel` | Region profile code | pending-kn-translation |
-| `createOrgRegionHint` | e.g. IN — supplies phone, document, and retention defaults (ADR-0007) | pending-kn-translation |
 | `createOrgContactEmailLabel` | Contact email (optional) | pending-kn-translation |
 | `createOrgContactPhoneLabel` | Contact phone (optional) | pending-kn-translation |
 | `createOrgCreatingSpinnerLabel` | Creating organization | pending-kn-translation |
-| `createOrgSubmitButton` | Create organization | pending-kn-translation |
 | `onboardingCompleteTitle` | Organization onboarded | pending-kn-translation |
 | `onboardingSummaryOrgLabel` | Organization | pending-kn-translation |
 | `onboardingNameAndCode` | {name} ({code}) | pending-kn-translation |
@@ -594,6 +587,42 @@ table at the top).
 | `orgDetailsCodeFixedLabel` | Organization code (fixed, BR-TEN-007) | pending-kn-translation |
 | `orgDetailsSavingSpinnerLabel` | Saving organization | pending-kn-translation |
 | `orgDetailsSaveButton` | Save organization changes | pending-kn-translation |
+| `onboardingAddOrganizationTitle` | Add organization | pending-kn-translation |
+| `onboardingAddOrganizationSubtitle` | Create the organization, then add its first school. | pending-kn-translation |
+| `onboardingStepOrganizationLabel` | Organization | pending-kn-translation |
+| `onboardingStepFirstSchoolLabel` | First school | pending-kn-translation |
+| `onboardingStepSemanticLabel` | Step {number} of {total}: {label}, {status} | pending-kn-translation |
+| `onboardingStepStatusDone` | completed | pending-kn-translation |
+| `onboardingStepStatusCurrent` | current step | pending-kn-translation |
+| `onboardingStepStatusUpcoming` | not started | pending-kn-translation |
+| `createOrgSectionIdentityTitle` | Identity | pending-kn-translation |
+| `createOrgSectionIdentityDescription` | How this organization is named and identified across the platform. | pending-kn-translation |
+| `createOrgCodeHelper` | Short and unique. Fixed once the organization has schools or staff. | pending-kn-translation |
+| `createOrgSectionRegionTitle` | Region | pending-kn-translation |
+| `createOrgSectionRegionDescription` | Supplies phone, document, and data-retention defaults. | pending-kn-translation |
+| `createOrgRegionHelper` | e.g. IN | pending-kn-translation |
+| `createOrgSectionContactTitle` | Contact | pending-kn-translation |
+| `createOrgSectionContactDescription` | Who the platform team reaches about this organization. | pending-kn-translation |
+| `createOrgContinueButton` | Create and continue | pending-kn-translation |
+| `createSchoolCreatedBannerTitle` | {orgName} ({orgCode}) created | pending-kn-translation |
+| `createSchoolCreatedBannerBody` | An organization needs at least one school before it can be used day to day. Add it now, or skip and add it later. | pending-kn-translation |
+| `createSchoolSectionSchoolTitle` | Identity | pending-kn-translation |
+| `createSchoolSectionSchoolDescription` | The campus buses travel to and from. | pending-kn-translation |
+| `createSchoolCodeHelper` | Unique within this organization. Fixed once the school is in use. | pending-kn-translation |
+| `createSchoolSectionLocationTitle` | Location | pending-kn-translation |
+| `createSchoolSectionLocationDescription` | Arrival alerts are measured from this point. | pending-kn-translation |
+| `createSchoolPlusCodeHint` | e.g. 7J4VXMQ5+8F | pending-kn-translation |
+| `createSchoolPlusCodeGuide` | Paste the school's full Plus Code from Google Maps. The latitude and longitude are worked out from it and shown here before you save. | pending-kn-translation |
+| `createSchoolLocationFoundTitle` | Location found | pending-kn-translation |
+| `createSchoolGeofenceLabel` | Geofence radius | pending-kn-translation |
+| `createSchoolGeofenceHelper` | Between 20 and 2000 metres around the school. | pending-kn-translation |
+| `unitMetresSuffix` | m | pending-kn-translation |
+| `createSchoolSectionTimeTitle` | Local time | pending-kn-translation |
+| `createSchoolSectionTimeDescription` | Every time shown for this school uses its time zone. | pending-kn-translation |
+| `createSchoolTimezoneLabel` | Time zone | pending-kn-translation |
+| `createSchoolTimezoneHelper` | IANA name, e.g. Asia/Kolkata | pending-kn-translation |
+| `createSchoolSkipForNowButton` | Skip for now | pending-kn-translation |
+
 ### Routes, stops, and crew (A-30/A-31, STF-004)
 
 | Key | English value | Kannada status |

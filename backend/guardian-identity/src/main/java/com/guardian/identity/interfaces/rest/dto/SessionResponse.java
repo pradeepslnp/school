@@ -20,9 +20,12 @@ public record SessionResponse(
    * @param scopes same affordance-only treatment as {@code roles} (BR-IAM-006) — the admin console
    *     uses this to pre-select an {@code ORG_ADMIN}/{@code SCHOOL_ADMIN}'s own organization or
    *     school on a scoped screen rather than making them pick it every time.
+   * @param organizationId the organization the account belongs to — affordance only, like {@code
+   *     roles}; see {@link IssuedSession.AuthenticatedUserView}.
    */
   public record UserResponse(
       String id,
+      String organizationId,
       String firstName,
       String lastName,
       String preferredLocale,
@@ -44,6 +47,7 @@ public record SessionResponse(
         "Bearer",
         new UserResponse(
             issued.user().id(),
+            issued.user().organizationId(),
             issued.user().firstName(),
             issued.user().lastName(),
             issued.user().preferredLocale(),

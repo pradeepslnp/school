@@ -221,6 +221,7 @@ class StaffLoginUseCaseTest {
             900,
             new IssuedSession.AuthenticatedUserView(
                 USER.value().toString(),
+                TENANT.value().toString(),
                 "Anil",
                 "Kumar",
                 "en",

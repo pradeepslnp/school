@@ -49,6 +49,8 @@ class OnboardingErrorText extends StatelessWidget {
     return switch (code) {
       ErrorCode.orgCodeAlreadyExists => l10n.onboardingErrorOrgCodeExists,
       ErrorCode.schoolCodeAlreadyExists => l10n.onboardingErrorSchoolCodeExists,
+      ErrorCode.orgCannotSuspendOwnOrganization =>
+        l10n.onboardingErrorCannotSuspendOwnOrganization,
       ErrorCode.staffEmployeeCodeExists => l10n.onboardingErrorStaffEmployeeCodeExists,
       ErrorCode.validationRequiredFieldMissing => l10n.errorValidationRequiredField,
       ErrorCode.validationInvalidFormat ||

@@ -17,11 +17,15 @@ class OrganizationOnboardingRoute extends StatelessWidget {
   const OrganizationOnboardingRoute({
     super.key,
     required this.actorRoles,
+    required this.actorOrganizationId,
     this.viewingOrganization,
   });
 
   /// Passed straight through to `OrganizationOnboardingScreen` — see its own documentation.
   final List<String> actorRoles;
+
+  /// Passed straight through alongside [actorRoles].
+  final String? actorOrganizationId;
 
   final CreatedOrganization? viewingOrganization;
 
@@ -40,7 +44,10 @@ class OrganizationOnboardingRoute extends StatelessWidget {
         }
         return bloc;
       },
-      child: OrganizationOnboardingScreen(actorRoles: actorRoles),
+      child: OrganizationOnboardingScreen(
+        actorRoles: actorRoles,
+        actorOrganizationId: actorOrganizationId,
+      ),
     );
   }
 }

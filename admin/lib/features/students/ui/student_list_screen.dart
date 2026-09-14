@@ -125,9 +125,11 @@ class _StudentListScreenState extends State<StudentListScreen> {
 
   Future<void> _openForm(BuildContext context, {Student? existing}) async {
     final bloc = context.read<StudentListBloc>();
+    final messenger = ScaffoldMessenger.of(context);
+    final savedMessage = context.l10n.commonChangesSavedSnackbar;
     final schoolId = _selectedSchoolId ?? '';
 
-    await showDialog<void>(
+    final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => Dialog(
         child: ConstrainedBox(
@@ -186,6 +188,12 @@ class _StudentListScreenState extends State<StudentListScreen> {
         ),
       ),
     );
+
+    // `true` only when the listener in [build] closed the dialog after the write succeeded — a
+    // cancel or a dismissed dialog returns null, and a failed save keeps the dialog open.
+    if (existing != null && (saved ?? false)) {
+      messenger.showSnackBar(SnackBar(content: Text(savedMessage)));
+    }
   }
 
   /// Withdrawal is confirmed; ordinary edits are not.
@@ -248,8 +256,9 @@ class _StudentListScreenState extends State<StudentListScreen> {
           previous.isSubmitting && !current.isSubmitting && current.error == null,
       listener: (context, state) {
         // The form dialog stays open until the write succeeds — closed here rather than from
-        // inside StudentForm, which has no reason to know it is inside a dialog.
-        if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+        // inside StudentForm, which has no reason to know it is inside a dialog. Closed with
+        // `true` so [_openForm] can confirm an edit was saved.
+        if (Navigator.of(context).canPop()) Navigator.of(context).pop(true);
       },
       child: Padding(
         padding: const EdgeInsets.all(AdminSpacing.xl),

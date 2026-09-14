@@ -103,6 +103,7 @@ public class SessionFactory {
         accessToken.lifetime().toSeconds(),
         new IssuedSession.AuthenticatedUserView(
             user.id().value().toString(),
+            tenantId.value().toString(),
             user.firstName(),
             user.lastName(),
             user.preferredLocale(),

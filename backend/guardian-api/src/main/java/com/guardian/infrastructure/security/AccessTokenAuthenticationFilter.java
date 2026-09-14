@@ -104,9 +104,15 @@ public class AccessTokenAuthenticationFilter extends OncePerRequestFilter {
     //
     // The session id travels too, from the token's verified sessionId claim — a self-service
     // endpoint (logout, "my sessions") then acts on the session the caller is calling from
-    // rather than one the request body names (IAM-004).
+    // rather than one the request body names (IAM-004). So does the home tenant, from the verified
+    // tenantId claim: under a platform elevation (ADR-0016) the ambient tenant is the target, and
+    // this is the only place a use case can still learn which organization the caller belongs to.
     CurrentActor actor =
-        CurrentActor.of(claims.userId().value(), roles.get(0), claims.sessionId().value());
+        CurrentActor.of(
+            claims.userId().value(),
+            roles.get(0),
+            claims.sessionId().value(),
+            claims.tenantId().value());
 
     UsernamePasswordAuthenticationToken authentication =
         UsernamePasswordAuthenticationToken.authenticated(

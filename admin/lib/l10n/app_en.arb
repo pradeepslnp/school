@@ -94,6 +94,7 @@
     "description": "Shared ErrorCode-to-copy fallbacks reused by OnboardingErrorText, StudentErrorText, and similar widgets — kept as one key per distinct message rather than duplicated per feature."
   },
   "onboardingErrorOrgCodeExists": "That organization code is already in use. Choose another — codes cannot be changed once operational data exists (BR-TEN-007).",
+  "onboardingErrorCannotSuspendOwnOrganization": "You cannot suspend the organization your own account belongs to — it would lock out every account able to reactivate it.",
   "onboardingErrorSchoolCodeExists": "That school code is already used within this organization. Choose another.",
   "onboardingErrorStaffEmployeeCodeExists": "That employee code is already used at this school. Choose another.",
   "onboardingErrorPermissionDenied": "Your account does not have permission to create organizations.",
@@ -398,6 +399,7 @@
   "lastNameLabel": "Last name",
   "commonSavingSpinnerLabel": "Saving",
   "commonSaveChangesButton": "Save changes",
+  "commonChangesSavedSnackbar": "Changes saved",
   "createStaffFormTitle": "Add driver or attendant",
   "createStaffFormIntro": "Creates the roster record and a working driver-app sign-in in one step — the phone number below is what they sign in with (phone + one-time code). Added to the school you have selected above.",
   "staffTypeDriver": "Driver",
@@ -652,25 +654,20 @@
   },
   "orgSuspendedChip": "Suspended",
   "orgListLoadError": "That could not be loaded right now. Try again shortly.",
-  "createOrgStepTitle": "Step 1 of 2 — Organization details",
-  "createOrgIntro": "This becomes a new tenant. The code is immutable once the organization has any schools or staff (BR-TEN-007).",
   "createOrgCodeLabel": "Organization code",
   "createOrgCodeHint": "e.g. GREENWOOD",
   "createOrgNameLabel": "Organization name",
   "createOrgNameHint": "e.g. Greenwood Education Group",
   "createOrgRegionLabel": "Region profile code",
-  "createOrgRegionHint": "e.g. IN — supplies phone, document, and retention defaults (ADR-0007)",
   "createOrgContactEmailLabel": "Contact email (optional)",
   "createOrgContactPhoneLabel": "Contact phone (optional)",
   "createOrgCreatingSpinnerLabel": "Creating organization",
-  "createOrgSubmitButton": "Create organization",
   "schoolFieldNameLabel": "School name",
   "schoolFieldTimezoneLabel": "Timezone (IANA identifier)",
   "schoolFieldLatitudeLabel": "Latitude",
   "schoolFieldLongitudeLabel": "Longitude",
   "schoolFieldGeofenceLabel": "Geofence radius (metres, 20–2000)",
   "schoolFieldPlusCodeLabel": "Plus Code",
-  "schoolFieldPlusCodeHelp": "Paste a Plus Code from Google Maps (for example 7J4VXMQ5+8F) and the coordinates below fill in. You can still type them directly.",
   "schoolFieldPlusCodeResolved": "Resolved to {latitude}, {longitude} — accurate to about {metres} m",
   "@schoolFieldPlusCodeResolved": {
     "placeholders": {
@@ -689,25 +686,11 @@
   "@schoolFieldGeofenceLabel": {
     "description": "Shared field labels between CreateSchoolForm (onboarding step 2) and SchoolEditForm (A-40/A-41 edit) — one key per field so the two never drift in Kannada either."
   },
-  "createSchoolStepTitle": "Step 2 of 2 — First school",
-  "createSchoolIntro": "{orgName} ({orgCode}) was created. An organization needs at least one school before it can be used day to day (BR-TEN-002) — add one now, or come back to it later.",
-  "@createSchoolIntro": {
-    "placeholders": {
-      "orgName": {
-        "type": "String"
-      },
-      "orgCode": {
-        "type": "String"
-      }
-    }
-  },
   "createSchoolCodeLabel": "School code",
   "createSchoolCodeHint": "e.g. GW-MAIN",
   "createSchoolNameHint": "e.g. Greenwood Main Campus",
-  "createSchoolTimezoneHint": "e.g. Asia/Kolkata",
   "createSchoolAddingSpinnerLabel": "Adding school",
   "createSchoolSubmitButton": "Add school",
-  "createSchoolSkipButton": "Finish without adding a school",
   "schoolDetailsIdLabel": "School ID",
   "schoolDetailsIdHelper": "Give this to whoever registers staff, vehicles, or routes for this school.",
   "schoolDetailsCodeFixedLabel": "School code (fixed)",
@@ -730,7 +713,6 @@
   "onboardingSummaryFirstSchoolLabel": "First school",
   "onboardingNoSchoolYet": "No school was added yet. Add one from the Schools screen before this organization is used day to day (BR-TEN-002).",
   "onboardingStartAnotherButton": "Onboard another organization",
-  "backButtonTooltip": "Back",
   "orgDetailsSectionTitle": "Organization details",
   "orgStatusClosed": "Closed",
   "orgStatusActive": "Active",
@@ -771,7 +753,7 @@
   "orgDetailsCodeFixedLabel": "Organization code (fixed, BR-TEN-007)",
   "orgDetailsSavingSpinnerLabel": "Saving organization",
   "orgDetailsSaveButton": "Save organization changes",
-  "addSchoolPromptIntro": "No school has been added yet. {orgName} needs at least one before it can be used day to day (BR-TEN-002).",
+  "addSchoolPromptIntro": "No school has been added yet. {orgName} needs at least one before it can be used day to day.",
   "@addSchoolPromptIntro": {
     "placeholders": {
       "orgName": {
@@ -977,5 +959,66 @@
   "custodyUntilFormatError": "Use the format YYYY-MM-DD, or leave blank for no end date.",
   "custodyAddSubmitButton": "Add restriction",
   "custodyErrorSubjectRequired": "Name exactly one person — a parent on file, or someone by name.",
-  "custodyErrorNotFound": "That restriction could not be found. It may already have been lifted."
+  "custodyErrorNotFound": "That restriction could not be found. It may already have been lifted.",
+  "onboardingAddOrganizationTitle": "Add organization",
+  "onboardingAddOrganizationSubtitle": "Create the organization, then add its first school.",
+  "onboardingStepOrganizationLabel": "Organization",
+  "onboardingStepFirstSchoolLabel": "First school",
+  "onboardingStepSemanticLabel": "Step {number} of {total}: {label}, {status}",
+  "@onboardingStepSemanticLabel": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingStepStatusDone": "completed",
+  "onboardingStepStatusCurrent": "current step",
+  "onboardingStepStatusUpcoming": "not started",
+  "createOrgSectionIdentityTitle": "Identity",
+  "createOrgSectionIdentityDescription": "How this organization is named and identified across the platform.",
+  "createOrgCodeHelper": "Short and unique. Fixed once the organization has schools or staff.",
+  "createOrgSectionRegionTitle": "Region",
+  "createOrgSectionRegionDescription": "Supplies phone, document, and data-retention defaults.",
+  "createOrgRegionHelper": "e.g. IN",
+  "createOrgSectionContactTitle": "Contact",
+  "createOrgSectionContactDescription": "Who the platform team reaches about this organization.",
+  "createOrgContinueButton": "Create and continue",
+  "createSchoolCreatedBannerTitle": "{orgName} ({orgCode}) created",
+  "@createSchoolCreatedBannerTitle": {
+    "placeholders": {
+      "orgName": {
+        "type": "String"
+      },
+      "orgCode": {
+        "type": "String"
+      }
+    }
+  },
+  "createSchoolCreatedBannerBody": "An organization needs at least one school before it can be used day to day. Add it now, or skip and add it later.",
+  "createSchoolSectionSchoolTitle": "Identity",
+  "createSchoolSectionSchoolDescription": "The campus buses travel to and from.",
+  "createSchoolCodeHelper": "Unique within this organization. Fixed once the school is in use.",
+  "createSchoolSectionLocationTitle": "Location",
+  "createSchoolSectionLocationDescription": "Arrival alerts are measured from this point.",
+  "createSchoolPlusCodeHint": "e.g. 7J4VXMQ5+8F",
+  "createSchoolPlusCodeGuide": "Paste the school's full Plus Code from Google Maps. The latitude and longitude are worked out from it and shown here before you save.",
+  "createSchoolLocationFoundTitle": "Location found",
+  "createSchoolGeofenceLabel": "Geofence radius",
+  "createSchoolGeofenceHelper": "Between 20 and 2000 metres around the school.",
+  "unitMetresSuffix": "m",
+  "createSchoolSectionTimeTitle": "Local time",
+  "createSchoolSectionTimeDescription": "Every time shown for this school uses its time zone.",
+  "createSchoolTimezoneLabel": "Time zone",
+  "createSchoolTimezoneHelper": "IANA name, e.g. Asia/Kolkata",
+  "createSchoolSkipForNowButton": "Skip for now"
 }

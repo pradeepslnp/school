@@ -17,8 +17,15 @@ import java.util.UUID;
  * from" — logout, or listing sessions with the current one marked — without the client naming an id
  * it could get wrong or forge. It is {@code null} only where there is no session behind the actor:
  * a system-initiated action, or a test that constructs an actor directly.
+ *
+ * <p>{@code homeTenantId} is the organization the account belongs to — the tenant its session was
+ * issued in (the access token's verified {@code tenantId} claim). Ordinarily that is also the
+ * tenant the request acts in, but not under a platform elevation (ADR-0016), where the request acts
+ * in a named target organization instead. A rule about the caller's own organization — such as not
+ * suspending it (BR-TEN-006) — must read this, never the ambient tenant. {@code null} under the
+ * same conditions as {@code sessionId}.
  */
-public record CurrentActor(UUID userId, String role, UUID sessionId) {
+public record CurrentActor(UUID userId, String role, UUID sessionId, UUID homeTenantId) {
 
   public CurrentActor {
     Objects.requireNonNull(userId, "userId");
@@ -26,10 +33,10 @@ public record CurrentActor(UUID userId, String role, UUID sessionId) {
   }
 
   public static CurrentActor of(UUID userId, String role) {
-    return new CurrentActor(userId, role, null);
+    return new CurrentActor(userId, role, null, null);
   }
 
-  public static CurrentActor of(UUID userId, String role, UUID sessionId) {
-    return new CurrentActor(userId, role, sessionId);
+  public static CurrentActor of(UUID userId, String role, UUID sessionId, UUID homeTenantId) {
+    return new CurrentActor(userId, role, sessionId, homeTenantId);
   }
 }

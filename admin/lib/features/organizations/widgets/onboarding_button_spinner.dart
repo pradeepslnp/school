@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 /// codebase's discipline that each feature under `features/` is self-contained
 /// (PROJECT_STRUCTURE.md §Flutter Layout); a two-line widget is cheaper to duplicate than to
 /// promote to `core/` on the strength of one other user.
+///
+/// Takes the enclosing button's own icon color, so it stays visible on the disabled fill the
+/// button shows while its action is in flight — a fixed `onPrimary` white disappeared there.
 class OnboardingButtonSpinner extends StatelessWidget {
   const OnboardingButtonSpinner({super.key, this.semanticsLabel});
 
@@ -18,7 +21,7 @@ class OnboardingButtonSpinner extends StatelessWidget {
       child: CircularProgressIndicator(
         strokeWidth: 2,
         semanticsLabel: semanticsLabel,
-        color: Theme.of(context).colorScheme.onPrimary,
+        color: IconTheme.of(context).color ?? Theme.of(context).colorScheme.onPrimary,
       ),
     );
   }

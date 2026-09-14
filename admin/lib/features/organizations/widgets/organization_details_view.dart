@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
-import '../../../core/geo/plus_code.dart';
 import '../../../l10n/app_localizations_extension.dart';
 import '../domain/onboarding_models.dart';
+import 'create_school_form.dart';
 import 'onboarding_button_spinner.dart';
+import 'onboarding_form_section.dart';
 import 'school_edit_form.dart';
 
 /// View and edit one organization plus its (at most one, in this view) school (TEN-001,
@@ -21,6 +22,7 @@ class OrganizationDetailsView extends StatelessWidget {
     required this.school,
     required this.isSubmitting,
     required this.actorRoles,
+    required this.actorOrganizationId,
     required this.onOrganizationSave,
     required this.onSchoolSave,
     required this.onAddSchool,
@@ -42,6 +44,12 @@ class OrganizationDetailsView extends StatelessWidget {
   /// it for anyone else is UX only; the server enforces the real rule regardless
   /// (`OrganizationController.suspend`/`reactivate`).
   final List<String> actorRoles;
+
+  /// The organization the signed-in operator's own account belongs to, or null if unknown.
+  /// Suspend is withheld on it: suspending it would lock out every account able to reactivate
+  /// it, so the server refuses (`SuspendOrganizationUseCase`, BR-TEN-006). UX only, like
+  /// [actorRoles].
+  final String? actorOrganizationId;
 
   final void Function({
     required String name,
@@ -93,6 +101,7 @@ class OrganizationDetailsView extends StatelessWidget {
           organization: organization,
           isSubmitting: isSubmitting,
           canManage: _canManageLifecycle,
+          isOwnOrganization: organization.id == actorOrganizationId,
           onSuspend: onSuspend,
           onReactivate: onReactivate,
         ),
@@ -118,19 +127,26 @@ class OrganizationDetailsView extends StatelessWidget {
             onSave: onSchoolSave,
           )
         else
-          _AddSchoolPrompt(
+          CreateSchoolForm(
             organization: organization,
             isSubmitting: isSubmitting,
-            onAddSchool: onAddSchool,
+            announceCreated: false,
+            onSubmit: onAddSchool,
             onSkip: onSkipSchool,
           ),
         const SizedBox(height: AdminSpacing.lg),
         const Divider(),
         const SizedBox(height: AdminSpacing.lg),
-        FilledButton.tonal(
-          key: const Key('org_onboarding_start_another_button'),
-          onPressed: isSubmitting ? null : onStartAnother,
-          child: Text(context.l10n.onboardingStartAnotherButton),
+        // A way on to the next job, not the point of this page — so a quiet outlined button, not
+        // a full-width bar competing with the save actions above it.
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: OutlinedButton.icon(
+            key: const Key('org_onboarding_start_another_button'),
+            onPressed: isSubmitting ? null : onStartAnother,
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(context.l10n.onboardingStartAnotherButton),
+          ),
         ),
       ],
     );
@@ -149,6 +165,7 @@ class _OrganizationLifecycleHeader extends StatelessWidget {
     required this.organization,
     required this.isSubmitting,
     required this.canManage,
+    required this.isOwnOrganization,
     required this.onSuspend,
     required this.onReactivate,
   });
@@ -156,6 +173,10 @@ class _OrganizationLifecycleHeader extends StatelessWidget {
   final CreatedOrganization organization;
   final bool isSubmitting;
   final bool canManage;
+
+  /// Whether this is the operator's own organization — Suspend is not offered on it. See
+  /// `OrganizationDetailsView.actorOrganizationId`.
+  final bool isOwnOrganization;
   final VoidCallback onSuspend;
   final VoidCallback onReactivate;
 
@@ -219,7 +240,7 @@ class _OrganizationLifecycleHeader extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        if (canManage && organization.status == 'ACTIVE')
+        if (canManage && !isOwnOrganization && organization.status == 'ACTIVE')
           OutlinedButton.icon(
             key: const Key('org_lifecycle_suspend_button'),
             onPressed: isSubmitting
@@ -306,290 +327,119 @@ class _OrganizationEditFormState extends State<_OrganizationEditForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    // The same identity / region / contact grouping as `CreateOrganizationForm`, so editing an
+    // organization reads like creating one — and sits consistently above the add-school form.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          key: const Key('org_details_code_field'),
-          enabled: false,
-          controller: TextEditingController(text: widget.organization.code),
-          decoration: InputDecoration(
-            labelText: context.l10n.orgDetailsCodeFixedLabel,
-            border: const OutlineInputBorder(),
-            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
-          key: const Key('org_details_name_field'),
-          controller: _name,
-          enabled: !widget.isSubmitting,
-          decoration: InputDecoration(
-            labelText: context.l10n.createOrgNameLabel,
-            border: const OutlineInputBorder(),
-            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
-          key: const Key('org_details_region_field'),
-          controller: _regionProfileCode,
-          enabled: !widget.isSubmitting,
-          textCapitalization: TextCapitalization.characters,
-          decoration: InputDecoration(
-            labelText: context.l10n.createOrgRegionLabel,
-            border: const OutlineInputBorder(),
-            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
-          key: const Key('org_details_contact_email_field'),
-          controller: _contactEmail,
-          enabled: !widget.isSubmitting,
-          keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            labelText: context.l10n.createOrgContactEmailLabel,
-            border: const OutlineInputBorder(),
-            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
-          key: const Key('org_details_contact_phone_field'),
-          controller: _contactPhone,
-          enabled: !widget.isSubmitting,
-          keyboardType: TextInputType.phone,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _submit(),
-          decoration: InputDecoration(
-            labelText: context.l10n.createOrgContactPhoneLabel,
-            border: const OutlineInputBorder(),
-            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        FilledButton(
-          key: const Key('org_details_save_button'),
-          onPressed: widget.isSubmitting ? null : _submit,
-          child: widget.isSubmitting
-              ? OnboardingButtonSpinner(semanticsLabel: context.l10n.orgDetailsSavingSpinnerLabel)
-              : Text(context.l10n.orgDetailsSaveButton),
-        ),
-      ],
-    );
-  }
-}
-
-/// Shown in place of the school edit form when the operator skipped step 2 — reuses the same
-/// code/name/timezone/location fields, just still framed as adding rather than editing.
-class _AddSchoolPrompt extends StatefulWidget {
-  const _AddSchoolPrompt({
-    required this.organization,
-    required this.isSubmitting,
-    required this.onAddSchool,
-    required this.onSkip,
-  });
-
-  final CreatedOrganization organization;
-  final bool isSubmitting;
-  final void Function({
-    required String code,
-    required String name,
-    required String timezone,
-    required double latitude,
-    required double longitude,
-    required int geofenceRadiusM,
-  }) onAddSchool;
-  final VoidCallback onSkip;
-
-  @override
-  State<_AddSchoolPrompt> createState() => _AddSchoolPromptState();
-}
-
-class _AddSchoolPromptState extends State<_AddSchoolPrompt> {
-  final _code = TextEditingController();
-  final _name = TextEditingController();
-  final _timezone = TextEditingController(text: 'Asia/Kolkata');
-  final _geofenceRadiusM = TextEditingController(text: '150');
-  final _plusCode = TextEditingController();
-
-  /// See `CreateSchoolForm` — the same Plus Code entry, because this is the same form reached
-  /// from a different place. The duplication is pre-existing; what must not differ is how a
-  /// school's location gets set, so both are changed together.
-  PlusCodeLocation? _resolved;
-  bool _plusCodeRejected = false;
-
-  @override
-  void dispose() {
-    _code.dispose();
-    _name.dispose();
-    _timezone.dispose();
-    _geofenceRadiusM.dispose();
-    _plusCode.dispose();
-    super.dispose();
-  }
-
-  void _onPlusCodeChanged(String value) {
-    final trimmed = value.trim();
-
-    if (trimmed.isEmpty) {
-      setState(() {
-        _resolved = null;
-        _plusCodeRejected = false;
-      });
-      return;
-    }
-
-    final decoded = PlusCode.decode(trimmed);
-    setState(() {
-      _resolved = decoded;
-      _plusCodeRejected = decoded == null && trimmed.length >= 9;
-    });
-  }
-
-  void _submit() {
-    if (widget.isSubmitting) return;
-
-    // No resolved location, no submission. Before this, an empty coordinate field parsed to
-    // 0 and the server accepted it: 0, 0 is a valid coordinate in the Gulf of Guinea, so a
-    // school created that way got a geofence in the Atlantic and would never fire an arrival
-    // notification (BR-ALERT-001). A missing location must fail loudly here, not silently
-    // succeed as a wrong one.
-    if (_resolved == null) {
-      setState(() => _plusCodeRejected = true);
-      return;
-    }
-    widget.onAddSchool(
-      code: _code.text,
-      name: _name.text,
-      timezone: _timezone.text.trim(),
-      latitude: _resolved?.latitude ?? 0,
-      longitude: _resolved?.longitude ?? 0,
-      geofenceRadiusM: int.tryParse(_geofenceRadiusM.text.trim()) ?? 0,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          context.l10n.addSchoolPromptIntro(widget.organization.name),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
-          key: const Key('org_details_add_school_code_field'),
-          controller: _code,
-          enabled: !widget.isSubmitting,
-          textCapitalization: TextCapitalization.characters,
-          decoration: InputDecoration(
-            labelText: context.l10n.createSchoolCodeLabel,
-            hintText: context.l10n.createSchoolCodeHint,
-            border: const OutlineInputBorder(),
-            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
-          key: const Key('org_details_add_school_name_field'),
-          controller: _name,
-          enabled: !widget.isSubmitting,
-          decoration: InputDecoration(
-            labelText: context.l10n.schoolFieldNameLabel,
-            border: const OutlineInputBorder(),
-            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
-          key: const Key('org_details_add_school_timezone_field'),
-          controller: _timezone,
-          enabled: !widget.isSubmitting,
-          decoration: InputDecoration(
-            labelText: context.l10n.schoolFieldTimezoneLabel,
-            border: const OutlineInputBorder(),
-            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-          ),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
-          key: const Key('org_details_add_school_plus_code_field'),
-          controller: _plusCode,
-          enabled: !widget.isSubmitting,
-          textCapitalization: TextCapitalization.characters,
-          onChanged: _onPlusCodeChanged,
-          decoration: InputDecoration(
-            labelText: context.l10n.schoolFieldPlusCodeLabel,
-            helperText: context.l10n.schoolFieldPlusCodeHelp,
-            helperMaxLines: 3,
-            errorText: _plusCodeRejected
-                ? context.l10n.schoolFieldPlusCodeInvalid
-                : null,
-            errorMaxLines: 3,
-            border: const OutlineInputBorder(),
-            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
-          ),
-        ),
-        if (_resolved != null) ...[
-          const SizedBox(height: AdminSpacing.sm),
-          Row(
+        OnboardingFormSection(
+          title: l10n.createOrgSectionIdentityTitle,
+          description: l10n.createOrgSectionIdentityDescription,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(
-                Icons.place_outlined,
-                size: 18,
-                color: theme.colorScheme.onSurfaceVariant,
+              TextField(
+                key: const Key('org_details_name_field'),
+                controller: _name,
+                enabled: !widget.isSubmitting,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: l10n.createOrgNameLabel,
+                  border: const OutlineInputBorder(),
+                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
+                ),
               ),
-              const SizedBox(width: AdminSpacing.sm),
-              Expanded(
-                child: Text(
-                  context.l10n.schoolFieldPlusCodeResolved(
-                    _resolved!.latitude.toStringAsFixed(6),
-                    _resolved!.longitude.toStringAsFixed(6),
-                    _resolved!.precisionMetres.toString(),
-                  ),
-                  key: const Key('org_details_add_school_plus_code_resolved'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+              const SizedBox(height: AdminSpacing.md),
+              OnboardingCompactField(
+                maxWidth: 320,
+                child: TextField(
+                  key: const Key('org_details_code_field'),
+                  enabled: false,
+                  controller: TextEditingController(text: widget.organization.code),
+                  decoration: InputDecoration(
+                    labelText: l10n.orgDetailsCodeFixedLabel,
+                    border: const OutlineInputBorder(),
+                    constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
                   ),
                 ),
               ),
             ],
           ),
-        ],
-        const SizedBox(height: AdminSpacing.md),
-        TextField(
-          key: const Key('org_details_add_school_geofence_field'),
-          controller: _geofenceRadiusM,
-          enabled: !widget.isSubmitting,
-          keyboardType: TextInputType.number,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _submit(),
-          decoration: InputDecoration(
-            labelText: context.l10n.schoolFieldGeofenceLabel,
-            border: const OutlineInputBorder(),
-            constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
+        ),
+        const OnboardingSectionDivider(),
+        OnboardingFormSection(
+          title: l10n.createOrgSectionRegionTitle,
+          description: l10n.createOrgSectionRegionDescription,
+          child: OnboardingCompactField(
+            maxWidth: 320,
+            child: TextField(
+              key: const Key('org_details_region_field'),
+              controller: _regionProfileCode,
+              enabled: !widget.isSubmitting,
+              textCapitalization: TextCapitalization.characters,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                labelText: l10n.createOrgRegionLabel,
+                helperText: l10n.createOrgRegionHelper,
+                border: const OutlineInputBorder(),
+                constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: AdminSpacing.md),
-        FilledButton(
-          key: const Key('org_details_add_school_button'),
-          onPressed: widget.isSubmitting ? null : _submit,
-          child: widget.isSubmitting
-              ? OnboardingButtonSpinner(semanticsLabel: context.l10n.createSchoolAddingSpinnerLabel)
-              : Text(context.l10n.createSchoolSubmitButton),
+        const OnboardingSectionDivider(),
+        OnboardingFormSection(
+          title: l10n.createOrgSectionContactTitle,
+          description: l10n.createOrgSectionContactDescription,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                key: const Key('org_details_contact_email_field'),
+                controller: _contactEmail,
+                enabled: !widget.isSubmitting,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: l10n.createOrgContactEmailLabel,
+                  border: const OutlineInputBorder(),
+                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
+                ),
+              ),
+              const SizedBox(height: AdminSpacing.md),
+              TextField(
+                key: const Key('org_details_contact_phone_field'),
+                controller: _contactPhone,
+                enabled: !widget.isSubmitting,
+                keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _submit(),
+                decoration: InputDecoration(
+                  labelText: l10n.createOrgContactPhoneLabel,
+                  border: const OutlineInputBorder(),
+                  constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: AdminSpacing.sm),
-        TextButton(
-          key: const Key('org_details_skip_school_button'),
-          onPressed: widget.isSubmitting ? null : widget.onSkip,
-          child: Text(context.l10n.addSchoolPromptSkipButton),
+        OnboardingFormFooter(
+          primary: FilledButton(
+            key: const Key('org_details_save_button'),
+            onPressed: widget.isSubmitting ? null : _submit,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(l10n.orgDetailsSaveButton),
+                if (widget.isSubmitting) ...[
+                  const SizedBox(width: AdminSpacing.sm),
+                  OnboardingButtonSpinner(semanticsLabel: l10n.orgDetailsSavingSpinnerLabel),
+                ],
+              ],
+            ),
+          ),
         ),
       ],
     );

@@ -39,6 +39,8 @@ Standards: [`API_STANDARDS.md`](API_STANDARDS.md) · Errors: [`ERROR_CATALOG.md`
 
 `POST /organizations/{id}/suspend` blocks all user access except platform operations. It **destroys no data and does not stop safety recording for trips already started** (BR-TEN-006) — a suspension for non-payment must not strand a bus mid-route with no way to record boarding.
 
+An operator cannot suspend the organization their own account belongs to — `422 ORG_CANNOT_SUSPEND_OWN_ORGANIZATION` (BR-TEN-006). The suspension would block their own reactivation request too, leaving no account able to undo it.
+
 ---
 
 ## Schools
@@ -194,3 +196,4 @@ The **only** path across the tenant boundary (BR-TEN-004 🔴). `justification` 
 7. Setting a derived scope level returns `400`.
 8. Platform tenant access without a justification is refused, and a successful elevation writes an audit record before the first read.
 9. Suspending an organization does not stop safety recording on in-progress trips.
+10. An operator suspending the organization their own account belongs to is refused.

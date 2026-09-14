@@ -22,9 +22,15 @@ public record IssuedSession(
    * Neither is ever trusted for authorisation: every request re-resolves permission and scope
    * server-side (BR-IAM-001, BR-IAM-004, BR-IAM-006). The parent app deliberately does not even
    * model either field.
+   *
+   * <p>{@code organizationId} — the organization the account belongs to — gets the same
+   * affordance-only treatment. It differs from an {@code ORG} scope: a {@code SUPER_ADMIN} holds no
+   * organization scope yet still belongs to one, and the admin console uses this to withhold
+   * Suspend on it (BR-TEN-006), which the server refuses regardless.
    */
   public record AuthenticatedUserView(
       String id,
+      String organizationId,
       String firstName,
       String lastName,
       String preferredLocale,
