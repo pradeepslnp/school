@@ -33,5 +33,7 @@ include(
     "guardian-boarding",
     // MOD-18. Read-only composition for the parent app; owns no tables (ADR-0010).
     "guardian-parent",
+    // MOD-19. Read-only global search for the admin console; owns no tables (ADR-0017).
+    "guardian-search",
     "guardian-api",
 )

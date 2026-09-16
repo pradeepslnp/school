@@ -35,6 +35,7 @@ class ConsoleShell extends StatelessWidget {
     this.selectedDestinationId,
     this.onDestinationSelected,
     this.isSigningOut = false,
+    this.headerSearch,
     this.child,
   });
 
@@ -51,6 +52,14 @@ class ConsoleShell extends StatelessWidget {
 
   /// The screen. Null while the console has no modules — see [NoModulesNotice].
   final Widget? child;
+
+  /// Global search (SRC-001), shown in the header — or null for an operator it is not offered
+  /// to. Passed in rather than built here, so the shell still knows nothing about what search
+  /// finds or where it leads.
+  ///
+  /// Not shown below [narrowBreakpoint]: the narrow layout is the incident-response subset
+  /// (ADMIN_WEB.md §Responsive), and a results panel wider than the screen is not usable there.
+  final Widget? headerSearch;
 
   /// Full sidebar and detail panel above this (ADMIN_WEB.md §Responsive).
   static const double wideBreakpoint = 1280;
@@ -84,6 +93,7 @@ class ConsoleShell extends StatelessWidget {
             user: user,
             onSignOut: onSignOut,
             isSigningOut: isSigningOut,
+            search: isNarrow ? null : headerSearch,
             // The drawer button is only meaningful when there is something in the drawer.
             showMenuButton: isNarrow && showNavigation,
             // The wordmark lives on the rail. Where there is no rail — narrow, or a console
@@ -212,6 +222,7 @@ class _ConsoleHeader extends StatelessWidget implements PreferredSizeWidget {
     required this.isSigningOut,
     required this.showMenuButton,
     required this.showBrand,
+    this.search,
   });
 
   final AuthenticatedUser user;
@@ -219,6 +230,7 @@ class _ConsoleHeader extends StatelessWidget implements PreferredSizeWidget {
   final bool isSigningOut;
   final bool showMenuButton;
   final bool showBrand;
+  final Widget? search;
 
   @override
   Size get preferredSize => const Size.fromHeight(62);
@@ -234,26 +246,38 @@ class _ConsoleHeader extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: livery.panel,
       surfaceTintColor: Colors.transparent,
       shape: Border(bottom: BorderSide(color: livery.border)),
-      title: showBrand
+      title: showBrand || search != null
           ? Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Semantics(
-                  excludeSemantics: true,
-                  child: Icon(
-                    Icons.directions_bus_filled_outlined,
-                    size: 22,
-                    color: theme.colorScheme.primary,
+                if (showBrand) ...[
+                  Semantics(
+                    excludeSemantics: true,
+                    child: Icon(
+                      Icons.directions_bus_filled_outlined,
+                      size: 22,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
-                ),
-                const SizedBox(width: AdminSpacing.sm),
-                Text(
-                  context.l10n.consoleHeaderBrand,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontFamily: kAdminDisplayFontFamily,
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(width: AdminSpacing.sm),
+                  Text(
+                    context.l10n.consoleHeaderBrand,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontFamily: kAdminDisplayFontFamily,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
+                ],
+                if (search != null) ...[
+                  if (showBrand) const SizedBox(width: AdminSpacing.lg),
+                  // Bounded: a search field stretched across a wide monitor reads as a banner,
+                  // and its results panel would open far from where the eye is.
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 640),
+                      child: search,
+                    ),
+                  ),
+                ],
               ],
             )
           : null,

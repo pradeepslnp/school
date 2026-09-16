@@ -678,6 +678,42 @@ table at the top).
 | `stopFormErrorGeofenceRange` | Geofence radius must be between 20 and 500 metres. | pending-kn-translation |
 | `stopFormErrorTimeFormat` | Times must be in 24-hour HH:mm form, e.g. 07:40. | pending-kn-translation |
 
+### Global search (SRC-001)
+
+| Key | English value | Kannada status |
+|---|---|---|
+| `globalSearchHint` | Search students, parents, staff, vehicles… | pending-kn-translation |
+| `globalSearchShortcutMac` | ⌘K | pending-kn-translation |
+| `globalSearchShortcutOther` | Ctrl K | pending-kn-translation |
+| `globalSearchClearTooltip` | Clear search | pending-kn-translation |
+| `globalSearchMinLength` | Type at least 3 characters to search | pending-kn-translation |
+| `globalSearchLoading` | Searching | pending-kn-translation |
+| `globalSearchNoResults` | No matches for “{query}” | pending-kn-translation |
+| `globalSearchError` | Search is unavailable right now. Try again shortly. | pending-kn-translation |
+| `globalSearchNoScreen` | There is no screen for this record in your console. | pending-kn-translation |
+| `globalSearchOpenFailed` | That record could not be opened right now. | pending-kn-translation |
+| `globalSearchMoreResults` | More matches — keep typing to narrow them down | pending-kn-translation |
+| `globalSearchSubtitleSeparator` | · | pending-kn-translation |
+| `globalSearchGroupStudents` | Students | pending-kn-translation |
+| `globalSearchGroupGuardians` | Parents | pending-kn-translation |
+| `globalSearchGroupStaff` | Drivers & attendants | pending-kn-translation |
+| `globalSearchGroupVehicles` | Vehicles | pending-kn-translation |
+| `globalSearchGroupRoutes` | Routes | pending-kn-translation |
+| `globalSearchGroupUsers` | Administrators | pending-kn-translation |
+| `globalSearchGroupSchools` | Schools | pending-kn-translation |
+| `globalSearchGroupOrganizations` | Organizations | pending-kn-translation |
+| `globalSearchKindStudent` | Student | pending-kn-translation |
+| `globalSearchKindGuardian` | Parent | pending-kn-translation |
+| `globalSearchKindDriver` | Driver | pending-kn-translation |
+| `globalSearchKindAttendant` | Attendant | pending-kn-translation |
+| `globalSearchKindVehicle` | Vehicle | pending-kn-translation |
+| `globalSearchKindRoute` | Route | pending-kn-translation |
+| `globalSearchKindUser` | Administrator | pending-kn-translation |
+| `globalSearchKindSchool` | School | pending-kn-translation |
+| `globalSearchKindOrganization` | Organization | pending-kn-translation |
+| `globalSearchLinkedChild` | Child: {studentName} | pending-kn-translation |
+| `globalSearchAdmissionNumber` | Adm {admissionNo} | pending-kn-translation |
+
 ### Other
 
 | Key | English value | Kannada status |

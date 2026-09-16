@@ -29,6 +29,7 @@ The platform's functional decomposition. Module boundaries are also **code bound
 | MOD-16 | Audit | `com.guardian.audit` | Audit records, access logs |
 | MOD-17 | Configuration | `com.guardian.config` | Tenant configuration, region profiles, reference data |
 | MOD-18 | Parent Experience | `com.guardian.parent` | **Owns nothing.** Read-only composition of the parent app's screens (ADR-0010) |
+| MOD-19 | Search | `com.guardian.search` | **Owns nothing.** Read-only global search for the admin console (ADR-0017) |
 
 ---
 
@@ -135,6 +136,11 @@ Composes the parent app's read surfaces — the dashboard (P-02) and child detai
 **Read-only, and owns no tables.** It sits above every module it reads, which is what lets `GET /guardians/me/students` carry live journey state without MOD-04 depending upward on MOD-08 — the cycle that made the documented endpoint unbuildable. Every parent-app *write* stays in the owning module: absences in MOD-14, pickup persons in MOD-04, notification reads in MOD-12.
 
 Its cross-module table access is a deliberate, bounded exception to cross-module rule 1, argued and constrained in [`ADR-0010`](../00-governance/adr/ADR-0010-parent-read-composition.md).
+
+### MOD-19 Search
+Finds any record the caller may already see — students, guardians, transport staff, vehicles, routes, administrators, schools, organizations — from one query, for the admin console's header search (SRC-001).
+
+**Read-only, and owns no tables.** Like MOD-18 it sits above the modules it reads and composes one projection; the same bounded exception to cross-module rule 1 applies, argued in [`ADR-0017`](../00-governance/adr/ADR-0017-global-search.md). It depends on MOD-01 only to reuse the single gated path to a platform operator's cross-tenant organization list. A platform operator's search across every organization reads through the read-only `platform_search_*` functions and audits each organization it shows ([`ADR-0018`](../00-governance/adr/ADR-0018-platform-wide-search.md)). Each kind of result requires that kind's own view permission, and school scope is applied inside the query (BR-IAM-006).
 
 ### MOD-16 Audit
 Append-only audit records written in-transaction by every module via a port. Also records data-access events for child PII.

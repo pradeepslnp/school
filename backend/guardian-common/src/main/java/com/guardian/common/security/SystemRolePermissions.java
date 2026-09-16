@@ -33,6 +33,7 @@ public final class SystemRolePermissions {
                   "PERM-ORG-SUSPEND",
                   "PERM-SCHOOL-CREATE",
                   "PERM-SCHOOL-VIEW",
+                  "PERM-SEARCH-QUERY",
                   "PERM-SCHOOL-EDIT",
                   "PERM-CONFIG-VIEW",
                   "PERM-CONFIG-EDIT",
@@ -91,6 +92,7 @@ public final class SystemRolePermissions {
                   "PERM-ORG-EDIT",
                   "PERM-SCHOOL-CREATE",
                   "PERM-SCHOOL-VIEW",
+                  "PERM-SEARCH-QUERY",
                   "PERM-SCHOOL-EDIT",
                   "PERM-CONFIG-VIEW",
                   "PERM-CONFIG-EDIT",
@@ -143,6 +145,7 @@ public final class SystemRolePermissions {
           "SCHOOL_ADMIN",
               Set.of(
                   "PERM-SCHOOL-VIEW",
+                  "PERM-SEARCH-QUERY",
                   "PERM-SCHOOL-EDIT",
                   "PERM-CONFIG-VIEW",
                   "PERM-CONFIG-EDIT",
@@ -199,6 +202,7 @@ public final class SystemRolePermissions {
           "PRINCIPAL",
               Set.of(
                   "PERM-SCHOOL-VIEW",
+                  "PERM-SEARCH-QUERY",
                   "PERM-CONFIG-VIEW",
                   "PERM-USER-VIEW",
                   "PERM-PROFILE-SELF-EDIT",
@@ -222,6 +226,7 @@ public final class SystemRolePermissions {
           "TRANSPORT_MANAGER",
               Set.of(
                   "PERM-SCHOOL-VIEW",
+                  "PERM-SEARCH-QUERY",
                   "PERM-USER-VIEW",
                   "PERM-PROFILE-SELF-EDIT",
                   "PERM-STUDENT-VIEW",

@@ -27,6 +27,8 @@ import '../features/routes/repository/route_repository.dart';
 import '../features/route_assignments/data_provider/route_assignment_data_provider.dart';
 import '../features/route_assignments/repository/route_assignment_repository.dart';
 import '../features/routes/repository/stop_repository.dart';
+import '../features/search/data_provider/search_data_provider.dart';
+import '../features/search/repository/search_repository.dart';
 import '../features/staff/data_provider/staff_data_provider.dart';
 import '../features/students/data_provider/student_data_provider.dart';
 import '../features/students/import/data_provider/student_import_data_provider.dart';
@@ -58,6 +60,7 @@ class AppDependencies {
     required this.organizationOnboardingRepository,
     required this.staffRepository,
     required this.studentRepository,
+    required this.searchRepository,
     required this.studentImportRepository,
     required this.vehicleRepository,
     required this.routeRepository,
@@ -94,6 +97,11 @@ class AppDependencies {
   /// though only `SUPER_ADMIN`/`ORG_ADMIN`/`SCHOOL_ADMIN` are offered the write affordances;
   /// see `StudentListScreen`.
   final StudentRepository studentRepository;
+
+  /// Global search (SRC-001, ADR-0017) — the console header's search field, offered to the roles
+  /// holding `PERM-SEARCH-QUERY`. What it may return is decided server-side per kind of record;
+  /// see `GlobalSearchRoute`.
+  final SearchRepository searchRepository;
 
   /// Bulk student import (A-12, STU-002) — reached from the register by roles holding
   /// `PERM-STUDENT-IMPORT` (`SUPER_ADMIN` / `ORG_ADMIN` / `SCHOOL_ADMIN`).
@@ -198,6 +206,10 @@ class AppDependencies {
       dataProvider: StudentDataProvider(client: restClient),
     );
 
+    final searchRepository = SearchRepository(
+      dataProvider: SearchDataProvider(client: restClient),
+    );
+
     final studentImportRepository = StudentImportRepository(
       dataProvider: StudentImportDataProvider(client: restClient),
     );
@@ -278,6 +290,7 @@ class AppDependencies {
       organizationOnboardingRepository: organizationOnboardingRepository,
       staffRepository: staffRepository,
       studentRepository: studentRepository,
+      searchRepository: searchRepository,
       studentImportRepository: studentImportRepository,
       vehicleRepository: vehicleRepository,
       routeRepository: routeRepository,

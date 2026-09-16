@@ -1020,5 +1020,57 @@
   "createSchoolSectionTimeDescription": "Every time shown for this school uses its time zone.",
   "createSchoolTimezoneLabel": "Time zone",
   "createSchoolTimezoneHelper": "IANA name, e.g. Asia/Kolkata",
-  "createSchoolSkipForNowButton": "Skip for now"
+  "createSchoolSkipForNowButton": "Skip for now",
+  "globalSearchHint": "Search students, parents, staff, vehicles…",
+  "globalSearchShortcutMac": "⌘K",
+  "globalSearchShortcutOther": "Ctrl K",
+  "globalSearchClearTooltip": "Clear search",
+  "globalSearchMinLength": "Type at least 3 characters to search",
+  "globalSearchLoading": "Searching",
+  "globalSearchNoResults": "No matches for “{query}”",
+  "@globalSearchNoResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSearchError": "Search is unavailable right now. Try again shortly.",
+  "globalSearchOpenFailed": "That record could not be opened right now.",
+  "globalSearchMoreResults": "More matches — keep typing to narrow them down",
+  "globalSearchSubtitleSeparator": " · ",
+  "globalSearchGroupStudents": "Students",
+  "globalSearchGroupGuardians": "Parents",
+  "globalSearchGroupStaff": "Drivers & attendants",
+  "globalSearchGroupVehicles": "Vehicles",
+  "globalSearchGroupRoutes": "Routes",
+  "globalSearchGroupUsers": "Administrators",
+  "globalSearchGroupSchools": "Schools",
+  "globalSearchGroupOrganizations": "Organizations",
+  "globalSearchKindStudent": "Student",
+  "globalSearchKindGuardian": "Parent",
+  "globalSearchKindDriver": "Driver",
+  "globalSearchKindAttendant": "Attendant",
+  "globalSearchKindVehicle": "Vehicle",
+  "globalSearchKindRoute": "Route",
+  "globalSearchKindUser": "Administrator",
+  "globalSearchKindSchool": "School",
+  "globalSearchKindOrganization": "Organization",
+  "globalSearchLinkedChild": "Child: {studentName}",
+  "@globalSearchLinkedChild": {
+    "placeholders": {
+      "studentName": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSearchAdmissionNumber": "Adm {admissionNo}",
+  "@globalSearchAdmissionNumber": {
+    "placeholders": {
+      "admissionNo": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSearchNoScreen": "There is no screen for this record in your console."
 }

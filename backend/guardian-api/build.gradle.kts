@@ -17,6 +17,8 @@ dependencies {
     // MOD-18, read-only (ADR-0010). Depends downward on nothing here — it reads the schema,
     // not other modules' Java.
     implementation(project(":guardian-parent"))
+    // MOD-19, read-only (ADR-0017). Reads the schema through its own projection, like MOD-18.
+    implementation(project(":guardian-search"))
 
     implementation(rootProject.libs.spring.boot.starter.web)
     implementation(rootProject.libs.spring.boot.starter.data.jpa)

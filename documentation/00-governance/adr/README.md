@@ -31,6 +31,8 @@ An ADR records a decision that is expensive to reverse: why it was made, what wa
 | [ADR-0014](ADR-0014-platform-email-delivery-smtp.md) | Platform email delivery over SMTP | Accepted |
 | [ADR-0015](ADR-0015-admin-web-session-persistence.md) | Persisted admin-web sessions in browser local storage | Accepted |
 | [ADR-0016](ADR-0016-platform-operator-organization-elevation.md) | Platform-operator elevation into an organization | Accepted |
+| [ADR-0017](ADR-0017-global-search.md) | Console global search as a read-only composition module | Accepted (cross-organization scope superseded by ADR-0018) |
+| [ADR-0018](ADR-0018-platform-wide-search.md) | Platform-wide search for platform operators | Accepted |
 
 ## Writing a new ADR
 

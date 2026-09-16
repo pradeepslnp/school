@@ -1955,4 +1955,107 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get createSchoolSkipForNowButton => 'Skip for now';
+
+  @override
+  String get globalSearchHint => 'Search students, parents, staff, vehicles…';
+
+  @override
+  String get globalSearchShortcutMac => '⌘K';
+
+  @override
+  String get globalSearchShortcutOther => 'Ctrl K';
+
+  @override
+  String get globalSearchClearTooltip => 'Clear search';
+
+  @override
+  String get globalSearchMinLength => 'Type at least 3 characters to search';
+
+  @override
+  String get globalSearchLoading => 'Searching';
+
+  @override
+  String globalSearchNoResults(String query) {
+    return 'No matches for “$query”';
+  }
+
+  @override
+  String get globalSearchError =>
+      'Search is unavailable right now. Try again shortly.';
+
+  @override
+  String get globalSearchOpenFailed =>
+      'That record could not be opened right now.';
+
+  @override
+  String get globalSearchMoreResults =>
+      'More matches — keep typing to narrow them down';
+
+  @override
+  String get globalSearchSubtitleSeparator => ' · ';
+
+  @override
+  String get globalSearchGroupStudents => 'Students';
+
+  @override
+  String get globalSearchGroupGuardians => 'Parents';
+
+  @override
+  String get globalSearchGroupStaff => 'Drivers & attendants';
+
+  @override
+  String get globalSearchGroupVehicles => 'Vehicles';
+
+  @override
+  String get globalSearchGroupRoutes => 'Routes';
+
+  @override
+  String get globalSearchGroupUsers => 'Administrators';
+
+  @override
+  String get globalSearchGroupSchools => 'Schools';
+
+  @override
+  String get globalSearchGroupOrganizations => 'Organizations';
+
+  @override
+  String get globalSearchKindStudent => 'Student';
+
+  @override
+  String get globalSearchKindGuardian => 'Parent';
+
+  @override
+  String get globalSearchKindDriver => 'Driver';
+
+  @override
+  String get globalSearchKindAttendant => 'Attendant';
+
+  @override
+  String get globalSearchKindVehicle => 'Vehicle';
+
+  @override
+  String get globalSearchKindRoute => 'Route';
+
+  @override
+  String get globalSearchKindUser => 'Administrator';
+
+  @override
+  String get globalSearchKindSchool => 'School';
+
+  @override
+  String get globalSearchKindOrganization => 'Organization';
+
+  @override
+  String globalSearchLinkedChild(String studentName) {
+    return 'Child: $studentName';
+  }
+
+  @override
+  String globalSearchAdmissionNumber(String admissionNo) {
+    return 'Adm $admissionNo';
+  }
+
+  @override
+  String get globalSearchNoScreen =>
+      'There is no screen for this record in your console.';
 }

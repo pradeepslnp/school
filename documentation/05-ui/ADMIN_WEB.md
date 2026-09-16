@@ -54,6 +54,34 @@ Nine flat destinations make an operator read the whole rail to find one module. 
 
 ---
 
+## Global Search
+
+Operators find a record by what they know about it — a name, a phone number, an admission, registration, or employee number — without first choosing the screen it lives on (SRC-001, [`SEARCH_API.md`](../04-api/SEARCH_API.md), ADR-0017).
+
+```
+┌ header ─────────────────────────────────────────────────────────────────┐
+│ 🚌 Guardian   [🔍 Search students, parents, staff, vehicles…      ⌘K]    │
+└──────────────────────────────────────────────────────────────────────────┘
+               ┌─────────────────────────────────────────────────┐
+               │ Parents                                         │
+               │ (👪) 9990012345                                  │
+               │      Parent · Lakshmi Rao · Parent of Diya Rao   │
+               │ Drivers & attendants                            │
+               │ (🪪) 9990000001                                  │
+               │      Driver · Suresh Kumar · Greenwood Main      │
+               └─────────────────────────────────────────────────┘
+```
+
+- **Placement.** In the console header, on every layout of 768 px and wider. Not in the narrow incident-response layout (§Responsive).
+- **A row answers "what did I find, and where is it from?"** The title is what the query matched — the name, or the number or code itself when that is what was typed. The subtitle names the kind of record as a word, then whose it is when a number matched, then the school or the linked child. Kind is never carried by color alone.
+- **Behaviour.** Results appear after 3 characters and a short typing pause, grouped by kind, at most 5 per kind, with a "keep typing" hint when more matched. Previous results stay visible under a thin progress bar while the next search runs.
+- **Keyboard.** ⌘K / Ctrl+K focuses the field from anywhere; ↑ / ↓ move through results; Enter opens the highlighted one; Esc clears the query, then closes.
+- **Where a result leads.** Nowhere new — each opens the screen that record already has: a student opens their record (A-11); a parent opens their linked child's record; a driver, attendant, vehicle, or route opens that screen at the record's school; an administrator opens Users (A-43); a school opens School (A-41) for a `SCHOOL_ADMIN` and that school's register otherwise; an organization opens its details (A-40). Only destinations the operator's role can already reach from the rail.
+- **Platform operators search every organization at once** (ADR-0018) — there is no organization picker. Each result's subtitle ends with the organization it belongs to, and opening a result enters that organization through the ordinary elevation (ADR-0016).
+- **Visibility is the server's.** The console hides nothing it received and filters nothing. Every student a search shows is recorded as a data access (BR-IAM-012), which is why the minimum length and the per-kind cap exist.
+
+---
+
 ## A-01 — Operations Dashboard
 
 The landing screen. Exceptions first, statistics second.

@@ -92,6 +92,14 @@ public class PermissionEnforcementInterceptor implements HandlerInterceptor {
           "PERM-TRACKING-",
           "PERM-RECONCILIATION-");
 
+  /**
+   * Request attribute holding the permissions resolved for this request, set once every check here
+   * has passed. Read by {@code CallerAccessArgumentResolver} so a controller deciding per kind of
+   * record reuses this resolution instead of repeating it — and cannot disagree with it.
+   */
+  public static final String GRANTED_PERMISSIONS_ATTRIBUTE =
+      PermissionEnforcementInterceptor.class.getName() + ".grantedPermissions";
+
   private final PermissionResolver permissionResolver;
   private final OrganizationRepository organizationRepository;
 
@@ -133,6 +141,7 @@ public class PermissionEnforcementInterceptor implements HandlerInterceptor {
 
     rejectIfOrganizationSuspended(required.value());
 
+    request.setAttribute(GRANTED_PERMISSIONS_ATTRIBUTE, granted);
     return true;
   }
 

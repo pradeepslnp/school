@@ -79,6 +79,24 @@ Reporting runs against a read replica (BR-RPT-004), so these indexes cost write 
 
 ---
 
+## Search (trigram)
+
+Global search (SRC-001) matches substrings — `LIKE '%…%'` — over names, codes, email, phone digits, and registration numbers. A B-tree cannot serve that, and a platform operator's search spans every tenant, so `tenant_id`-leading indexes cannot narrow it either (ADR-0018). `V19__platform_search.sql` adds `pg_trgm` GIN indexes on exactly the expressions the search predicates use:
+
+| Table | Indexed expressions |
+|---|---|
+| `students` | full name (`lower(first_name` · `' '` · `last_name)`), `lower(admission_no)` |
+| `guardians` | full name, phone digits (`regexp_replace(phone, '[^0-9]', '', 'g')`), `lower(email)` |
+| `transport_staff` | full name, phone digits, `lower(employee_code)` |
+| `vehicles` | `lower(display_name)`, `lower(registration_no)`, registration letters and digits only |
+| `routes` | `lower(name)`, `lower(code)` |
+| `schools` | `lower(name)`, `lower(code)` |
+| `users` | full name, `lower(email)`, phone digits |
+
+Trigram indexes serve patterns of 3 or more characters — the minimum `SearchQuery` enforces. **An expression changed in the search SQL must change in the index too**, or the index silently stops being used. They add write cost on insert, most visible during bulk student import.
+
+---
+
 ## Partial Indexes
 
 Used heavily, because most hot queries filter on a small active subset:

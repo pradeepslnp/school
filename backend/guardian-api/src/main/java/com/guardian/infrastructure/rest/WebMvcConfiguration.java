@@ -25,12 +25,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfiguration implements WebMvcConfigurer {
 
   private final CurrentActorArgumentResolver currentActorArgumentResolver;
+  private final CallerAccessArgumentResolver callerAccessArgumentResolver;
   private final PermissionEnforcementInterceptor permissionEnforcementInterceptor;
 
   public WebMvcConfiguration(
       CurrentActorArgumentResolver currentActorArgumentResolver,
+      CallerAccessArgumentResolver callerAccessArgumentResolver,
       PermissionEnforcementInterceptor permissionEnforcementInterceptor) {
     this.currentActorArgumentResolver = currentActorArgumentResolver;
+    this.callerAccessArgumentResolver = callerAccessArgumentResolver;
     this.permissionEnforcementInterceptor = permissionEnforcementInterceptor;
   }
 
@@ -39,6 +42,8 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
     // Added ahead of Spring's defaults: custom resolvers are consulted first, so this wins over
     // model-attribute binding for the same parameter type.
     resolvers.add(currentActorArgumentResolver);
+    // Same reasoning: CallerAccess must never be bound from request parameters.
+    resolvers.add(callerAccessArgumentResolver);
   }
 
   @Override

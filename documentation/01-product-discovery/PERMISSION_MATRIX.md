@@ -176,6 +176,14 @@ Guardian `PERM-INCIDENT-VIEW` is limited to incidents affecting their own child 
 
 `PERM-NOTIFICATION-SELF-VIEW` covers the notification centre (P-08) and marking an entry read. Held by everyone, and scoped to the caller's **own** notifications — it grants no visibility into anyone else's, so it is never a route to another family's child (BR-NTF-007 🔴). It exists as a row here rather than being left as "authenticated" because an endpoint with no declared permission fails the build (BR-IAM-002), and "everyone may read their own" is a scope statement worth writing down rather than an absence of one.
 
+### Search
+
+| Permission | SUPER | ORG | SCH | PRIN | TM | VEND | DRV | ATT | GRD |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `PERM-SEARCH-QUERY` | ✔ | ✔ | ✔ | ✔ | ✔ | | | | |
+
+`PERM-SEARCH-QUERY` opens the admin console's global search (SRC-001) and grants **no data by itself**. Each kind of result is returned only to a caller who also holds that kind's own view permission — `PERM-STUDENT-VIEW` for students and parents, `PERM-STAFF-MANAGE` for drivers and attendants, `PERM-VEHICLE-VIEW`, `PERM-ROUTE-VIEW`, `PERM-USER-VIEW`, `PERM-SCHOOL-VIEW`, `PERM-ORG-VIEW` — and only within their scope (BR-IAM-006). Every student a search shows is recorded as a data-access event (BR-IAM-012). A `SUPER_ADMIN`'s `PLATFORM` scope searches every organization at once, audited in each organization shown (ADR-0018). See [`SEARCH_API.md`](../04-api/SEARCH_API.md).
+
 ### Platform Operations
 
 | Permission | SUPER | Others |

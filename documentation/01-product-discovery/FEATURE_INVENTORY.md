@@ -224,6 +224,14 @@ The canonical list of features. **Feature IDs are the traceability key** across 
 
 ---
 
+## SRC — Search (MOD-19)
+
+| ID | Feature | Rules | Release |
+|---|---|---|---|
+| SRC-001 | Console global search — find students, parents, drivers and attendants, vehicles, routes, administrators, schools, and organizations by name or number from one field | BR-IAM-002, BR-IAM-006, BR-IAM-012, BR-TEN-004 | R1 |
+
+---
+
 ## Adding a Feature
 
 1. Append with the next ID in its area. Never reuse an ID.

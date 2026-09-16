@@ -3438,6 +3438,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip for now'**
   String get createSchoolSkipForNowButton;
+
+  /// No description provided for @globalSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search students, parents, staff, vehicles…'**
+  String get globalSearchHint;
+
+  /// No description provided for @globalSearchShortcutMac.
+  ///
+  /// In en, this message translates to:
+  /// **'⌘K'**
+  String get globalSearchShortcutMac;
+
+  /// No description provided for @globalSearchShortcutOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl K'**
+  String get globalSearchShortcutOther;
+
+  /// No description provided for @globalSearchClearTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get globalSearchClearTooltip;
+
+  /// No description provided for @globalSearchMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Type at least 3 characters to search'**
+  String get globalSearchMinLength;
+
+  /// No description provided for @globalSearchLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching'**
+  String get globalSearchLoading;
+
+  /// No description provided for @globalSearchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches for “{query}”'**
+  String globalSearchNoResults(String query);
+
+  /// No description provided for @globalSearchError.
+  ///
+  /// In en, this message translates to:
+  /// **'Search is unavailable right now. Try again shortly.'**
+  String get globalSearchError;
+
+  /// No description provided for @globalSearchOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That record could not be opened right now.'**
+  String get globalSearchOpenFailed;
+
+  /// No description provided for @globalSearchMoreResults.
+  ///
+  /// In en, this message translates to:
+  /// **'More matches — keep typing to narrow them down'**
+  String get globalSearchMoreResults;
+
+  /// No description provided for @globalSearchSubtitleSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **' · '**
+  String get globalSearchSubtitleSeparator;
+
+  /// No description provided for @globalSearchGroupStudents.
+  ///
+  /// In en, this message translates to:
+  /// **'Students'**
+  String get globalSearchGroupStudents;
+
+  /// No description provided for @globalSearchGroupGuardians.
+  ///
+  /// In en, this message translates to:
+  /// **'Parents'**
+  String get globalSearchGroupGuardians;
+
+  /// No description provided for @globalSearchGroupStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Drivers & attendants'**
+  String get globalSearchGroupStaff;
+
+  /// No description provided for @globalSearchGroupVehicles.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicles'**
+  String get globalSearchGroupVehicles;
+
+  /// No description provided for @globalSearchGroupRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Routes'**
+  String get globalSearchGroupRoutes;
+
+  /// No description provided for @globalSearchGroupUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrators'**
+  String get globalSearchGroupUsers;
+
+  /// No description provided for @globalSearchGroupSchools.
+  ///
+  /// In en, this message translates to:
+  /// **'Schools'**
+  String get globalSearchGroupSchools;
+
+  /// No description provided for @globalSearchGroupOrganizations.
+  ///
+  /// In en, this message translates to:
+  /// **'Organizations'**
+  String get globalSearchGroupOrganizations;
+
+  /// No description provided for @globalSearchKindStudent.
+  ///
+  /// In en, this message translates to:
+  /// **'Student'**
+  String get globalSearchKindStudent;
+
+  /// No description provided for @globalSearchKindGuardian.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent'**
+  String get globalSearchKindGuardian;
+
+  /// No description provided for @globalSearchKindDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver'**
+  String get globalSearchKindDriver;
+
+  /// No description provided for @globalSearchKindAttendant.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendant'**
+  String get globalSearchKindAttendant;
+
+  /// No description provided for @globalSearchKindVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle'**
+  String get globalSearchKindVehicle;
+
+  /// No description provided for @globalSearchKindRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Route'**
+  String get globalSearchKindRoute;
+
+  /// No description provided for @globalSearchKindUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator'**
+  String get globalSearchKindUser;
+
+  /// No description provided for @globalSearchKindSchool.
+  ///
+  /// In en, this message translates to:
+  /// **'School'**
+  String get globalSearchKindSchool;
+
+  /// No description provided for @globalSearchKindOrganization.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get globalSearchKindOrganization;
+
+  /// No description provided for @globalSearchLinkedChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Child: {studentName}'**
+  String globalSearchLinkedChild(String studentName);
+
+  /// No description provided for @globalSearchAdmissionNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Adm {admissionNo}'**
+  String globalSearchAdmissionNumber(String admissionNo);
+
+  /// No description provided for @globalSearchNoScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no screen for this record in your console.'**
+  String get globalSearchNoScreen;
 }
 
 class _AppLocalizationsDelegate

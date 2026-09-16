@@ -13,6 +13,7 @@ import '../features/platform_health/ui/platform_health_route.dart';
 import '../features/roles/ui/role_reference_screen.dart';
 import '../features/routes/ui/route_list_route.dart';
 import '../features/school_settings/ui/school_settings_route.dart';
+import '../features/search/ui/global_search_route.dart';
 import '../features/shell/console_destination.dart';
 import '../features/shell/ui/console_shell.dart';
 import '../features/staff/ui/staff_list_route.dart';
@@ -151,6 +152,11 @@ class ConsoleRouterDelegate extends RouterDelegate<AdminRoutePath>
 
   bool _isSigningOut = false;
 
+  /// Bumped whenever global search moves the console, so the destination screen remounts. List
+  /// screens read the remembered school once, as they mount; without this, choosing a result for
+  /// another school while already on that screen would leave the old school's list in place.
+  int _screenEpoch = 0;
+
   @override
   AdminRoutePath get currentConfiguration {
     final recovery = _recovery;
@@ -209,7 +215,14 @@ class ConsoleRouterDelegate extends RouterDelegate<AdminRoutePath>
                   destinations: ConsoleDestinations.visibleTo(session.user.roles),
                   selectedDestinationId: _selectedDestinationId(session),
                   onDestinationSelected: _goTo,
-                  child: _screenFor(_consoleLocation, session),
+                  headerSearch: GlobalSearchRoute.isAvailableTo(session.user.roles)
+                      ? GlobalSearchRoute(
+                          actorRoles: session.user.roles,
+                          actorOrganizationId: session.user.organizationId,
+                          onGoToLocation: _goToLocation,
+                        )
+                      : null,
+                  child: _keyed(_screenFor(_consoleLocation, session)),
                 ),
               ),
           };
@@ -230,6 +243,31 @@ class ConsoleRouterDelegate extends RouterDelegate<AdminRoutePath>
     _consoleLocation = destination.location;
     notifyListeners();
   }
+
+  /// Moves to [location] on behalf of global search (SRC-001). Only a destination the signed-in
+  /// roles can already reach from the rail — search never opens a screen the navigation would not
+  /// (BR-IAM-001: the client's idea of what it may show is affordance, and it stays the rail's).
+  ///
+  /// Remounts the screen even when it is already open; see [_screenEpoch].
+  bool _goToLocation(String location) {
+    final session = switch (_sessionManager.status) {
+      AuthSignedIn(:final session) => session,
+      _ => null,
+    };
+    if (session == null) return false;
+
+    final reachable = ConsoleDestinations.visibleTo(session.user.roles)
+        .any((destination) => destination.location == location);
+    if (!reachable) return false;
+
+    _consoleLocation = location;
+    _screenEpoch++;
+    notifyListeners();
+    return true;
+  }
+
+  Widget? _keyed(Widget? screen) =>
+      screen == null ? null : KeyedSubtree(key: ValueKey<int>(_screenEpoch), child: screen);
 
   /// The public recovery page for [path] (ADR-0012). Each carries [_leaveRecovery] as the way
   /// back to sign-in, so "where to go next" stays answered in one place — matching how signing in
