@@ -63,6 +63,26 @@ class GuardianRepository {
     return Success<StudentGuardian>(guardian);
   }
 
+  /// Nothing is read back: the response is the guardian record alone, while the panel shows each
+  /// guardian with the rights on this child's link — so the caller re-lists instead.
+  Future<Result<void>> updateGuardian({
+    required String guardianId,
+    required String firstName,
+    required String lastName,
+    required String phone,
+    String? email,
+  }) async {
+    final response = await dataProvider.updateGuardian(
+      guardianId: guardianId,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phone: phone.trim(),
+      email: email?.trim(),
+    );
+    if (!response.isSuccess) return _toFailure<void>(response);
+    return const Success<void>(null);
+  }
+
   Result<T> _toFailure<T>(ApiResponse response) {
     if (response.isTransportFailure) {
       return Failure<T>(ErrorCode.dependencyUnavailable);

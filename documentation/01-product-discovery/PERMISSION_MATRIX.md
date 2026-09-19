@@ -32,7 +32,7 @@ Permission alone is insufficient — every check resolves permission **and** sco
 | `SUPER_ADMIN` | `PLATFORM` | Platform operator. Every cross-org action audited. |
 | `ORG_ADMIN` | `ORG` | Group-level administration. |
 | `SCHOOL_ADMIN` | `SCHOOL` | Day-to-day school administration. |
-| `PRINCIPAL` | `SCHOOL` | Read and reporting; minimal write. |
+| `PRINCIPAL` | `SCHOOL` | Read and reporting; minimal write. Discards mistaken student and staff entries (ADR-0019). |
 | `TRANSPORT_MANAGER` | `SCHOOL` | Fleet, routes, trips, incidents. |
 | `VENDOR_STAFF` | `ROUTE` | Outsourced operator; manifest access only. |
 | `DRIVER` | `TRIP` | Current trip only. |
@@ -84,6 +84,7 @@ Roles are templates. Tenants may define custom roles from the same permission se
 | `PERM-STUDENT-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | ✔* | ✔* | ✔* | ✔* |
 | `PERM-STUDENT-EDIT` | ✔ | ✔ | ✔ | | | | | | |
 | `PERM-STUDENT-IMPORT` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-STUDENT-DELETE` | ✔ | | | ✔ | | | | | |
 | `PERM-GUARDIAN-MANAGE` | ✔ | ✔ | ✔ | | | | | | |
 | `PERM-GUARDIAN-LINK` | ✔ | ✔ | ✔ | | | | | | |
 | `PERM-PICKUP-PERSON-MANAGE` | | | ✔ | | | | | | ✔* |
@@ -91,6 +92,8 @@ Roles are templates. Tenants may define custom roles from the same permission se
 | `PERM-HANDOVER-CODE-REQUEST` | | | | | | | | | ✔* |
 
 `PERM-STUDENT-VIEW` scope narrows sharply: `VEND`/`DRV`/`ATT` see only the current trip manifest; `GRD` only their own children (BR-IAM-005). Non-guardian access is logged (BR-IAM-012).
+
+`PERM-STUDENT-DELETE` discards a student record entered by mistake (BR-STU-007). It is deliberately held by `PRINCIPAL` and not by the school office roles that enter records: whoever made the mistake is not the one who erases it (ADR-0019). A record with any safety history is refused whatever the permission.
 
 `PERM-PICKUP-PERSON-MANAGE` for a guardian requires the "authorise handover" right on the relationship (BR-GRD-006).
 
@@ -105,8 +108,12 @@ Roles are templates. Tenants may define custom roles from the same permission se
 | `PERM-VEHICLE-DOCUMENT-MANAGE` | ✔ | ✔ | ✔ | | ✔ | | | | |
 | `PERM-DEVICE-MANAGE` | ✔ | ✔ | | | ✔ | | | | |
 | `PERM-STAFF-MANAGE` | ✔ | ✔ | ✔ | | ✔ | | | | |
+| `PERM-STAFF-VIEW` | ✔ | ✔ | ✔ | ✔ | ✔ | | | | |
 | `PERM-STAFF-VERIFY` | ✔ | ✔ | ✔ | | | | | | |
+| `PERM-STAFF-DELETE` | ✔ | | | ✔ | | | | | |
 | `PERM-DUTY-ASSIGN` | ✔ | ✔ | | | ✔ | | | | |
+
+`PERM-STAFF-VIEW` reads the staff register (the Drivers screen) without managing it. `PERM-STAFF-DELETE` discards a driver or attendant record entered by mistake (BR-STAFF-007), on the same two-person reasoning as `PERM-STUDENT-DELETE` (ADR-0019).
 
 ### Routes & Trips
 

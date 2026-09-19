@@ -10,13 +10,15 @@ import '../bloc/student_list_event.dart';
 import '../bloc/student_list_state.dart';
 import '../domain/student_models.dart';
 import '../import/ui/student_import_route.dart';
+import '../widgets/discard_entry_form.dart';
 import '../widgets/student_error_text.dart';
 import '../widgets/student_form.dart';
 import 'student_detail_route.dart';
 
 /// A-10 — Student register: the school's roll, and the entry point to a student's record
-/// (STU-001, STU-004). Reached by roles holding `PERM-STUDENT-VIEW`; the mutation affordances
-/// are hidden from roles that only hold the view permission — see [_canEdit].
+/// (STU-001, STU-004, STU-008). Reached by roles holding `PERM-STUDENT-VIEW`; the mutation
+/// affordances are hidden from roles that only hold the view permission — see [_canEdit] and
+/// [_canDiscard].
 ///
 /// Holds the "which school" text and the search query the operator is looking at — everything
 /// else is [StudentListState]. Matching `StaffListScreen`: no decisions here, only rendering and
@@ -39,6 +41,10 @@ class _StudentListScreenState extends State<StudentListScreen> {
   /// `PRINCIPAL` and `TRANSPORT_MANAGER` — who should see the register and not be offered
   /// buttons the server will refuse.
   static const _editingRoles = {'SUPER_ADMIN', 'ORG_ADMIN', 'SCHOOL_ADMIN'};
+
+  /// `PERM-STUDENT-DELETE`'s holders (PERMISSION_MATRIX.md). Deliberately not the office roles
+  /// that enter students: whoever made the mistake is not the one who erases it (ADR-0019).
+  static const _discardRoles = {'SUPER_ADMIN', 'PRINCIPAL'};
 
   /// The school currently loaded — from [widget.initialSchoolId], from `WorkspaceContext`, or
   /// from `SchoolPickerField` (shown only when neither of those is set; see [build]).
@@ -82,10 +88,13 @@ class _StudentListScreenState extends State<StudentListScreen> {
     context.read<StudentListBloc>().add(StudentListNextPageRequested(schoolId: schoolId));
   }
 
-  bool _canEdit(BuildContext context) {
+  bool _canEdit(BuildContext context) => _holdsAny(context, _editingRoles);
+
+  bool _canDiscard(BuildContext context) => _holdsAny(context, _discardRoles);
+
+  bool _holdsAny(BuildContext context, Set<String> roles) {
     final user = DependencyScope.of(context).sessionManager.currentUser;
-    final roles = user?.roles ?? const <String>[];
-    return roles.any(_editingRoles.contains);
+    return (user?.roles ?? const <String>[]).any(roles.contains);
   }
 
   void _load(BuildContext context, String schoolId) {
@@ -231,6 +240,47 @@ class _StudentListScreenState extends State<StudentListScreen> {
     }
   }
 
+  /// Deleting an entry made by mistake (STU-008) — confirmed with a required reason, because it
+  /// cannot be undone. The server refuses a student with any history, and the dialog then says to
+  /// withdraw them instead.
+  Future<void> _confirmDiscard(BuildContext context, Student student) async {
+    final bloc = context.read<StudentListBloc>();
+    final messenger = ScaffoldMessenger.of(context);
+    final deletedMessage = context.l10n.discardEntryDeletedSnackbar;
+
+    final deleted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AdminSpacing.lg),
+            child: BlocProvider.value(
+              value: bloc,
+              child: BlocBuilder<StudentListBloc, StudentListState>(
+                builder: (context, state) => DiscardEntryForm(
+                  body: context.l10n.studentDiscardBody(student.displayName, student.admissionNo),
+                  isSubmitting: state.isSubmitting,
+                  error: state.error == null
+                      ? null
+                      : StudentErrorText(code: state.error!, messageKey: state.errorMessageKey),
+                  onCancel: () => Navigator.of(dialogContext).pop(),
+                  onConfirm: (reason) =>
+                      bloc.add(StudentDiscarded(studentId: student.id, reason: reason)),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // `true` only when the listener in [build] closed the dialog after the deletion succeeded.
+    if (deleted ?? false) {
+      messenger.showSnackBar(SnackBar(content: Text(deletedMessage)));
+    }
+  }
+
   /// Instant, client-side, over whatever rows are already loaded — no server round trip.
   ///
   /// `GET /students` takes no search parameter yet, so this filters the loaded pages only. On a
@@ -250,6 +300,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final canEdit = _canEdit(context);
+    final canDiscard = _canDiscard(context);
 
     return BlocListener<StudentListBloc, StudentListState>(
       listenWhen: (previous, current) =>
@@ -320,7 +371,8 @@ class _StudentListScreenState extends State<StudentListScreen> {
             const SizedBox(height: AdminSpacing.lg),
             Expanded(
               child: BlocBuilder<StudentListBloc, StudentListState>(
-                builder: (context, state) => _body(context, state, theme, canEdit),
+                builder: (context, state) =>
+                    _body(context, state, theme, canEdit: canEdit, canDiscard: canDiscard),
               ),
             ),
           ],
@@ -332,9 +384,10 @@ class _StudentListScreenState extends State<StudentListScreen> {
   Widget _body(
     BuildContext context,
     StudentListState state,
-    ThemeData theme,
-    bool canEdit,
-  ) {
+    ThemeData theme, {
+    required bool canEdit,
+    required bool canDiscard,
+  }) {
     if (state.isLoading && state.students.isEmpty) {
       return Center(
         child: CircularProgressIndicator(semanticsLabel: context.l10n.studentListLoadingLabel),
@@ -410,9 +463,11 @@ class _StudentListScreenState extends State<StudentListScreen> {
                 return _StudentRow(
                   student: students[index],
                   canEdit: canEdit,
+                  canDiscard: canDiscard,
                   onOpen: () => _openDetail(context, students[index]),
                   onEdit: () => _openForm(context, existing: students[index]),
                   onWithdraw: () => _confirmWithdraw(context, students[index]),
+                  onDiscard: () => _confirmDiscard(context, students[index]),
                 );
               },
             ),
@@ -482,15 +537,19 @@ class _StudentRow extends StatelessWidget {
   const _StudentRow({
     required this.student,
     required this.canEdit,
+    required this.canDiscard,
     required this.onEdit,
     required this.onWithdraw,
+    required this.onDiscard,
     required this.onOpen,
   });
 
   final Student student;
   final bool canEdit;
+  final bool canDiscard;
   final VoidCallback onEdit;
   final VoidCallback onWithdraw;
+  final VoidCallback onDiscard;
   final VoidCallback onOpen;
 
   /// The row's accent, as a (fill, ink) pair.
@@ -593,6 +652,19 @@ class _StudentRow extends StatelessWidget {
                   tooltip: context.l10n.studentListWithdrawTooltip(student.displayName),
                   onPressed: onWithdraw,
                 ),
+            ],
+            if (canDiscard) ...[
+              if (!canEdit) const SizedBox(width: AdminSpacing.sm),
+              IconButton(
+                key: Key('student_list_discard_${student.id}'),
+                icon: Icon(
+                  Icons.delete_forever_outlined,
+                  size: 19,
+                  color: theme.colorScheme.error,
+                ),
+                tooltip: context.l10n.studentDiscardTooltip(student.displayName),
+                onPressed: onDiscard,
+              ),
             ],
           ],
         ),

@@ -15,6 +15,7 @@ import com.guardian.common.tenant.TenantId;
 import com.guardian.routes.application.command.ReplaceStopsCommand;
 import com.guardian.routes.application.command.StopInput;
 import com.guardian.routes.application.port.RouteRepository;
+import com.guardian.routes.application.port.RouteStudentAssignmentRepository;
 import com.guardian.routes.application.port.StopRepository;
 import com.guardian.routes.domain.Route;
 import com.guardian.routes.domain.RouteId;
@@ -42,13 +43,14 @@ class ReplaceStopsUseCaseTest {
 
   @Mock private RouteRepository routeRepository;
   @Mock private StopRepository stopRepository;
+  @Mock private RouteStudentAssignmentRepository assignments;
   @Mock private AuditPort auditPort;
 
   private ReplaceStopsUseCase useCase;
 
   @BeforeEach
   void setUp() {
-    useCase = new ReplaceStopsUseCase(routeRepository, stopRepository, auditPort);
+    useCase = new ReplaceStopsUseCase(routeRepository, stopRepository, assignments, auditPort);
     TenantContext.set(TENANT);
     when(routeRepository.findById(ROUTE))
         .thenReturn(
@@ -62,7 +64,8 @@ class ReplaceStopsUseCaseTest {
   }
 
   private static StopInput aStop(int sequenceNo, LocalTime pickup) {
-    return new StopInput(sequenceNo, "Stop " + sequenceNo, 28.5, 77.2, 100, pickup, null, null);
+    return new StopInput(
+        null, sequenceNo, "Stop " + sequenceNo, 28.5, 77.2, 100, pickup, null, null);
   }
 
   @Test

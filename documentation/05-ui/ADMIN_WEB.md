@@ -136,6 +136,30 @@ Every row carries actor, reason, resolution, and its **business rule ID** — so
 
 ---
 
+## A-11 — Student Record: Transport & Journey
+
+The student record answers **"where is this child, and which bus are they on?"** from the child, not from the bus (STU-009, [ADR-0020](../00-governance/adr/ADR-0020-staff-student-journey-reads.md)). Every role that can open the record sees it, within its school scope.
+
+**Built — assigned bus and crew.** Under each direction of *Pickup & drop*: the route's bus (name and registration) and today's driver and attendant. A caption says once that this is the route's usual assignment, not where the child is. Gaps are shown with a warning icon, never hidden: no bus set on the route, a bus not in service, no driver on duty. A missing attendant is shown neutrally, because whether one is required is tenant configuration (BR-STAFF-005). The panel re-reads after the pickup or drop is changed.
+
+**Planned — needs trips, boarding and tracking (Phase B/C):**
+
+```
+┌ Right now ───────────────────────────────────────────────┐
+│ 🟢 ON BUS  KA-01-AB-1234 · Route R3 (morning)             │
+│ Boarded 07:42 at Green Park stop · recorded by Ravi (att.)│
+│ Bus near MG Road · ETA school 08:10 (estimate)  [Map]     │
+└───────────────────────────────────────────────────────────┘
+Today      07:42 Boarded · 08:14 Reached school · 15:30 Boarded · 15:58 Handed over to Anita (mother)
+History    ◀ 18 Sep 2026 ▶  the same timeline for any past day, absences included
+```
+
+- *Right now* shows the parent app's journey states: absent, waiting at stop, on bus, at school, handed over (to whom, when), missed the bus, unaccounted. The last two are safety alerts, shown with colour, icon **and** words.
+- The bus position appears only while the child is on a running trip (BR-TRACK-001). Otherwise the last recorded event stands, e.g. "Handed over 15:58".
+- Reaching school is a transport event, never official attendance.
+
+---
+
 ## A-12 — Bulk Student Import
 
 ```
@@ -170,6 +194,19 @@ Rajesh Sharma · Father
 Rights are **explicit checkboxes**, never inferred from relationship (BR-GRD-001 🔴). The relationship label is descriptive only — the form makes that visually obvious so an admin does not assume "father" grants collection.
 
 Unchecking the last `Authorise handover` across all guardians is **blocked** with an explanation (BR-GRD-002 🔴).
+
+**Correcting a parent's details.** Holders of `PERM-GUARDIAN-MANAGE` edit a parent's name, phone, and email from their card. The form states before saving that a new phone moves the parent's app sign-in and signs out the old number (BR-IAM-014).
+
+---
+
+## A-10 / A-23 — Discarding a Mistaken Entry
+
+For a student (A-10) or driver/attendant (A-23) that should never have been entered — shown only to `PRINCIPAL` and `SUPER_ADMIN` (`PERM-STUDENT-DELETE`, `PERM-STAFF-DELETE`; ADR-0019).
+
+- A row action **Delete entry**, error-toned, opens a confirmation that says what is removed (the record, its parent links and route assignments, or its credentials and duties) and that a record with any history cannot be deleted.
+- **A reason is required** before the error-toned *Delete permanently* button enables (ACCESSIBILITY.md: destructive actions always confirm).
+- On success the row disappears. On `STUDENT_HAS_SAFETY_RECORDS` / `STAFF_HAS_SAFETY_RECORDS` the dialog explains the fix: a school admin withdraws the student, or deactivates the staff member.
+- A Principal's Drivers screen is **read-only** (`PERM-STAFF-VIEW`): no *Add driver*, rows do not open the editor, only *Delete entry* is offered.
 
 ---
 

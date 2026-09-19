@@ -8,6 +8,8 @@ import '../../guardians/bloc/student_guardians_bloc.dart';
 import '../../guardians/bloc/student_guardians_event.dart';
 import '../../route_assignments/bloc/student_assignments_bloc.dart';
 import '../../route_assignments/bloc/student_assignments_event.dart';
+import '../../student_transport/bloc/student_transport_bloc.dart';
+import '../../student_transport/bloc/student_transport_event.dart';
 import '../domain/student_models.dart';
 import 'student_detail_screen.dart';
 
@@ -47,6 +49,13 @@ class StudentDetailRoute extends StatelessWidget {
           create: (_) =>
               StudentAssignmentsBloc(repository: dependencies.routeAssignmentRepository)
                 ..add(StudentAssignmentsRequested(studentId: student.id)),
+        ),
+        // The bus and crew under each direction (STU-009). Every role that can open this record
+        // may read it; the server narrows by school scope.
+        BlocProvider<StudentTransportBloc>(
+          create: (_) =>
+              StudentTransportBloc(repository: dependencies.studentTransportRepository)
+                ..add(StudentTransportRequested(studentId: student.id)),
         ),
         // Only for roles that can reach the endpoint — a PRINCIPAL who may view the record
         // never triggers a custody-restriction fetch the server would refuse (BR-GRD-008 🔴).

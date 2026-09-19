@@ -38,6 +38,11 @@ class RouteCrewDialog extends StatelessWidget {
 class _RouteCrewView extends StatelessWidget {
   const _RouteCrewView({required this.route});
 
+  /// `PERM-DUTY-ASSIGN`'s holders (PERMISSION_MATRIX.md). Narrower than the roles that open
+  /// Routes: a `SCHOOL_ADMIN` sees the crew (`PERM-ROUTE-VIEW`) but is not offered *Assign crew*,
+  /// which the server would refuse with `403`.
+  static const _dutyAssigningRoles = {'SUPER_ADMIN', 'ORG_ADMIN', 'TRANSPORT_MANAGER'};
+
   final CreatedRoute route;
 
   Future<void> _openAssignForm(BuildContext context) async {
@@ -97,6 +102,8 @@ class _RouteCrewView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final roles = DependencyScope.of(context).sessionManager.currentUser?.roles ?? const [];
+    final canAssign = roles.any(_dutyAssigningRoles.contains);
 
     return BlocListener<DutyAssignmentBloc, DutyAssignmentState>(
       listenWhen: (previous, current) =>
@@ -117,12 +124,13 @@ class _RouteCrewView extends StatelessWidget {
                     Expanded(
                       child: Text(route.name, style: theme.textTheme.titleLarge),
                     ),
-                    FilledButton.icon(
-                      key: const Key('route_crew_assign_button'),
-                      onPressed: () => _openAssignForm(context),
-                      icon: const Icon(Icons.person_add_alt),
-                      label: Text(context.l10n.routeCrewAssignButton),
-                    ),
+                    if (canAssign)
+                      FilledButton.icon(
+                        key: const Key('route_crew_assign_button'),
+                        onPressed: () => _openAssignForm(context),
+                        icon: const Icon(Icons.person_add_alt),
+                        label: Text(context.l10n.routeCrewAssignButton),
+                      ),
                   ],
                 ),
                 const SizedBox(height: AdminSpacing.md),

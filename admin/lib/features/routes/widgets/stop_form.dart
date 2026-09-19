@@ -191,6 +191,9 @@ class _StopFormState extends State<StopForm> {
                 decoration: InputDecoration(
                   labelText: context.l10n.stopFormDropTimeLabel,
                   hintText: context.l10n.stopFormTimeHint,
+                  // BR-ROUTE-008: said here so the order is right before the save is refused.
+                  helperText: context.l10n.stopFormDropTimeHelper,
+                  helperMaxLines: 2,
                   border: const OutlineInputBorder(),
                   constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
                 ),

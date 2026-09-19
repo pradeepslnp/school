@@ -117,6 +117,9 @@ class _EditStaffFormState extends State<EditStaffForm> {
           keyboardType: TextInputType.phone,
           decoration: InputDecoration(
             labelText: context.l10n.staffPhoneLabel,
+            // BR-IAM-014: said before saving, because it signs someone out.
+            helperText: context.l10n.staffEditPhoneHelper,
+            helperMaxLines: 2,
             border: const OutlineInputBorder(),
             constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),

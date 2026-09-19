@@ -30,6 +30,8 @@ CONSTRAINT ck_students_enrolment CHECK (
 
 Students are **never hard-deleted** while a safety record references them (BR-STU-005); withdrawal sets `enrolment_status` and removes future route assignments.
 
+A student **entered by mistake** is discarded (BR-STU-007, ADR-0019): its `guardian_student_links`, `route_student_assignments`, and `student_credentials` are deleted, then the row itself, in one transaction. Every other table referencing `students` is `ON DELETE RESTRICT`, so any safety history makes the delete fail and the transaction roll back. `guardian_app` holds `DELETE` on exactly those four tables for this purpose (V20). `guardians` rows are kept.
+
 **Indexes:** `idx_students_tenant_school (tenant_id, school_id) WHERE enrolment_status = 'ACTIVE'`, `uq_students_admission`
 
 **Rules:** BR-STU-001, BR-STU-003, BR-STU-004, BR-STU-005

@@ -110,6 +110,10 @@ CONSTRAINT ck_staff_verified_until CHECK (
 
 **Indexes:** `idx_staff_tenant_school (tenant_id, school_id) WHERE is_active`, `idx_staff_verification (tenant_id, verified_until) WHERE verification_status = 'VERIFIED'`
 
+**`phone` is the roster copy; `users.phone` is what sign-in resolves.** Correcting `phone` relinks `user_id` to the new number's account and releases the old one (BR-IAM-014, ADR-0019), so the two cannot drift apart.
+
+**Discard.** A record entered by mistake whose account has never signed in is removed with its `staff_credentials` and `duty_assignments` in one transaction (BR-STAFF-007). Anything else referencing the row is `RESTRICT` and refuses it. Staff leaving employment are deactivated, never discarded (BR-IAM-008).
+
 ---
 
 ## `staff_credentials` 🔴

@@ -56,7 +56,7 @@ class RouteStopsBloc extends Bloc<RouteStopsEvent, RouteStopsState> {
     if (state.stops.length < 2) {
       // BR-ROUTE-001, mirrored client-side so the operator gets the message without a round
       // trip. The server enforces it regardless.
-      emit(state.copyWith(error: ErrorCode.validationValueOutOfRange));
+      emit(state.copyWith(error: ErrorCode.routeMinimumStopsRequired));
       return;
     }
 

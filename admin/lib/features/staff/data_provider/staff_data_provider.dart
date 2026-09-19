@@ -40,13 +40,14 @@ class StaffDataProvider {
   }
 
   /// `GET /transport-staff?schoolId=` — every driver/attendant at one school (STF-001,
-  /// `PERM-STAFF-MANAGE`).
+  /// `PERM-STAFF-VIEW`).
   Future<ApiResponse> listStaff({required String schoolId}) {
     return client.get('/transport-staff', query: {'schoolId': schoolId});
   }
 
   /// `PATCH /transport-staff/{staffId}` — updates name, phone, employee code, and vendor name
-  /// (STF-001, `PERM-STAFF-MANAGE`). `staffType` and `schoolId` are not here: see
+  /// (STF-001, `PERM-STAFF-MANAGE`). A changed phone moves the person's driver-app sign-in to the
+  /// new number and signs the old one out (BR-IAM-014). `staffType` and `schoolId` are not here: see
   /// `UpdateTransportStaffUseCase`'s own documentation for why a type change is not offered as
   /// an edit, and `OrganizationDetailsView`'s treatment of fixed codes for the same reasoning
   /// applied to school.
@@ -68,5 +69,14 @@ class StaffDataProvider {
         if (vendorName != null && vendorName.isNotEmpty) 'vendorName': vendorName,
       },
     );
+  }
+
+  /// `POST /transport-staff/{staffId}/discard` — permanently removes a driver or attendant
+  /// entered by mistake (STF-007, `PERM-STAFF-DELETE`, ADR-0019). Answers `204` with no body.
+  ///
+  /// A `POST`, so [RestClient] never retries it. The server refuses anyone who has signed in or
+  /// has history with `STAFF_HAS_SAFETY_RECORDS`.
+  Future<ApiResponse> discardStaff({required String staffId, required String reason}) {
+    return client.post('/transport-staff/$staffId/discard', body: {'reason': reason});
   }
 }

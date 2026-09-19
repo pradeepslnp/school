@@ -92,8 +92,10 @@ Envelope format: [`API_STANDARDS.md`](API_STANDARDS.md).
 | `STUDENT_ADMISSION_NO_EXISTS` | 409 | BR-STU-003 | |
 | `STUDENT_NOT_ACTIVE` | 422 | BR-STU-004 | Inactive students cannot be assigned or boarded |
 | `STUDENT_HAS_NO_ACTIVE_GUARDIAN` | 422 | BR-STU-002 | Blocks route assignment |
-| `STUDENT_HAS_SAFETY_RECORDS` | 422 | BR-STU-005 | Cannot hard-delete |
+| `STUDENT_HAS_SAFETY_RECORDS` | 422 | BR-STU-007 | Cannot discard: something other than its own links, assignments, or credentials references the student. Withdraw instead (ADR-0019) |
 | `GUARDIAN_HANDOVER_RIGHT_REQUIRED` | 422 | BR-GRD-002 | **At least one guardian must hold it** |
+| `GUARDIAN_NOT_FOUND` | 404 | | Not found, or not visible to the caller at all |
+| `GUARDIAN_PHONE_IN_USE` | 409 | BR-IAM-014 | The corrected phone's sign-in account already belongs to a different guardian record in this organization |
 | `GUARDIAN_LINK_ALREADY_EXISTS` | 409 | | |
 | `GUARDIAN_NOT_AUTHORISED_TO_NOMINATE` | 403 | BR-GRD-006 | Lacks `can_authorise_handover` |
 | `PICKUP_PERSON_OUTSIDE_VALIDITY` | 422 | BR-GRD-005 | Nomination expired or not yet valid |
@@ -137,6 +139,7 @@ catalogue (`STUDENT_ADMISSION_NO_EXISTS`, `VALIDATION_INVALID_FORMAT`,
 | `DEVICE_NOT_REGISTERED` | 404 | BR-FLEET-006 | Also returned when the referenced device ID does not exist |
 | `STAFF_NOT_FOUND` | 404 | | Not found, or not visible to the caller at all |
 | `STAFF_EMPLOYEE_CODE_EXISTS` | 409 | | Data-integrity constraint (`uq_staff_school_employee_code`), not a documented BR — same treatment as a vehicle's registration number |
+| `STAFF_HAS_SAFETY_RECORDS` | 422 | BR-STAFF-007 | Cannot discard: their sign-in account has signed in, or something other than their own credentials and duty assignments references the record. Deactivate instead (ADR-0019) |
 | `STAFF_LICENCE_EXPIRED` | 422 | BR-STAFF-001 🔴 |
 | `STAFF_LICENCE_CLASS_INVALID` | 422 | BR-STAFF-001 🔴 |
 | `STAFF_NOT_VERIFIED` | 422 | BR-STAFF-002 🔴 |
@@ -161,6 +164,8 @@ Each of these names the exact failing check. A generic "cannot start trip" at 6:
 | `ROUTE_STOP_TIMES_NOT_INCREASING` | 422 | BR-ROUTE-008 |
 | `ROUTE_GEOFENCE_OUT_OF_BOUNDS` | 422 | BR-ROUTE-003, BR-CFG-003 🔴 |
 | `ROUTE_HAS_ACTIVE_ASSIGNMENTS` | 422 | BR-ROUTE-007 |
+| `ROUTE_STOP_HAS_ASSIGNED_STUDENTS` | 422 | BR-ROUTE-009 |
+| `ROUTE_STOP_NOT_FOUND` | 404 | BR-ROUTE-002 |
 | `STUDENT_ALREADY_ASSIGNED_FOR_DIRECTION` | 409 | BR-ROUTE-004 |
 
 ---

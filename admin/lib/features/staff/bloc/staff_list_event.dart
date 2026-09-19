@@ -72,3 +72,15 @@ final class StaffUpdated extends StaffListEvent {
   List<Object?> get props =>
       [staffId, firstName, lastName, phone, employeeCode, vendorName];
 }
+
+/// The operator deleted a driver or attendant entered by mistake (STF-007, ADR-0019). Confirmed
+/// in the UI with a required reason first — this cannot be undone.
+final class StaffDiscarded extends StaffListEvent {
+  const StaffDiscarded({required this.staffId, required this.reason});
+
+  final String staffId;
+  final String reason;
+
+  @override
+  List<Object?> get props => [staffId, reason];
+}

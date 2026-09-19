@@ -83,6 +83,13 @@ public enum ErrorCode {
   // BR-STU-002: a child must not be put on a bus with no guardian authorised to receive
   // them at the other end. Blocks route assignment until at least one exists.
   STUDENT_HAS_NO_ACTIVE_GUARDIAN(422),
+  // BR-STU-007 / ADR-0019: a discard was refused because something other than the student's own
+  // links, assignments, or credentials still references it. The student is withdrawn instead.
+  STUDENT_HAS_SAFETY_RECORDS(422),
+  GUARDIAN_NOT_FOUND(404),
+  // BR-IAM-014: the corrected phone's sign-in account already belongs to a different guardian
+  // record. Relinking would merge two people's access, so the office resolves which is right.
+  GUARDIAN_PHONE_IN_USE(409),
   // 403, not 422: the caller lacks the handover right on the relationship, which is an
   // authorisation fact rather than a malformed nomination (BR-GRD-006).
   GUARDIAN_NOT_AUTHORISED_TO_NOMINATE(403),
@@ -128,6 +135,9 @@ public enum ErrorCode {
   // --- Transport Staff (MOD-06) -----------------------------------------------------------
   STAFF_NOT_FOUND(404),
   STAFF_EMPLOYEE_CODE_EXISTS(409),
+  // BR-STAFF-007 / ADR-0019: a discard was refused because the staff member's account has signed
+  // in, or something besides their own credentials and duties references the record. Deactivate.
+  STAFF_HAS_SAFETY_RECORDS(422),
 
   // --- Routes (MOD-07) ---------------------------------------------------------------------
   ROUTE_CODE_ALREADY_EXISTS(409),
@@ -135,6 +145,11 @@ public enum ErrorCode {
   ROUTE_MINIMUM_STOPS_REQUIRED(422),
   ROUTE_GEOFENCE_OUT_OF_BOUNDS(422),
   ROUTE_STOP_TIMES_NOT_INCREASING(422),
+  // A stop id in a PUT /routes/{id}/stops list that is not one of that route's current stops —
+  // a stale editor, or an id from another route.
+  ROUTE_STOP_NOT_FOUND(404),
+  // BR-ROUTE-009: a stop cannot be removed while students are assigned to it.
+  ROUTE_STOP_HAS_ASSIGNED_STUDENTS(422),
   // BR-ROUTE-004: at most one active pickup and one active drop per student. The DB's
   // uq_rsa_student_direction is the guarantee; this names the conflict for the client.
   STUDENT_ALREADY_ASSIGNED_FOR_DIRECTION(409),

@@ -148,6 +148,7 @@ List<PermissionCategory> permissionMatrix(AppLocalizations l10n) => [
           ),
           PermissionRow(id: 'PERM-STUDENT-EDIT', grants: _grants('FFF......')),
           PermissionRow(id: 'PERM-STUDENT-IMPORT', grants: _grants('FFF......')),
+          PermissionRow(id: 'PERM-STUDENT-DELETE', grants: _grants('F..F.....')),
           PermissionRow(id: 'PERM-GUARDIAN-MANAGE', grants: _grants('FFF......')),
           PermissionRow(id: 'PERM-GUARDIAN-LINK', grants: _grants('FFF......')),
           PermissionRow(
@@ -171,7 +172,9 @@ List<PermissionCategory> permissionMatrix(AppLocalizations l10n) => [
           PermissionRow(id: 'PERM-VEHICLE-DOCUMENT-MANAGE', grants: _grants('FFF.F....')),
           PermissionRow(id: 'PERM-DEVICE-MANAGE', grants: _grants('FF..F....')),
           PermissionRow(id: 'PERM-STAFF-MANAGE', grants: _grants('FFF.F....')),
+          PermissionRow(id: 'PERM-STAFF-VIEW', grants: _grants('FFFFF....')),
           PermissionRow(id: 'PERM-STAFF-VERIFY', grants: _grants('FFF......')),
+          PermissionRow(id: 'PERM-STAFF-DELETE', grants: _grants('F..F.....')),
           PermissionRow(id: 'PERM-DUTY-ASSIGN', grants: _grants('FF..F....')),
         ],
       ),

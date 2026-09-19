@@ -63,4 +63,9 @@ class StaffCredentialRepositoryAdapter implements StaffCredentialRepository {
 
     return mapper.toDomain(jpaRepository.save(entity));
   }
+
+  @Override
+  public int deleteAllForStaff(StaffId staffId) {
+    return jpaRepository.deleteAllByStaffId(staffId.value());
+  }
 }

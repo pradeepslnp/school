@@ -61,6 +61,9 @@ class StopRepository {
 
   Map<String, Object?> _toWire(RouteStop stop, int sequenceNo) {
     return {
+      // An existing stop's id keeps it — and every student assigned to it — through the edit
+      // (BR-ROUTE-009). A stop added in this editing session has none and is created.
+      if (stop.id != null) 'id': stop.id,
       'sequenceNo': sequenceNo,
       'name': stop.name.trim(),
       'latitude': stop.latitude,

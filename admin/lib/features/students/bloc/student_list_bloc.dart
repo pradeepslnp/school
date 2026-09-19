@@ -19,6 +19,7 @@ class StudentListBloc extends Bloc<StudentListEvent, StudentListState> {
     on<StudentCreated>(_onCreated);
     on<StudentUpdated>(_onUpdated);
     on<StudentWithdrawn>(_onWithdrawn);
+    on<StudentDiscarded>(_onDiscarded);
   }
 
   final StudentRepository _repository;
@@ -146,6 +147,35 @@ class StudentListBloc extends Bloc<StudentListEvent, StudentListState> {
     // shown — BR-STU-005 keeps the record, and hiding it would suggest to the office that the
     // child had been deleted.
     _emitReplacement(result, emit);
+  }
+
+  Future<void> _onDiscarded(StudentDiscarded event, Emitter<StudentListState> emit) async {
+    if (event.reason.trim().isEmpty) {
+      emit(state.copyWith(error: ErrorCode.validationRequiredFieldMissing));
+      return;
+    }
+
+    emit(state.copyWith(isSubmitting: true, clearError: true));
+
+    final result = await _repository.discardStudent(
+      studentId: event.studentId,
+      reason: event.reason,
+    );
+
+    switch (result) {
+      case Success<void>():
+        // Removed, unlike a withdrawal: the record no longer exists (BR-STU-007).
+        emit(state.copyWith(
+          isSubmitting: false,
+          clearError: true,
+          students: [
+            for (final student in state.students)
+              if (student.id != event.studentId) student,
+          ],
+        ));
+      case Failure(:final code, :final messageKey):
+        emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));
+    }
   }
 
   void _emitReplacement(Result<Student> result, Emitter<StudentListState> emit) {

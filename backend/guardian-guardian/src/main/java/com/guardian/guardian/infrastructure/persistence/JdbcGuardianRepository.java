@@ -44,6 +44,32 @@ public class JdbcGuardianRepository implements GuardianRepository {
   }
 
   @Override
+  public Optional<Guardian> findById(UUID guardianId) {
+    return jdbc
+        .query(
+            """
+            SELECT id, user_id, first_name, last_name, phone, email, is_active
+            FROM guardians
+            WHERE id = ?
+            """,
+            GUARDIAN_MAPPER,
+            guardianId)
+        .stream()
+        .findFirst();
+  }
+
+  @Override
+  public boolean existsByUserIdExcluding(UUID userId, UUID excludingGuardianId) {
+    Boolean exists =
+        jdbc.queryForObject(
+            "SELECT EXISTS (SELECT 1 FROM guardians WHERE user_id = ? AND id <> ?)",
+            Boolean.class,
+            userId,
+            excludingGuardianId);
+    return Boolean.TRUE.equals(exists);
+  }
+
+  @Override
   public Guardian saveGuardian(Guardian guardian, UUID actorUserId) {
     UUID id =
         jdbc.queryForObject(
@@ -72,6 +98,25 @@ public class JdbcGuardianRepository implements GuardianRepository {
         guardian.phone(),
         guardian.email(),
         true);
+  }
+
+  @Override
+  public Guardian updateGuardian(Guardian guardian, UUID actorUserId) {
+    jdbc.update(
+        """
+        UPDATE guardians
+           SET user_id = ?, first_name = ?, last_name = ?, phone = ?, email = ?,
+               updated_at = now(), updated_by = ?, version = version + 1
+         WHERE id = ?
+        """,
+        guardian.userId(),
+        guardian.firstName(),
+        guardian.lastName(),
+        guardian.phone(),
+        guardian.email(),
+        actorUserId,
+        guardian.id());
+    return guardian;
   }
 
   @Override
@@ -157,6 +202,11 @@ public class JdbcGuardianRepository implements GuardianRepository {
             Boolean.class,
             studentId);
     return Boolean.TRUE.equals(exists);
+  }
+
+  @Override
+  public int deleteLinksForStudent(UUID studentId) {
+    return jdbc.update("DELETE FROM guardian_student_links WHERE student_id = ?", studentId);
   }
 
   private static final RowMapper<Guardian> GUARDIAN_MAPPER =

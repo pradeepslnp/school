@@ -2,7 +2,7 @@
 
 Per [ADR-0013](../../../documentation/00-governance/adr/ADR-0013-interim-client-bundled-flutter-localisation.md), `app_en.arb` is the complete, real source of truth. `app_kn.arb` currently carries the **English value as an explicit, tracked placeholder** for every key below — not a silent gap, not an inline `TODO`. Every key in `app_en.arb` has a mirrored key in `app_kn.arb` (parity is verified as part of this pass); none of the Kannada values are a real translation yet.
 
-**Total resource keys: 521. Kannada status for all of them: `pending-kn-translation`.**
+**Total resource keys: 625. Kannada status for all of them: `pending-kn-translation`.**
 
 ## Safety-critical — requires native-speaker sign-off before a Kannada value ships
 
@@ -38,6 +38,15 @@ The keys below are called out separately because they touch guardian handover au
 | `custodyTypeNoHandover` / `custodyTypeNoVisibility` / `custodyTypeFull` | Cannot collect / see / collect-or-see the child | pending-kn-translation — native-speaker review required |
 | `custodyLiftConfirmBody` | The person named will be able to collect and see this child again, straight away… | pending-kn-translation — native-speaker review required |
 | `custodyReasonHelper` | What authorises this — a court order and its reference… | pending-kn-translation — native-speaker review required |
+| `studentTransportCaption` | Bus and crew shown are the route's usual assignment for today. Where the child is right now will appear here once trips are running. | pending-kn-translation — native-speaker review required |
+| `discardEntryConfirmButton` | Delete permanently | pending-kn-translation — native-speaker review required |
+| `studentDiscardBody` | Use this only for a student entered by mistake… will be permanently removed… Withdraw them instead. | pending-kn-translation — native-speaker review required |
+| `studentErrorHasSafetyRecords` | This student has history and cannot be deleted… | pending-kn-translation — native-speaker review required |
+| `staffDiscardBody` | Use this only for a driver or attendant entered by mistake… Deactivate them instead. | pending-kn-translation — native-speaker review required |
+| `staffErrorHasSafetyRecords` | This person has signed in or has history, so they cannot be deleted… | pending-kn-translation — native-speaker review required |
+| `staffEditPhoneHelper` | Changing the number moves their app sign-in to it and signs the old number out. | pending-kn-translation — native-speaker review required |
+| `editGuardianPhoneHelper` | Changing the number moves this parent's app sign-in to it and signs the old number out straight away. | pending-kn-translation — native-speaker review required |
+| `studentErrorGuardianPhoneInUse` | That number already belongs to another parent on file… | pending-kn-translation — native-speaker review required |
 
 Not included above because this admin console does not yet surface them: wrong-bus/missed-bus rider-facing alerts and incident/SOS screens are part of `parent_app`/`driver_attender_app`'s scope (see those apps' own `TRANSLATION_STATUS.md`) — this console currently has no dashboard, alerts, or SOS destination built (`NoModulesNotice`), so there is no equivalent in-app copy here to flag yet. If A-01/alerts/SOS land in a later build, extend this table then.
 
@@ -713,6 +722,61 @@ table at the top).
 | `globalSearchKindOrganization` | Organization | pending-kn-translation |
 | `globalSearchLinkedChild` | Child: {studentName} | pending-kn-translation |
 | `globalSearchAdmissionNumber` | Adm {admissionNo} | pending-kn-translation |
+
+### Deleting mistaken entries & correcting phone numbers (ADR-0019)
+
+| Key | English value | Kannada status |
+|---|---|---|
+| `discardEntryTitle` | Delete this entry? | pending-kn-translation |
+| `discardEntryReasonLabel` | Reason | pending-kn-translation |
+| `discardEntryReasonHelper` | Required. Say what the mistake was, e.g. "Duplicate of admission 2024-118". It is kept on the audit trail. | pending-kn-translation |
+| `discardEntryConfirmButton` ⚠️ | Delete permanently | pending-kn-translation |
+| `discardEntryDeletingSpinnerLabel` | Deleting entry | pending-kn-translation |
+| `discardEntryDeletedSnackbar` | Entry deleted | pending-kn-translation |
+| `studentDiscardTooltip` | Delete entry for {name} | pending-kn-translation |
+| `studentDiscardBody` ⚠️ | Use this only for a student entered by mistake, such as a duplicate or a wrong admission number.<br><br>{name} ({admissionNo}) will be permanently removed, with their parent links, pickup and drop, and boarding credentials. Parent records are kept.<br><br>A student with any history (boarding, absences, notifications) cannot be deleted. Withdraw them instead. | pending-kn-translation |
+| `studentErrorHasSafetyRecords` ⚠️ | This student has history and cannot be deleted. A school admin can withdraw them instead. | pending-kn-translation |
+| `staffDiscardTooltip` | Delete entry for {name} | pending-kn-translation |
+| `staffDiscardBody` ⚠️ | Use this only for a driver or attendant entered by mistake.<br><br>{name} will be permanently removed, with their credential documents and duty assignments, and their app sign-in will be switched off.<br><br>Someone who has signed in to the app, or has any history, cannot be deleted. Deactivate them instead. | pending-kn-translation |
+| `staffErrorHasSafetyRecords` ⚠️ | This person has signed in or has history, so they cannot be deleted. A school admin or transport manager can deactivate them instead. | pending-kn-translation |
+| `staffErrorNotFound` | This driver or attendant no longer exists, or is outside your school. Refresh the list. | pending-kn-translation |
+| `staffEditPhoneHelper` ⚠️ | Changing the number moves their app sign-in to it and signs the old number out. | pending-kn-translation |
+| `guardianEditTooltip` | Edit {name}'s details | pending-kn-translation |
+| `editGuardianTitle` | Edit {name} | pending-kn-translation |
+| `editGuardianPhoneHelper` ⚠️ | Changing the number moves this parent's app sign-in to it and signs the old number out straight away. | pending-kn-translation |
+| `studentErrorGuardianPhoneInUse` ⚠️ | That number already belongs to another parent on file. Check which record is right before changing it. | pending-kn-translation |
+| `studentErrorGuardianNotFound` | This parent's record could not be found. Refresh the page and try again. | pending-kn-translation |
+
+### Student transport on the student record (A-11, STU-009)
+
+| Key | English value | Kannada status |
+|---|---|---|
+| `studentTransportCaption` ⚠️ | Bus and crew shown are the route's usual assignment for today. Where the child is right now will appear here once trips are running. | pending-kn-translation |
+| `studentTransportBus` | Bus: {name} ({registration}) | pending-kn-translation |
+| `studentTransportBusNotInService` | Bus: {name} ({registration}), not in service. Set another bus on the route. | pending-kn-translation |
+| `studentTransportNoBus` | No bus set for this route | pending-kn-translation |
+| `studentTransportDriver` | Driver: {names} | pending-kn-translation |
+| `studentTransportNoDriver` | No driver on duty for this route today | pending-kn-translation |
+| `studentTransportAttendant` | Attendant: {names} | pending-kn-translation |
+| `studentTransportNoAttendant` | No attendant on duty for this route today | pending-kn-translation |
+| `studentTransportLoadError` | Couldn't load the assigned bus and crew. Reopen the record to try again. | pending-kn-translation |
+
+### Route stops editor — saving and errors (RTE-001)
+
+| Key | English value | Kannada status |
+|---|---|---|
+| `routeStopsUnsavedHint` | Not saved yet. Press Save to keep these stops. | pending-kn-translation |
+| `routeStopsDiscardTitle` | Discard unsaved stops? | pending-kn-translation |
+| `routeStopsDiscardBody` | The stops you added or removed have not been saved. If you close now, the changes are lost and students cannot be given these stops. | pending-kn-translation |
+| `routeStopsKeepEditingButton` | Keep editing | pending-kn-translation |
+| `routeStopsDiscardButton` | Discard changes | pending-kn-translation |
+| `routeStopsErrorMinimum` | A route needs at least two stops. Add another stop, then save. | pending-kn-translation |
+| `routeStopsErrorGeofence` | A stop's arrival radius must be between 20 and 500 metres. Correct it, then save. | pending-kn-translation |
+| `routeStopsErrorTimesNotIncreasing` | Pickup times must get later going down the list of stops. Drop times run the other way: the afternoon bus drops the last stop first, so drop times must get later going up the list. Check the times, then save. | pending-kn-translation |
+| `stopFormDropTimeHelper` | Afternoon runs in reverse: the last stop is dropped first. | pending-kn-translation |
+| `routeStopsSavedSnackbar` | Stops saved. Students can now be given these stops for pickup and drop. | pending-kn-translation |
+| `routeStopsErrorStale` | These stops were changed somewhere else since you opened them. Close and reopen the stops, then make your change again. | pending-kn-translation |
+| `routeStopsErrorHasAssignedStudents` | A stop you removed still has students assigned to it. Move those students to another stop from their student record first, then remove the stop. | pending-kn-translation |
 
 ### Other
 

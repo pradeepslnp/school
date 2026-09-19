@@ -1072,5 +1072,147 @@
       }
     }
   },
-  "globalSearchNoScreen": "There is no screen for this record in your console."
+  "globalSearchNoScreen": "There is no screen for this record in your console.",
+  "discardEntryTitle": "Delete this entry?",
+  "discardEntryReasonLabel": "Reason",
+  "discardEntryReasonHelper": "Required. Say what the mistake was, e.g. \"Duplicate of admission 2024-118\". It is kept on the audit trail.",
+  "discardEntryConfirmButton": "Delete permanently",
+  "@discardEntryConfirmButton": {
+    "description": "Safety-relevant: permanently removes a record entered by mistake (ADR-0019)."
+  },
+  "discardEntryDeletingSpinnerLabel": "Deleting entry",
+  "discardEntryDeletedSnackbar": "Entry deleted",
+  "studentDiscardTooltip": "Delete entry for {name}",
+  "@studentDiscardTooltip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "studentDiscardBody": "Use this only for a student entered by mistake, such as a duplicate or a wrong admission number.\n\n{name} ({admissionNo}) will be permanently removed, with their parent links, pickup and drop, and boarding credentials. Parent records are kept.\n\nA student with any history (boarding, absences, notifications) cannot be deleted. Withdraw them instead.",
+  "@studentDiscardBody": {
+    "description": "Safety-relevant: confirms permanently deleting a student record (BR-STU-007, ADR-0019).",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "admissionNo": {
+        "type": "String"
+      }
+    }
+  },
+  "studentErrorHasSafetyRecords": "This student has history and cannot be deleted. A school admin can withdraw them instead.",
+  "@studentErrorHasSafetyRecords": {
+    "description": "Safety-relevant: explains why a student could not be deleted (BR-STU-007)."
+  },
+  "staffDiscardTooltip": "Delete entry for {name}",
+  "@staffDiscardTooltip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffDiscardBody": "Use this only for a driver or attendant entered by mistake.\n\n{name} will be permanently removed, with their credential documents and duty assignments, and their app sign-in will be switched off.\n\nSomeone who has signed in to the app, or has any history, cannot be deleted. Deactivate them instead.",
+  "@staffDiscardBody": {
+    "description": "Safety-relevant: confirms permanently deleting a driver or attendant record (BR-STAFF-007, ADR-0019).",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffErrorHasSafetyRecords": "This person has signed in or has history, so they cannot be deleted. A school admin or transport manager can deactivate them instead.",
+  "@staffErrorHasSafetyRecords": {
+    "description": "Safety-relevant: explains why a staff record could not be deleted (BR-STAFF-007)."
+  },
+  "staffErrorNotFound": "This driver or attendant no longer exists, or is outside your school. Refresh the list.",
+  "staffEditPhoneHelper": "Changing the number moves their app sign-in to it and signs the old number out.",
+  "@staffEditPhoneHelper": {
+    "description": "Safety-relevant: a corrected phone moves the driver-app sign-in (BR-IAM-014)."
+  },
+  "guardianEditTooltip": "Edit {name}'s details",
+  "@guardianEditTooltip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editGuardianTitle": "Edit {name}",
+  "@editGuardianTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editGuardianPhoneHelper": "Changing the number moves this parent's app sign-in to it and signs the old number out straight away.",
+  "@editGuardianPhoneHelper": {
+    "description": "Safety-relevant: a corrected phone moves the parent-app sign-in and revokes the old number's access to the child (BR-IAM-014)."
+  },
+  "studentErrorGuardianPhoneInUse": "That number already belongs to another parent on file. Check which record is right before changing it.",
+  "@studentErrorGuardianPhoneInUse": {
+    "description": "Safety-relevant: refuses merging two parents' access to children (BR-IAM-014)."
+  },
+  "studentErrorGuardianNotFound": "This parent's record could not be found. Refresh the page and try again.",
+  "studentTransportCaption": "Bus and crew shown are the route's usual assignment for today. Where the child is right now will appear here once trips are running.",
+  "@studentTransportCaption": {
+    "description": "Safety-relevant: states that the bus shown is a plan, not the child's location."
+  },
+  "studentTransportBus": "Bus: {name} ({registration})",
+  "@studentTransportBus": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "registration": {
+        "type": "String"
+      }
+    }
+  },
+  "studentTransportBusNotInService": "Bus: {name} ({registration}), not in service. Set another bus on the route.",
+  "@studentTransportBusNotInService": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "registration": {
+        "type": "String"
+      }
+    }
+  },
+  "studentTransportNoBus": "No bus set for this route",
+  "studentTransportDriver": "Driver: {names}",
+  "@studentTransportDriver": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "studentTransportNoDriver": "No driver on duty for this route today",
+  "studentTransportAttendant": "Attendant: {names}",
+  "@studentTransportAttendant": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "studentTransportNoAttendant": "No attendant on duty for this route today",
+  "studentTransportLoadError": "Couldn't load the assigned bus and crew. Reopen the record to try again.",
+  "routeStopsUnsavedHint": "Not saved yet. Press Save to keep these stops.",
+  "routeStopsDiscardTitle": "Discard unsaved stops?",
+  "routeStopsDiscardBody": "The stops you added or removed have not been saved. If you close now, the changes are lost and students cannot be given these stops.",
+  "routeStopsKeepEditingButton": "Keep editing",
+  "routeStopsDiscardButton": "Discard changes",
+  "routeStopsErrorMinimum": "A route needs at least two stops. Add another stop, then save.",
+  "routeStopsErrorGeofence": "A stop's arrival radius must be between 20 and 500 metres. Correct it, then save.",
+  "routeStopsErrorTimesNotIncreasing": "Pickup times must get later going down the list of stops. Drop times run the other way: the afternoon bus drops the last stop first, so drop times must get later going up the list. Check the times, then save.",
+  "stopFormDropTimeHelper": "Afternoon runs in reverse: the last stop is dropped first.",
+  "routeStopsSavedSnackbar": "Stops saved. Students can now be given these stops for pickup and drop.",
+  "routeStopsErrorStale": "These stops were changed somewhere else since you opened them. Close and reopen the stops, then make your change again.",
+  "routeStopsErrorHasAssignedStudents": "A stop you removed still has students assigned to it. Move those students to another stop from their student record first, then remove the stop."
 }

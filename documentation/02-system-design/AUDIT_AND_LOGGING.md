@@ -49,6 +49,8 @@ It is also why the platform is a modular monolith with a shared database ([`ARCH
 - Guardian relationship and pickup-person changes (BR-GRD-006)
 - Custody restriction changes
 - Role, permission, and session changes
+- Discarding a mistaken student or staff record, with its reason (ADR-0019) — identifiers only, never names or phones
+- Releasing a sign-in account when a phone number is corrected (BR-IAM-014)
 - Configuration changes, with old and new values (BR-CFG-004)
 - Every cross-tenant platform operation (BR-TEN-004, AUD-004)
 - Every export of child data, with record count (BR-RPT-002)

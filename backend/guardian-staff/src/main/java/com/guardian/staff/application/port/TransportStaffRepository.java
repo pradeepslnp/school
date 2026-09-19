@@ -31,4 +31,13 @@ public interface TransportStaffRepository {
   boolean existsByEmployeeCode(SchoolId schoolId, String employeeCode, StaffId excludingStaffId);
 
   TransportStaff save(TransportStaff staff);
+
+  /**
+   * Permanently deletes a record entered by mistake (BR-STAFF-007, ADR-0019). Its own credential
+   * documents and duty assignments must already have been removed in the same transaction.
+   *
+   * @return {@code false} if anything else still references the record — the database refused the
+   *     delete, and the surrounding transaction can now only be rolled back
+   */
+  boolean discard(StaffId id);
 }

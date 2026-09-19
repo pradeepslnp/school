@@ -62,10 +62,62 @@ class _RouteStopsView extends StatelessWidget {
     );
   }
 
+  /// Stops added here live only in this dialog until *Save*. Closing — the button, Escape, or a
+  /// click outside — must not throw them away silently, which is how a route ends up with no
+  /// stops and nobody knowing why.
+  Future<void> _confirmDiscard(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (confirmContext) => AlertDialog(
+        title: Text(context.l10n.routeStopsDiscardTitle),
+        content: Text(context.l10n.routeStopsDiscardBody),
+        actions: [
+          TextButton(
+            key: const Key('route_stops_keep_editing_button'),
+            onPressed: () => Navigator.of(confirmContext).pop(false),
+            child: Text(context.l10n.routeStopsKeepEditingButton),
+          ),
+          FilledButton(
+            key: const Key('route_stops_discard_button'),
+            onPressed: () => Navigator.of(confirmContext).pop(true),
+            child: Text(context.l10n.routeStopsDiscardButton),
+          ),
+        ],
+      ),
+    );
+    if (discard ?? false) navigator.pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    return BlocListener<RouteStopsBloc, RouteStopsState>(
+      // Say so when the save lands — the list looks the same before and after, and an operator
+      // who cannot tell whether it worked closes the dialog guessing.
+      listenWhen: (previous, current) =>
+          previous.isSaving && !current.isSaving && current.error == null,
+      listener: (context, state) => ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(context.l10n.routeStopsSavedSnackbar))),
+      child: _guarded(context, theme),
+    );
+  }
+
+  Widget _guarded(BuildContext context, ThemeData theme) {
+    return BlocBuilder<RouteStopsBloc, RouteStopsState>(
+      buildWhen: (previous, current) => previous.isDirty != current.isDirty,
+      builder: (context, dirtyState) => PopScope(
+        canPop: !dirtyState.isDirty,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _confirmDiscard(context);
+        },
+        child: _dialog(context, theme),
+      ),
+    );
+  }
+
+  Widget _dialog(BuildContext context, ThemeData theme) {
     return Dialog(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 520, maxHeight: 560),
@@ -133,6 +185,16 @@ class _RouteStopsView extends StatelessWidget {
                               messageKey: state.errorMessageKey,
                             ),
                           ),
+                        if (state.isDirty && state.stops.length >= 2)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AdminSpacing.sm),
+                            child: Text(
+                              context.l10n.routeStopsUnsavedHint,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: context.status.warning,
+                              ),
+                            ),
+                          ),
                         if (state.stops.length < 2)
                           Padding(
                             padding: const EdgeInsets.only(bottom: AdminSpacing.sm),
@@ -186,7 +248,9 @@ class _RouteStopsView extends StatelessWidget {
                   Expanded(
                     child: TextButton(
                       key: const Key('route_stops_close_button'),
-                      onPressed: () => Navigator.of(context).pop(),
+                      // maybePop, not pop: goes through the PopScope above, so unsaved stops
+                      // are confirmed before they are discarded.
+                      onPressed: () => Navigator.of(context).maybePop(),
                       child: Text(context.l10n.commonCloseButton),
                     ),
                   ),

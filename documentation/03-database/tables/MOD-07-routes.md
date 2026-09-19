@@ -44,7 +44,6 @@ CONSTRAINT uq_routes_school_code UNIQUE (tenant_id, school_id, code)
 | `landmark` | `VARCHAR(255)` | Helps parents locate the stop |
 
 ```sql
-CONSTRAINT uq_stops_route_sequence UNIQUE (tenant_id, route_id, sequence_no),
 CONSTRAINT ck_stops_sequence  CHECK (sequence_no > 0),
 CONSTRAINT ck_stops_latitude  CHECK (latitude  BETWEEN -90  AND 90),
 CONSTRAINT ck_stops_longitude CHECK (longitude BETWEEN -180 AND 180),
@@ -64,7 +63,9 @@ A tenant may tune within this window (ADR-0007); they cannot leave it (BR-SAFE-0
 
 **BR-ROUTE-008** (strictly increasing times along the sequence) is a cross-row invariant PostgreSQL cannot express as a check constraint. It is enforced in the domain on route save and covered by a test — **a documented deviation** from enforce-structurally.
 
-**Indexes:** `uq_stops_route_sequence` serves ordered retrieval directly.
+**Indexes:** `uq_stops_route_sequence (tenant_id, route_id, sequence_no) WHERE is_active` — unique among a route's **active** stops only, and serves ordered retrieval directly (V21). Removed stops are deactivated, never deleted, because trips that already ran reference them; V5 made the constraint count those inactive rows, so the second edit of any route's stops failed.
+
+**Editing keeps identity.** `PUT /routes/{id}/stops` updates a kept stop in place by `id`, so `route_student_assignments.stop_id` stays valid through an edit. A stop still assigned to a student cannot be removed (BR-ROUTE-009).
 
 ---
 

@@ -19,6 +19,19 @@ A-13 Guardian links & pickup persons · **A-14 Custody restrictions** · A-20 Ve
 A-23 Staff/drivers · A-30 Routes + stops · A-32 Student→route assignment · A-43 Users ·
 A-44 Roles (read-only) · A-54/A-55 Audit trail + override register · A-62 Platform health.
 
+**Mistaken-entry corrections (ADR-0019):** Principal and Super Admin discard a mistakenly entered
+student (A-10, STU-008) or driver/attendant (A-23, STF-007) that has no safety history; Principal
+reads the Drivers screen through `PERM-STAFF-VIEW`. Correcting a driver's, attendant's, or
+parent's phone moves their sign-in to the new number and revokes the old one (BR-IAM-014); parent
+details are edited from the student record (A-11). Backend (`/students/{id}/discard`,
+`/transport-staff/{id}/discard`, `PATCH /guardians/{id}`, phone correction on `PATCH
+/transport-staff/{id}`) and console (A-10/A-23 *Delete entry*, read-only Drivers screen for
+Principal, parent edit on A-11, A-44 matrix) both landed 2026-09-19.
+
+**Student transport on A-11 (STU-009, ADR-0020):** the student record shows the assigned bus and
+today's crew under each pickup/drop direction (`GET /students/{id}/transport`, MOD-18). Landed
+2026-09-19. The live half — where the child is now, today's timeline, history — is row B4.
+
 **MOD-02 Identity — backend completed** (see [`backend/guardian-identity/README.md`](../../backend/guardian-identity/README.md)):
 self-service + admin session management (IAM-004), role & scope reassignment over the nine fixed
 templates (IAM-005/IAM-007, `PUT /users/{id}/role`), staff deactivation revoking sessions and
@@ -45,6 +58,7 @@ IAM-006, remain deferred pending an ADR).
 | B1 | **MOD-08 Trips** — schedule generation from the operating calendar (TRP-001), manifest materialisation (TRP-003, subtracts absences), lifecycle (TRP-004), cancel (TRP-005), trip-close reconciliation gate (TRP-008, BR-SAFE-001) | new module `guardian-trip`; consumes MOD-07 routes, MOD-14 absence | **yes** — ADR-0004 area, trip is the anchor for every safety event | ⬜ |
 | B2 | **MOD-09 Boarding (full)** — boarding/alighting events (BRD-001/003), off-manifest + wrong-stop overrides (BRD-006/007), handover recording + override + no-receiver (BRD-008/010/012), compensating corrections | expand `guardian-boarding` beyond code issuance; needs B1 | maybe | ⬜ |
 | B3 | **A-01 Operations Dashboard v1** — trip counts, on-bus/delivered counts; alerts panel present but empty until Phase C | B1 + B2 | no | ⬜ |
+| B4 | **A-11 Journey panel** (STU-009) — *Right now* state, today's boarding/arrival/handover timeline, history by date; `GET /students/{id}/journey` in MOD-18 reusing the parent app's journey-state rules. Bus position on the panel follows C1 | B1 + B2 | no (ADR-0020) | ⬜ |
 
 ## Phase C — tracking & alerts
 
@@ -69,3 +83,5 @@ IAM-006, remain deferred pending an ADR).
 - **Fix the red backend build** — `./gradlew build` fails at `spotlessCheck` on files from commit `1f6a288` (pre-existing, unrelated). One `./gradlew spotlessApply` commit. Blocks trusting CI on every increment after.
 - **Notification catalogue coverage** — each new module's events must be added to `01-product-discovery/NOTIFICATION_CATALOG.md` as they land, not after.
 - **Tenant-isolation test per new module** (§20) — RLS + a cross-tenant test is part of each module row above, not a separate task.
+- **A deactivated driver can sign in again** (found 2026-09-19 during ADR-0019). `DeactivateStaffUseCase` revokes sessions but leaves the `DRIVER`/`ATTENDANT` role on the account, and OTP sign-in never reads `transport_staff.is_active` — so the person can request a new code and get back in. BR-IAM-008's intent ("must not keep access") is not met. Needs a decision: release the role on deactivation (as ADR-0019 does for discard), or have sign-in check the staff record.
+- **`BusinessRuleTraceabilityTest` is red** (pre-existing): `BR-IAM-013` is cited by `PasswordPolicy` (ADR-0012) but missing from `BUSINESS_RULES.md`, and its pending-areas baseline still lists rules later increments covered (`BR-GRD-008`, `BR-STU-002`, …).

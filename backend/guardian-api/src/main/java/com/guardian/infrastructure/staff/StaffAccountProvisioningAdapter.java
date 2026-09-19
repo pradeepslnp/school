@@ -53,7 +53,7 @@ class StaffAccountProvisioningAdapter implements StaffAccountProvisioningPort {
   /**
    * The role code PERMISSION_MATRIX.md gives each staff type — matches V900's seeded DRIVER role.
    */
-  private static String roleCodeFor(StaffType staffType) {
+  static String roleCodeFor(StaffType staffType) {
     return staffType.name();
   }
 

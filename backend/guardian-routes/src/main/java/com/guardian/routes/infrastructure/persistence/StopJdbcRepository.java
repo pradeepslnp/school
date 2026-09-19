@@ -14,9 +14,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Implements {@link StopRepository} with plain JDBC against {@code stops} directly, rather than JPA
- * — a stop has no lifecycle of its own outside its route (it is always replaced as a full list,
- * never edited in place), so a JPA entity and mapper would be machinery this class is the only
- * caller of.
+ * — a stop has no lifecycle of its own outside its route (it is always written as a full list), so
+ * a JPA entity and mapper would be machinery this class is the only caller of.
  *
  * <p>{@code tenant_id} is taken from the session's own RLS context ({@code
  * current_setting('app.tenant_id')}), matching {@code JdbcPickupPersonRepository} and every other
@@ -46,16 +45,40 @@ class StopJdbcRepository implements StopRepository {
   }
 
   /**
-   * Deletes every existing stop for this route and inserts the replacement set, in one transaction
-   * — matching {@code PUT /routes/{id}/stops}'s "replaces the full ordered list" contract
-   * (FLEET_STAFF_ROUTES_API.md). A soft delete (is_active = false) rather than a hard DELETE: stops
-   * are referenced by {@code trip_manifests.expected_stop_id} for trips that have already run, and
-   * an edit to today's route must not orphan yesterday's evidence.
+   * Makes {@code stops} the route's active stop list, in one transaction.
+   *
+   * <ol>
+   *   <li>Active stops not in the list are deactivated — never deleted: trips that already ran
+   *       reference them, and yesterday's evidence must survive an edit to today's route.
+   *   <li>The remaining active stops are moved out of the way ({@code sequence_no + 1000000}), so
+   *       re-numbering them can never collide with {@code uq_stops_route_sequence} mid-update.
+   *   <li>Each stop is written by id: an existing one updated in place — keeping every student
+   *       assignment that points at it — and a new one inserted.
+   * </ol>
+   *
+   * <p>The use case has already checked that every existing id belongs to this route; the {@code
+   * WHERE} on the update repeats it so a stop can never be moved between routes here.
    */
   @Override
   public void replaceAll(RouteId routeId, List<Stop> stops) {
+    UUID[] keptIds = stops.stream().map(stop -> stop.id().value()).toArray(UUID[]::new);
+
     jdbcTemplate.update(
-        "UPDATE stops SET is_active = false WHERE route_id = ? AND is_active", routeId.value());
+        connection -> {
+          var statement =
+              connection.prepareStatement(
+                  """
+                  UPDATE stops SET is_active = false, updated_at = now(), version = version + 1
+                  WHERE route_id = ? AND is_active AND id <> ALL (?)
+                  """);
+          statement.setObject(1, routeId.value());
+          statement.setArray(2, connection.createArrayOf("uuid", keptIds));
+          return statement;
+        });
+
+    jdbcTemplate.update(
+        "UPDATE stops SET sequence_no = sequence_no + 1000000 WHERE route_id = ? AND is_active",
+        routeId.value());
 
     for (Stop stop : stops) {
       jdbcTemplate.update(
@@ -65,6 +88,18 @@ class StopJdbcRepository implements StopRepository {
                geofence_radius_m, scheduled_pickup_time, scheduled_drop_time, landmark)
           VALUES (?, NULLIF(current_setting('app.tenant_id', true), '')::uuid,
                   ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT (id) DO UPDATE SET
+              sequence_no = EXCLUDED.sequence_no,
+              name = EXCLUDED.name,
+              latitude = EXCLUDED.latitude,
+              longitude = EXCLUDED.longitude,
+              geofence_radius_m = EXCLUDED.geofence_radius_m,
+              scheduled_pickup_time = EXCLUDED.scheduled_pickup_time,
+              scheduled_drop_time = EXCLUDED.scheduled_drop_time,
+              landmark = EXCLUDED.landmark,
+              updated_at = now(),
+              version = stops.version + 1
+          WHERE stops.route_id = EXCLUDED.route_id AND stops.is_active
           """,
           stop.id().value(),
           routeId.value(),

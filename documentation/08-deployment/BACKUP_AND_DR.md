@@ -100,6 +100,8 @@ Because safety and audit tables are **append-only** (BR-AUD-001, BR-BOARD-001 ðŸ
 
 Soft delete on configuration data means most "deletions" are recoverable in-place. Safety and audit records have no delete path at all.
 
+The exception is a student or staff record **discarded** as a mistaken entry (ADR-0019). It is gone from the database and recoverable only by point-in-time restore; its `STUDENT_DISCARDED` / `TRANSPORT_STAFF_DISCARDED` audit record gives the time, actor, and identifiers to restore to.
+
 ### Redis loss
 
 No recovery needed. Live tracking degrades until the next position report; **no data is lost** (ADR-0004).

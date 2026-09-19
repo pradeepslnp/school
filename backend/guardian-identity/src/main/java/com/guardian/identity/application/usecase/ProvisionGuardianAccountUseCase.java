@@ -13,6 +13,7 @@ import com.guardian.identity.domain.PhoneNumber;
 import com.guardian.identity.domain.RoleId;
 import com.guardian.identity.domain.User;
 import com.guardian.identity.domain.UserId;
+import com.guardian.identity.domain.UserStatus;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -73,6 +74,16 @@ public class ProvisionGuardianAccountUseCase {
                             command.lastName(),
                             "en")));
 
+    // BR-IAM-014 — the same reactivation as ProvisionStaffAccountUseCase, for the same reason.
+    boolean reactivated =
+        user.status() == UserStatus.INACTIVE && users.roleCodesOf(user.id()).isEmpty();
+    if (reactivated) {
+      user =
+          users.save(
+              user.withProfile(command.firstName(), command.lastName(), user.preferredLocale())
+                  .withStatus(UserStatus.ACTIVE));
+    }
+
     RoleId roleId =
         roleProvisioning.findOrCreateSystemRole(tenantId, GUARDIAN_ROLE_CODE, GUARDIAN_ROLE_NAME);
     roleProvisioning.grantIfMissing(tenantId, user.id(), roleId);
@@ -83,7 +94,11 @@ public class ProvisionGuardianAccountUseCase {
             .actor(command.actorId(), AuditRecord.ActorType.USER, command.actorRole())
             .action("GUARDIAN_ACCOUNT_PROVISIONED")
             .subject("User", user.id().value())
-            .after(Map.<String, Object>of("roleCode", GUARDIAN_ROLE_CODE, "phone", phone.masked()))
+            .after(
+                Map.<String, Object>of(
+                    "roleCode", GUARDIAN_ROLE_CODE,
+                    "phone", phone.masked(),
+                    "accountReactivated", reactivated))
             .build());
 
     return user.id();

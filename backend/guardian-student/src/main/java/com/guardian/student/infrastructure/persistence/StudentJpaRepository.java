@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -51,4 +52,22 @@ interface StudentJpaRepository extends JpaRepository<StudentEntity, UUID> {
       @Param("schoolId") UUID schoolId,
       @Param("afterAdmissionNo") String afterAdmissionNo,
       Limit limit);
+
+  /**
+   * {@code student_credentials} has no entity of its own yet — nothing in this module issues
+   * credentials so far — so the one statement that touches it is native.
+   */
+  @Modifying(flushAutomatically = true)
+  @Query(
+      value = "DELETE FROM student_credentials WHERE student_id = :studentId",
+      nativeQuery = true)
+  int deleteCredentialsByStudentId(@Param("studentId") UUID studentId);
+
+  /**
+   * A bulk delete, executed immediately so a foreign-key refusal surfaces here rather than at
+   * commit. Clears the persistence context so the student just loaded is not flushed back.
+   */
+  @Modifying(flushAutomatically = true, clearAutomatically = true)
+  @Query("DELETE FROM StudentEntity s WHERE s.id = :id")
+  int discardById(@Param("id") UUID id);
 }

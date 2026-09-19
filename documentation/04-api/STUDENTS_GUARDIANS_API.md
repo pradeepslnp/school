@@ -1,7 +1,7 @@
 # STUDENTS & GUARDIANS API
 
 **Document tier:** 4 — API
-**Modules:** MOD-03, MOD-04 · **Features:** STU-001…007, GRD-001…007
+**Modules:** MOD-03, MOD-04 · **Features:** STU-001…008, GRD-001…007
 
 These endpoints govern **who may collect a child**. Every write here is audited.
 
@@ -16,6 +16,9 @@ These endpoints govern **who may collect a child**. Every write here is audited.
 | `GET` | `/students/{id}` | STU-001 | `PERM-STUDENT-VIEW` | BR-IAM-005, BR-IAM-012 |
 | `PATCH` | `/students/{id}` | STU-001 | `PERM-STUDENT-EDIT` | |
 | `POST` | `/students/{id}/withdraw` | STU-004 | `PERM-STUDENT-EDIT` | BR-STU-005 |
+| `POST` | `/students/{id}/discard` | STU-008 | `PERM-STUDENT-DELETE` | BR-STU-007 |
+| `GET` | `/students/{id}/transport` | STU-009 | `PERM-STUDENT-VIEW` | BR-IAM-006, BR-IAM-012 |
+| `GET` | `/students/{id}/journey` | STU-009 | `PERM-STUDENT-VIEW` | BR-IAM-006, BR-IAM-012, BR-TRACK-001 — **planned** |
 | `POST` | `/students/import` | STU-002 | `PERM-STUDENT-IMPORT` | BR-STU-003 |
 | `GET` | `/students/import/{jobId}` | STU-002 | `PERM-STUDENT-IMPORT` | |
 | `GET` | `/students/import/{jobId}/errors.csv` | STU-002 | `PERM-STUDENT-IMPORT` | BR-RPT-002 🔴 |
@@ -90,7 +93,58 @@ A data export of child identifiers, so it is audited with a record count (BR-RPT
 
 ### `POST /students/{id}/withdraw`
 
-Sets `enrolmentStatus` and removes future route assignments. **Never hard-deletes** while safety records reference the student (BR-STU-005) — `STUDENT_HAS_SAFETY_RECORDS` (422) if a hard delete is attempted.
+Sets `enrolmentStatus` and removes future route assignments. **Never hard-deletes** while safety records reference the student (BR-STU-005). A record entered by mistake is discarded instead (below).
+
+### `POST /students/{id}/discard`
+
+Permanently removes a student record **entered by mistake** — a duplicate, or one with the wrong admission number (STU-008, BR-STU-007, [ADR-0019](../00-governance/adr/ADR-0019-discarding-mistaken-entries-and-phone-correction.md)). A named action rather than `DELETE`: `DELETE` never hard-deletes on this platform, and a `POST` is not retried.
+
+```json
+{ "reason": "Duplicate of admission 2024-118, entered twice during import" }
+```
+
+- `reason` is required, 1–500 characters.
+- In one transaction: the student's guardian links, route assignments, and boarding credentials are removed, then the student.
+- **Any other reference refuses the discard** — boarding, manifest, absence, notification, handover code, custody restriction, pickup nomination — with `422 STUDENT_HAS_SAFETY_RECORDS`, and nothing changes. Withdraw such a student instead.
+- Guardian records are kept; they may belong to a sibling.
+- A school-scoped caller may discard only within their school; any other student answers `404 STUDENT_NOT_FOUND`.
+- Audited as `STUDENT_DISCARDED` with the reason, admission number, school, and counts removed — never the child's name.
+- Answers `204 No Content`.
+
+### Student transport and journey
+
+Served by **MOD-18**, not MOD-03: the composition spans routes, fleet and staff (and later trips, boarding and tracking), which all sit above the student module ([ADR-0020](../00-governance/adr/ADR-0020-staff-student-journey-reads.md)). Both reads are scoped to the caller's schools inside the query. Out of scope and not found are the same `404 STUDENT_NOT_FOUND`. Each read is recorded as data access (BR-IAM-012).
+
+#### `GET /students/{id}/transport`
+
+**Status: implemented.** The bus and crew the student is **assigned** to, per direction. This is the plan, never the child's location: a running trip may use a substitute bus or crew, and only boarding records say where a child is.
+
+```json
+{
+  "studentId": "…", "schoolId": "…",
+  "legs": [
+    {
+      "direction": "PICKUP",
+      "routeId": "…", "routeCode": "R-12", "routeName": "Green Park corridor",
+      "stopId": "…", "stopName": "Green Park",
+      "vehicle": { "id": "…", "registrationNo": "DL1PC1234", "displayName": "Bus 12", "status": "ACTIVE" },
+      "crew": [ { "staffId": "…", "role": "DRIVER", "firstName": "Suresh", "lastName": "Kumar" } ]
+    }
+  ]
+}
+```
+
+- One leg per **active** route assignment, pickup first — the same assignments `GET /students/{id}/route-assignments` returns.
+- `vehicle` is the route's default bus, or `null` when none is set. A `status` other than `ACTIVE` means the route points at a bus not in service.
+- `crew` is every active driver and attendant whose duty on that route covers this direction (or both) and is in effect **today in the school's timezone**. It is empty when nobody is on duty. Names only; phones stay on the Drivers screen.
+- No legs when the student has no route assignment.
+
+#### `GET /students/{id}/journey`
+
+**Status: planned.** Needs MOD-08 Trips and MOD-09 Boarding; the bus position also needs MOD-10 Tracking. It will return:
+- **now:** the child's journey state (reusing the parent app's `JourneyState`), today's trip and bus, and the bus position while the child is on board (BR-TRACK-001)
+- **today:** every boarding, arrival and handover event with its time, stop, recording staff member and verification method
+- **history:** the same timeline for a chosen past date, absences included
 
 ### Credentials
 
@@ -104,11 +158,33 @@ Sets `enrolmentStatus` and removes future route assignments. **Never hard-delete
 |---|---|---|---|---|
 | `POST` | `/guardians` | GRD-001 | `PERM-GUARDIAN-MANAGE` | |
 | `GET` | `/guardians/{id}` | GRD-001 | `PERM-GUARDIAN-MANAGE` | |
-| `PATCH` | `/guardians/{id}` | GRD-001 | `PERM-GUARDIAN-MANAGE` | |
+| `PATCH` | `/guardians/{id}` | GRD-001 | `PERM-GUARDIAN-MANAGE` | BR-IAM-014 |
 | `POST` | `/guardians/{id}/invite` | GRD-001 | `PERM-GUARDIAN-MANAGE` | |
 | `GET` | `/guardians/me/students` | GRD-007 | authenticated | BR-IAM-005 |
 
 A guardian record exists — receiving SMS, authorised for handover — **before any account is activated**. Requiring an app account first would exclude exactly the parents the platform must reach ([`PRODUCT_PRINCIPLES.md`](../PRODUCT_PRINCIPLES.md) §6).
+
+### `PATCH /guardians/{id}`
+
+**Status: implemented.** Corrects a guardian's name, phone, or email.
+
+```json
+{ "firstName": "Anita", "lastName": "Rao", "phone": "+919876543210", "email": "anita@example.com" }
+```
+
+**Changing the phone moves the guardian's sign-in to the new number** (BR-IAM-014, [ADR-0019](../00-governance/adr/ADR-0019-discarding-mistaken-entries-and-phone-correction.md)):
+
+1. The new number's sign-in account is reused if one exists in the organization, or created, and granted `GUARDIAN`.
+2. The guardian record is relinked to it.
+3. The old number's account loses `GUARDIAN` and **every session it holds, immediately**. With no role left it becomes `INACTIVE`. It is never deleted.
+
+The old account is not edited in place: anything done under it stays attributed to the number that did it.
+
+- Every field is sent; a missing name or phone is `400`. An empty or absent `email` clears it.
+- Answers `200` with the guardian record: `{ "id", "firstName", "lastName", "phone", "email", "hasLogin" }`. The console re-reads `GET /students/{studentId}/guardians` afterwards, since that is where the rights on each link live.
+- A new number whose account already belongs to a different guardian record answers `409 GUARDIAN_PHONE_IN_USE`.
+- An unknown guardian answers `404 GUARDIAN_NOT_FOUND`.
+- Audited as `GUARDIAN_UPDATED` with the fields changed and whether the sign-in moved — never the values.
 
 ### `GET /guardians/me/students`
 
@@ -319,3 +395,6 @@ Attempting to disable a `CRITICAL` notification returns `422 NOTIFICATION_PREFER
 8. Student photos are unreachable without permission and scope.
 9. Import with 4 bad rows imports the other 408 and reports the 4.
 10. A student credential's raw value is returned once and never retrievable again.
+11. Discarding a student with any boarding, absence, or notification history returns `422` and changes no row.
+12. Discarding a mistaken student removes it with its links and assignments, and writes `STUDENT_DISCARDED`.
+13. Correcting a guardian's phone revokes every session of the old number's account.

@@ -17,6 +17,7 @@ class StaffListBloc extends Bloc<StaffListEvent, StaffListState> {
     on<StaffListRequested>(_onRequested);
     on<StaffCreated>(_onCreated);
     on<StaffUpdated>(_onUpdated);
+    on<StaffDiscarded>(_onDiscarded);
   }
 
   final StaffRepository _repository;
@@ -100,6 +101,31 @@ class StaffListBloc extends Bloc<StaffListEvent, StaffListState> {
           staff: [
             for (final staff in state.staff)
               if (staff.id == value.id) value else staff,
+          ],
+        ));
+      case Failure(:final code, :final messageKey):
+        emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));
+    }
+  }
+
+  Future<void> _onDiscarded(StaffDiscarded event, Emitter<StaffListState> emit) async {
+    if (event.reason.trim().isEmpty) {
+      emit(state.copyWith(error: ErrorCode.validationRequiredFieldMissing));
+      return;
+    }
+
+    emit(state.copyWith(isSubmitting: true, clearError: true));
+
+    final result = await _repository.discardStaff(staffId: event.staffId, reason: event.reason);
+
+    switch (result) {
+      case Success<void>():
+        emit(state.copyWith(
+          isSubmitting: false,
+          clearError: true,
+          staff: [
+            for (final staff in state.staff)
+              if (staff.id != event.staffId) staff,
           ],
         ));
       case Failure(:final code, :final messageKey):

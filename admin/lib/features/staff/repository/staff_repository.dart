@@ -80,6 +80,13 @@ class StaffRepository {
     return Success<List<CreatedStaff>>(staff);
   }
 
+  /// Nothing comes back on success — the record no longer exists.
+  Future<Result<void>> discardStaff({required String staffId, required String reason}) async {
+    final response = await dataProvider.discardStaff(staffId: staffId, reason: reason.trim());
+    if (!response.isSuccess) return _toFailure<void>(response);
+    return const Success<void>(null);
+  }
+
   Result<T> _toFailure<T>(ApiResponse response) {
     if (response.isTransportFailure) {
       return Failure<T>(ErrorCode.dependencyUnavailable);

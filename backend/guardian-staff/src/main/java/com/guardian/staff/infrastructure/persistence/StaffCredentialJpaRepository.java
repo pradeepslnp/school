@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -30,4 +31,8 @@ interface StaffCredentialJpaRepository extends JpaRepository<StaffCredentialEnti
       """)
   List<StaffCredentialEntity> findMandatoryExpiringBy(
       @Param("cutoff") LocalDate cutoff, Sort sort, Limit limit);
+
+  @Modifying(flushAutomatically = true)
+  @Query("DELETE FROM StaffCredentialEntity c WHERE c.staffId = :staffId")
+  int deleteAllByStaffId(@Param("staffId") UUID staffId);
 }

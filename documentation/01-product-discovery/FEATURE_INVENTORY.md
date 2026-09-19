@@ -47,12 +47,14 @@ The canonical list of features. **Feature IDs are the traceability key** across 
 | STU-005 | Transfer a student between schools | BR-STU-006 | R2 |
 | STU-006 | Student photo for handover identification | BR-HAND-001 | R1 |
 | STU-007 | Student boarding credential (QR / card) | BR-BOARD-002 | R1 |
+| STU-008 | Discard a mistakenly entered student | BR-STU-007 | R1 |
+| STU-009 | Student transport & journey on the student record: assigned bus and crew (built); where the child is now, today's timeline and history (needs TRP, BRD, TRK) | BR-IAM-006, BR-IAM-012, BR-TRACK-001 | R1 |
 
 ## GRD — Guardian Management (MOD-04)
 
 | ID | Feature | Rules | Release |
 |---|---|---|---|
-| GRD-001 | Create a guardian and link to a student with rights | BR-GRD-001, BR-GRD-002 | R1 |
+| GRD-001 | Create a guardian and link to a student with rights | BR-GRD-001, BR-GRD-002, BR-IAM-014 | R1 |
 | GRD-002 | Manage multiple guardians per student | BR-GRD-003 | R1 |
 | GRD-003 | Deactivate a guardian relationship | BR-GRD-004 | R1 |
 | GRD-004 | Nominate an authorised pickup person | BR-GRD-005, BR-GRD-006 | R1 |
@@ -74,12 +76,13 @@ The canonical list of features. **Feature IDs are the traceability key** across 
 
 | ID | Feature | Rules | Release |
 |---|---|---|---|
-| STF-001 | Create driver and attendant records | BR-STAFF-001 | R1 |
+| STF-001 | Create driver and attendant records | BR-STAFF-001, BR-IAM-014 | R1 |
 | STF-002 | Credential register with expiry | BR-STAFF-001, BR-STAFF-003 | R1 |
 | STF-003 | Verification status tracking | BR-STAFF-002 | R1 |
 | STF-004 | Duty assignment to routes | BR-STAFF-004, BR-STAFF-005 | R1 |
 | STF-005 | Substitute staff assignment mid-trip | BR-STAFF-006 | R2 |
 | STF-006 | Vendor-scoped staff access | BR-IAM-006 | R2 |
+| STF-007 | Discard a mistakenly entered staff record | BR-STAFF-007 | R1 |
 
 ## RTE — Routes & Stops (MOD-07)
 

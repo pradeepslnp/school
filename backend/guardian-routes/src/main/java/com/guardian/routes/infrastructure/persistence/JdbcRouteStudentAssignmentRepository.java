@@ -4,6 +4,7 @@ import com.guardian.routes.application.port.RouteStudentAssignmentRepository;
 import com.guardian.routes.domain.RouteStudentAssignment;
 import java.sql.Date;
 import java.sql.ResultSet;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -106,6 +107,30 @@ public class JdbcRouteStudentAssignmentRepository implements RouteStudentAssignm
         """,
         actorUserId,
         assignmentId);
+  }
+
+  @Override
+  public int deleteAllForStudent(UUID studentId) {
+    return jdbc.update("DELETE FROM route_student_assignments WHERE student_id = ?", studentId);
+  }
+
+  @Override
+  public List<UUID> stopsWithActiveAssignments(Collection<UUID> stopIds) {
+    if (stopIds.isEmpty()) {
+      return List.of();
+    }
+    return jdbc.query(
+        connection -> {
+          var statement =
+              connection.prepareStatement(
+                  """
+                  SELECT DISTINCT stop_id FROM route_student_assignments
+                  WHERE is_active AND stop_id = ANY (?)
+                  """);
+          statement.setArray(1, connection.createArrayOf("uuid", stopIds.toArray()));
+          return statement;
+        },
+        (rs, rowNum) -> rs.getObject("stop_id", UUID.class));
   }
 
   private static final RowMapper<StudentAssignment> ASSIGNMENT_MAPPER =

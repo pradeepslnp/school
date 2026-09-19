@@ -57,7 +57,10 @@ class TransportStaffPersistenceMapper {
    * concurrent edit silently win.
    */
   void applyTo(TransportStaffEntity managed, TransportStaff staff) {
+    // userId included: CreateTransportStaffUseCase links the account with a second save of the
+    // same, already-managed record, and a phone correction relinks it (BR-IAM-014).
     managed.applyMutableState(
+        staff.userId().map(UserId::value).orElse(null),
         staff.firstName(),
         staff.lastName(),
         staff.phone(),

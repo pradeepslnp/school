@@ -9,7 +9,9 @@ import '../../guardians/bloc/student_guardians_bloc.dart';
 import '../../guardians/bloc/student_guardians_event.dart';
 import '../../guardians/bloc/student_guardians_state.dart';
 import '../../custody_restrictions/widgets/custody_restriction_panel.dart';
+import '../../guardians/domain/guardian_models.dart';
 import '../../guardians/widgets/add_guardian_form.dart';
+import '../../guardians/widgets/edit_guardian_form.dart';
 import '../../guardians/widgets/guardian_tile.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
 import '../../route_assignments/bloc/student_assignments_bloc.dart';
@@ -19,7 +21,13 @@ import '../../route_assignments/domain/route_assignment_models.dart';
 import '../../route_assignments/widgets/assign_route_form.dart';
 import '../../routes/domain/route_models.dart';
 import '../../routes/domain/stop_models.dart';
+import '../../student_transport/bloc/student_transport_bloc.dart';
+import '../../student_transport/bloc/student_transport_event.dart';
+import '../../student_transport/bloc/student_transport_state.dart';
+import '../../student_transport/domain/student_transport_models.dart';
+import '../../student_transport/widgets/assigned_bus_line.dart';
 import '../domain/student_models.dart';
+import '../widgets/student_error_text.dart';
 
 /// A-11 — the record for one student: who they are, the parents who may see and collect them,
 /// and their pickup and drop. Reached by tapping a row on the register (A-10).
@@ -98,6 +106,57 @@ class StudentDetailScreen extends StatelessWidget {
                     if (state.error != null)
                       OnboardingErrorText(
                           code: state.error!, messageKey: state.errorMessageKey),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Corrects a parent's details (GRD-001). A changed phone moves their sign-in (BR-IAM-014);
+  /// the form says so before saving.
+  Future<void> _openEditParent(BuildContext context, StudentGuardian guardian) async {
+    final bloc = context.read<StudentGuardiansBloc>();
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AdminSpacing.lg),
+            child: BlocProvider.value(
+              value: bloc,
+              child: BlocBuilder<StudentGuardiansBloc, StudentGuardiansState>(
+                builder: (context, state) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    EditGuardianForm(
+                      guardian: guardian,
+                      isSubmitting: state.isSubmitting,
+                      onCancel: () => Navigator.of(dialogContext).pop(),
+                      onSubmit: ({
+                        required String firstName,
+                        required String lastName,
+                        required String phone,
+                        String? email,
+                      }) {
+                        bloc.add(GuardianUpdated(
+                          studentId: student.id,
+                          guardianId: guardian.guardianId,
+                          firstName: firstName,
+                          lastName: lastName,
+                          phone: phone,
+                          email: email,
+                        ));
+                      },
+                    ),
+                    if (state.error != null)
+                      StudentErrorText(code: state.error!, messageKey: state.errorMessageKey),
                   ],
                 ),
               ),
@@ -201,6 +260,15 @@ class StudentDetailScreen extends StatelessWidget {
             if (Navigator.of(context).canPop()) Navigator.of(context).pop();
           },
         ),
+        // A changed or removed pickup/drop changes the bus and crew too — re-read them, so the
+        // panel never shows the previous route's bus under the new route.
+        BlocListener<StudentAssignmentsBloc, StudentAssignmentsState>(
+          listenWhen: (previous, current) =>
+              previous.isSubmitting && !current.isSubmitting && current.error == null,
+          listener: (context, state) => context
+              .read<StudentTransportBloc>()
+              .add(StudentTransportRequested(studentId: student.id)),
+        ),
       ],
       child: Scaffold(
         appBar: AppBar(title: Text(student.displayName)),
@@ -212,6 +280,7 @@ class StudentDetailScreen extends StatelessWidget {
             _ParentsPanel(
               canEdit: canEdit,
               onAddParent: () => _openAddParent(context),
+              onEditParent: (guardian) => _openEditParent(context, guardian),
             ),
             const SizedBox(height: AdminSpacing.xl),
             _PickupDropPanel(
@@ -311,10 +380,17 @@ class _StudentHeader extends StatelessWidget {
 }
 
 class _ParentsPanel extends StatelessWidget {
-  const _ParentsPanel({required this.canEdit, required this.onAddParent});
+  const _ParentsPanel({
+    required this.canEdit,
+    required this.onAddParent,
+    required this.onEditParent,
+  });
 
+  /// `PERM-GUARDIAN-LINK` and `PERM-GUARDIAN-MANAGE` are held by the same three roles, so one
+  /// flag gates both adding a parent and correcting one.
   final bool canEdit;
   final VoidCallback onAddParent;
+  final ValueChanged<StudentGuardian> onEditParent;
 
   @override
   Widget build(BuildContext context) {
@@ -381,7 +457,10 @@ class _ParentsPanel extends StatelessWidget {
                     ),
                   ),
                 for (final guardian in state.guardians)
-                  GuardianTile(guardian: guardian),
+                  GuardianTile(
+                    guardian: guardian,
+                    onEdit: canEdit ? () => onEditParent(guardian) : null,
+                  ),
               ],
             );
           },
@@ -405,9 +484,16 @@ class _PickupDropPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(context.l10n.studentDetailPickupDropTitle, style: theme.textTheme.titleLarge),
+        const SizedBox(height: AdminSpacing.xs),
+        // The bus and crew below are the plan, not a location — said once, up front.
+        Text(
+          context.l10n.studentTransportCaption,
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
         const SizedBox(height: AdminSpacing.md),
         BlocBuilder<StudentAssignmentsBloc, StudentAssignmentsState>(
           builder: (context, state) {
+            final transport = context.watch<StudentTransportBloc>().state;
             if (state.isLoading && state.assignments.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.all(AdminSpacing.lg),
@@ -426,6 +512,7 @@ class _PickupDropPanel extends StatelessWidget {
                   label: context.l10n.studentDetailDirectionPickup,
                   direction: 'PICKUP',
                   assignment: state.pickup,
+                  transportLeg: _legFor(transport, 'PICKUP'),
                   canEdit: canEdit,
                   isBusy: state.isSubmitting,
                   onSet: () => onSet('PICKUP'),
@@ -443,6 +530,7 @@ class _PickupDropPanel extends StatelessWidget {
                   label: context.l10n.studentDetailDirectionDrop,
                   direction: 'DROP',
                   assignment: state.drop,
+                  transportLeg: _legFor(transport, 'DROP'),
                   canEdit: canEdit,
                   isBusy: state.isSubmitting,
                   onSet: () => onSet('DROP'),
@@ -455,6 +543,14 @@ class _PickupDropPanel extends StatelessWidget {
                             ),
                           ),
                 ),
+                if (transport.error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AdminSpacing.sm),
+                    child: Text(
+                      context.l10n.studentTransportLoadError,
+                      style: theme.textTheme.bodySmall?.copyWith(color: context.status.warning),
+                    ),
+                  ),
                 if (state.error != null)
                   Padding(
                     padding: const EdgeInsets.only(top: AdminSpacing.sm),
@@ -472,11 +568,20 @@ class _PickupDropPanel extends StatelessWidget {
   }
 }
 
+/// The loaded leg for [direction], or null before the first load or when none is assigned.
+TransportLeg? _legFor(StudentTransportState transport, String direction) {
+  for (final leg in transport.transport?.legs ?? const <TransportLeg>[]) {
+    if (leg.direction == direction) return leg;
+  }
+  return null;
+}
+
 class _DirectionRow extends StatelessWidget {
   const _DirectionRow({
     required this.label,
     required this.direction,
     required this.assignment,
+    required this.transportLeg,
     required this.canEdit,
     required this.isBusy,
     required this.onSet,
@@ -486,6 +591,10 @@ class _DirectionRow extends StatelessWidget {
   final String label;
   final String direction;
   final RouteAssignment? assignment;
+
+  /// The bus and crew for this direction, once loaded (STU-009). Shown only while an assignment
+  /// is set, so a stale leg never appears under "Not set".
+  final TransportLeg? transportLeg;
   final bool canEdit;
   final bool isBusy;
   final VoidCallback onSet;
@@ -522,6 +631,7 @@ class _DirectionRow extends StatelessWidget {
                     color: set ? null : theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (set && transportLeg != null) AssignedBusLine(leg: transportLeg!),
               ],
             ),
           ),

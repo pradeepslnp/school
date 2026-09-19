@@ -33,6 +33,8 @@ An ADR records a decision that is expensive to reverse: why it was made, what wa
 | [ADR-0016](ADR-0016-platform-operator-organization-elevation.md) | Platform-operator elevation into an organization | Accepted |
 | [ADR-0017](ADR-0017-global-search.md) | Console global search as a read-only composition module | Accepted (cross-organization scope superseded by ADR-0018) |
 | [ADR-0018](ADR-0018-platform-wide-search.md) | Platform-wide search for platform operators | Accepted |
+| [ADR-0019](ADR-0019-discarding-mistaken-entries-and-phone-correction.md) | Discarding mistaken entries and correcting sign-in phone numbers | Accepted |
+| [ADR-0020](ADR-0020-staff-student-journey-reads.md) | Staff-facing student transport and journey reads (amends ADR-0010) | Accepted |
 
 ## Writing a new ADR
 

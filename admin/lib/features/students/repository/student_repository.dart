@@ -97,6 +97,19 @@ class StudentRepository {
     return _single(response);
   }
 
+  /// Nothing comes back on success — the student no longer exists.
+  Future<Result<void>> discardStudent({
+    required String studentId,
+    required String reason,
+  }) async {
+    final response = await dataProvider.discardStudent(
+      studentId: studentId,
+      reason: reason.trim(),
+    );
+    if (!response.isSuccess) return _toFailure<void>(response);
+    return const Success<void>(null);
+  }
+
   Result<Student> _single(ApiResponse response) {
     if (!response.isSuccess) return _toFailure<Student>(response);
 

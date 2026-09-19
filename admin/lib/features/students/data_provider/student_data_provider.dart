@@ -103,4 +103,13 @@ class StudentDataProvider {
       body: {if (reason != null && reason.isNotEmpty) 'reason': reason},
     );
   }
+
+  /// `POST /students/{id}/discard` — permanently removes a student entered by mistake (STU-008,
+  /// `PERM-STUDENT-DELETE`, ADR-0019). Answers `204` with no body.
+  ///
+  /// A `POST`, so [RestClient] never retries it: a discard is sent once. The server refuses it with
+  /// `STUDENT_HAS_SAFETY_RECORDS` if the student has any history.
+  Future<ApiResponse> discardStudent({required String studentId, required String reason}) {
+    return client.post('/students/$studentId/discard', body: {'reason': reason});
+  }
 }

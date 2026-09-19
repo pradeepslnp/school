@@ -22,7 +22,23 @@ public interface GuardianRepository {
    */
   Optional<Guardian> findByUserId(UUID userId);
 
+  /** A guardian record by id, active or not. */
+  Optional<Guardian> findById(UUID guardianId);
+
+  /**
+   * Whether a guardian record other than {@code excludingGuardianId}, active or not, is tied to
+   * this login. {@code uq_guardians_user} allows one record per account, so a phone correction onto
+   * such an account is refused rather than merging two people's access (BR-IAM-014).
+   */
+  boolean existsByUserIdExcluding(UUID userId, UUID excludingGuardianId);
+
   Guardian saveGuardian(Guardian guardian, UUID actorUserId);
+
+  /**
+   * Writes a guardian's corrected name, phone, email, and the login it is tied to (BR-IAM-014).
+   * {@code is_active} is not written here.
+   */
+  Guardian updateGuardian(Guardian guardian, UUID actorUserId);
 
   /**
    * Creates the guardian↔student link, or reactivates and updates it if one already exists for this
@@ -43,6 +59,15 @@ public interface GuardianRepository {
    * StudentGuardianGuard} before a student may be put on a bus.
    */
   boolean hasActiveHandoverGuardian(UUID studentId);
+
+  /**
+   * Deletes every link, active or not, between a student and their guardians, for a student being
+   * discarded as a mistaken entry (BR-STU-007, ADR-0019). Guardian records are untouched — they may
+   * belong to a sibling. Never used to end a relationship; that is a deactivation (BR-GRD-004).
+   *
+   * @return how many were removed
+   */
+  int deleteLinksForStudent(UUID studentId);
 
   /**
    * A student's guardian as the enrolment screen reads it: the guardian's own details joined with

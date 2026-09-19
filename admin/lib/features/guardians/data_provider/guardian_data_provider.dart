@@ -50,4 +50,25 @@ class GuardianDataProvider {
       },
     );
   }
+
+  /// `PATCH /guardians/{guardianId}` (`PERM-GUARDIAN-MANAGE`) — corrects a parent's name, phone,
+  /// or email. A changed phone moves the parent's app sign-in to the new number and revokes every
+  /// session of the old one (BR-IAM-014). Every field is sent; an empty email clears it.
+  Future<ApiResponse> updateGuardian({
+    required String guardianId,
+    required String firstName,
+    required String lastName,
+    required String phone,
+    String? email,
+  }) {
+    return client.patch(
+      '/guardians/$guardianId',
+      body: {
+        'firstName': firstName,
+        'lastName': lastName,
+        'phone': phone,
+        if (email != null && email.isNotEmpty) 'email': email,
+      },
+    );
+  }
 }

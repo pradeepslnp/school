@@ -106,8 +106,9 @@ public final class TransportStaff {
 
   /**
    * Links this staff record to the login provisioned for it (feature STF-001/MOD-02). {@code
-   * userId} starts null — see this class's field documentation — and is set exactly once, right
-   * after {@code CreateTransportStaffUseCase} provisions the account in the same transaction.
+   * userId} starts null — see this class's field documentation — and is set right after {@code
+   * CreateTransportStaffUseCase} provisions the account in the same transaction. It changes again
+   * only when a phone correction moves the sign-in to the new number's account (BR-IAM-014).
    */
   public TransportStaff withUserId(UserId newUserId) {
     return new TransportStaff(

@@ -3624,6 +3624,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'There is no screen for this record in your console.'**
   String get globalSearchNoScreen;
+
+  /// No description provided for @discardEntryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this entry?'**
+  String get discardEntryTitle;
+
+  /// No description provided for @discardEntryReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get discardEntryReasonLabel;
+
+  /// No description provided for @discardEntryReasonHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Required. Say what the mistake was, e.g. \"Duplicate of admission 2024-118\". It is kept on the audit trail.'**
+  String get discardEntryReasonHelper;
+
+  /// Safety-relevant: permanently removes a record entered by mistake (ADR-0019).
+  ///
+  /// In en, this message translates to:
+  /// **'Delete permanently'**
+  String get discardEntryConfirmButton;
+
+  /// No description provided for @discardEntryDeletingSpinnerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting entry'**
+  String get discardEntryDeletingSpinnerLabel;
+
+  /// No description provided for @discardEntryDeletedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry deleted'**
+  String get discardEntryDeletedSnackbar;
+
+  /// No description provided for @studentDiscardTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete entry for {name}'**
+  String studentDiscardTooltip(String name);
+
+  /// Safety-relevant: confirms permanently deleting a student record (BR-STU-007, ADR-0019).
+  ///
+  /// In en, this message translates to:
+  /// **'Use this only for a student entered by mistake, such as a duplicate or a wrong admission number.\n\n{name} ({admissionNo}) will be permanently removed, with their parent links, pickup and drop, and boarding credentials. Parent records are kept.\n\nA student with any history (boarding, absences, notifications) cannot be deleted. Withdraw them instead.'**
+  String studentDiscardBody(String name, String admissionNo);
+
+  /// Safety-relevant: explains why a student could not be deleted (BR-STU-007).
+  ///
+  /// In en, this message translates to:
+  /// **'This student has history and cannot be deleted. A school admin can withdraw them instead.'**
+  String get studentErrorHasSafetyRecords;
+
+  /// No description provided for @staffDiscardTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete entry for {name}'**
+  String staffDiscardTooltip(String name);
+
+  /// Safety-relevant: confirms permanently deleting a driver or attendant record (BR-STAFF-007, ADR-0019).
+  ///
+  /// In en, this message translates to:
+  /// **'Use this only for a driver or attendant entered by mistake.\n\n{name} will be permanently removed, with their credential documents and duty assignments, and their app sign-in will be switched off.\n\nSomeone who has signed in to the app, or has any history, cannot be deleted. Deactivate them instead.'**
+  String staffDiscardBody(String name);
+
+  /// Safety-relevant: explains why a staff record could not be deleted (BR-STAFF-007).
+  ///
+  /// In en, this message translates to:
+  /// **'This person has signed in or has history, so they cannot be deleted. A school admin or transport manager can deactivate them instead.'**
+  String get staffErrorHasSafetyRecords;
+
+  /// No description provided for @staffErrorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This driver or attendant no longer exists, or is outside your school. Refresh the list.'**
+  String get staffErrorNotFound;
+
+  /// Safety-relevant: a corrected phone moves the driver-app sign-in (BR-IAM-014).
+  ///
+  /// In en, this message translates to:
+  /// **'Changing the number moves their app sign-in to it and signs the old number out.'**
+  String get staffEditPhoneHelper;
+
+  /// No description provided for @guardianEditTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {name}\'s details'**
+  String guardianEditTooltip(String name);
+
+  /// No description provided for @editGuardianTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {name}'**
+  String editGuardianTitle(String name);
+
+  /// Safety-relevant: a corrected phone moves the parent-app sign-in and revokes the old number's access to the child (BR-IAM-014).
+  ///
+  /// In en, this message translates to:
+  /// **'Changing the number moves this parent\'s app sign-in to it and signs the old number out straight away.'**
+  String get editGuardianPhoneHelper;
+
+  /// Safety-relevant: refuses merging two parents' access to children (BR-IAM-014).
+  ///
+  /// In en, this message translates to:
+  /// **'That number already belongs to another parent on file. Check which record is right before changing it.'**
+  String get studentErrorGuardianPhoneInUse;
+
+  /// No description provided for @studentErrorGuardianNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This parent\'s record could not be found. Refresh the page and try again.'**
+  String get studentErrorGuardianNotFound;
+
+  /// Safety-relevant: states that the bus shown is a plan, not the child's location.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus and crew shown are the route\'s usual assignment for today. Where the child is right now will appear here once trips are running.'**
+  String get studentTransportCaption;
+
+  /// No description provided for @studentTransportBus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus: {name} ({registration})'**
+  String studentTransportBus(String name, String registration);
+
+  /// No description provided for @studentTransportBusNotInService.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus: {name} ({registration}), not in service. Set another bus on the route.'**
+  String studentTransportBusNotInService(String name, String registration);
+
+  /// No description provided for @studentTransportNoBus.
+  ///
+  /// In en, this message translates to:
+  /// **'No bus set for this route'**
+  String get studentTransportNoBus;
+
+  /// No description provided for @studentTransportDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver: {names}'**
+  String studentTransportDriver(String names);
+
+  /// No description provided for @studentTransportNoDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'No driver on duty for this route today'**
+  String get studentTransportNoDriver;
+
+  /// No description provided for @studentTransportAttendant.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendant: {names}'**
+  String studentTransportAttendant(String names);
+
+  /// No description provided for @studentTransportNoAttendant.
+  ///
+  /// In en, this message translates to:
+  /// **'No attendant on duty for this route today'**
+  String get studentTransportNoAttendant;
+
+  /// No description provided for @studentTransportLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the assigned bus and crew. Reopen the record to try again.'**
+  String get studentTransportLoadError;
+
+  /// No description provided for @routeStopsUnsavedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Not saved yet. Press Save to keep these stops.'**
+  String get routeStopsUnsavedHint;
+
+  /// No description provided for @routeStopsDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard unsaved stops?'**
+  String get routeStopsDiscardTitle;
+
+  /// No description provided for @routeStopsDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The stops you added or removed have not been saved. If you close now, the changes are lost and students cannot be given these stops.'**
+  String get routeStopsDiscardBody;
+
+  /// No description provided for @routeStopsKeepEditingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get routeStopsKeepEditingButton;
+
+  /// No description provided for @routeStopsDiscardButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get routeStopsDiscardButton;
+
+  /// No description provided for @routeStopsErrorMinimum.
+  ///
+  /// In en, this message translates to:
+  /// **'A route needs at least two stops. Add another stop, then save.'**
+  String get routeStopsErrorMinimum;
+
+  /// No description provided for @routeStopsErrorGeofence.
+  ///
+  /// In en, this message translates to:
+  /// **'A stop\'s arrival radius must be between 20 and 500 metres. Correct it, then save.'**
+  String get routeStopsErrorGeofence;
+
+  /// No description provided for @routeStopsErrorTimesNotIncreasing.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup times must get later going down the list of stops. Drop times run the other way: the afternoon bus drops the last stop first, so drop times must get later going up the list. Check the times, then save.'**
+  String get routeStopsErrorTimesNotIncreasing;
+
+  /// No description provided for @stopFormDropTimeHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Afternoon runs in reverse: the last stop is dropped first.'**
+  String get stopFormDropTimeHelper;
+
+  /// No description provided for @routeStopsSavedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops saved. Students can now be given these stops for pickup and drop.'**
+  String get routeStopsSavedSnackbar;
+
+  /// No description provided for @routeStopsErrorStale.
+  ///
+  /// In en, this message translates to:
+  /// **'These stops were changed somewhere else since you opened them. Close and reopen the stops, then make your change again.'**
+  String get routeStopsErrorStale;
+
+  /// No description provided for @routeStopsErrorHasAssignedStudents.
+  ///
+  /// In en, this message translates to:
+  /// **'A stop you removed still has students assigned to it. Move those students to another stop from their student record first, then remove the stop.'**
+  String get routeStopsErrorHasAssignedStudents;
 }
 
 class _AppLocalizationsDelegate

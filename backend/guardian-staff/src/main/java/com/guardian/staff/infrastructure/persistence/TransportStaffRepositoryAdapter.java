@@ -6,6 +6,7 @@ import com.guardian.staff.domain.StaffId;
 import com.guardian.staff.domain.TransportStaff;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 /** Implements the domain-facing {@link TransportStaffRepository} over JPA. */
@@ -55,5 +56,17 @@ class TransportStaffRepositoryAdapter implements TransportStaffRepository {
             .orElseGet(() -> mapper.toEntity(staff));
 
     return mapper.toDomain(jpaRepository.save(entity));
+  }
+
+  @Override
+  public boolean discard(StaffId id) {
+    try {
+      jpaRepository.discardById(id.value());
+      return true;
+    } catch (DataIntegrityViolationException stillReferenced) {
+      // A DELETE can violate nothing but a foreign key: some other row still points at this
+      // record, which is exactly the history BR-STAFF-007 protects.
+      return false;
+    }
   }
 }

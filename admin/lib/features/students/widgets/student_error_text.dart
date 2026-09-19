@@ -57,6 +57,9 @@ class StudentErrorText extends StatelessWidget {
       ErrorCode.studentAdmissionNoExists => l10n.studentErrorAdmissionNoExists,
       ErrorCode.studentNotFound => l10n.studentErrorNotFound,
       ErrorCode.studentNotActive => l10n.studentErrorNotActive,
+      ErrorCode.studentHasSafetyRecords => l10n.studentErrorHasSafetyRecords,
+      ErrorCode.guardianPhoneInUse => l10n.studentErrorGuardianPhoneInUse,
+      ErrorCode.guardianNotFound => l10n.studentErrorGuardianNotFound,
       ErrorCode.validationRequiredFieldMissing => l10n.errorValidationRequiredField,
       ErrorCode.validationInvalidFormat ||
       ErrorCode.validationFailed => l10n.errorValidationCheckDetails,

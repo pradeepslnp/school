@@ -2,6 +2,7 @@ package com.guardian.routes.application.port;
 
 import com.guardian.routes.domain.RouteStudentAssignment;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,6 +35,22 @@ public interface RouteStudentAssignmentRepository {
    * Deactivates an assignment. Never a delete — a past manifest must still show who was expected.
    */
   void deactivate(UUID assignmentId, UUID actorUserId);
+
+  /**
+   * Deletes every assignment, active or not, held by a student being discarded as a mistaken entry
+   * (BR-STU-007, ADR-0019). The one exception to "never a delete": a student who was never really
+   * enrolled can appear on no manifest, and {@code trip_manifests} refuses the student's own delete
+   * if they somehow did.
+   *
+   * @return how many were removed
+   */
+  int deleteAllForStudent(UUID studentId);
+
+  /**
+   * Which of {@code stopIds} still have a student actively assigned to them — a stop in this set
+   * cannot be removed from its route until those students are moved (BR-ROUTE-009).
+   */
+  List<UUID> stopsWithActiveAssignments(Collection<UUID> stopIds);
 
   /**
    * A student's assignment as the enrolment screen reads it: the assignment joined with the route

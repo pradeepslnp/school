@@ -27,4 +27,12 @@ public interface DutyAssignmentRepository {
   List<DutyAssignment> findActiveByStaff(StaffId staffId);
 
   DutyAssignment save(DutyAssignment assignment);
+
+  /**
+   * Deletes every assignment, active or not, held by a staff record being discarded (BR-STAFF-007).
+   * Never used to end an assignment — that is {@link DutyAssignment#deactivate()}.
+   *
+   * @return how many were removed
+   */
+  int deleteAllForStaff(StaffId staffId);
 }

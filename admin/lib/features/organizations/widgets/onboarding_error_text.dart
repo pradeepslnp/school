@@ -52,6 +52,13 @@ class OnboardingErrorText extends StatelessWidget {
       ErrorCode.orgCannotSuspendOwnOrganization =>
         l10n.onboardingErrorCannotSuspendOwnOrganization,
       ErrorCode.staffEmployeeCodeExists => l10n.onboardingErrorStaffEmployeeCodeExists,
+      ErrorCode.staffHasSafetyRecords => l10n.staffErrorHasSafetyRecords,
+      ErrorCode.routeMinimumStopsRequired => l10n.routeStopsErrorMinimum,
+      ErrorCode.routeGeofenceOutOfBounds => l10n.routeStopsErrorGeofence,
+      ErrorCode.routeStopTimesNotIncreasing => l10n.routeStopsErrorTimesNotIncreasing,
+      ErrorCode.routeStopNotFound => l10n.routeStopsErrorStale,
+      ErrorCode.routeStopHasAssignedStudents => l10n.routeStopsErrorHasAssignedStudents,
+      ErrorCode.staffNotFound => l10n.staffErrorNotFound,
       ErrorCode.validationRequiredFieldMissing => l10n.errorValidationRequiredField,
       ErrorCode.validationInvalidFormat ||
       ErrorCode.validationFailed => l10n.errorValidationCheckDetails,

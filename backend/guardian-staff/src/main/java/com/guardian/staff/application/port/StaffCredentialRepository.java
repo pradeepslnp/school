@@ -23,4 +23,11 @@ public interface StaffCredentialRepository {
   List<StaffCredential> findMandatoryExpiringWithin(LocalDate asOf, int days, int limit);
 
   StaffCredential save(StaffCredential credential);
+
+  /**
+   * Deletes every credential document on a staff record being discarded (BR-STAFF-007).
+   *
+   * @return how many were removed
+   */
+  int deleteAllForStaff(StaffId staffId);
 }

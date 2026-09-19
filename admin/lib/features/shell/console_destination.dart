@@ -169,8 +169,16 @@ class ConsoleDestinations {
       // incident-response one — ADMIN_WEB.md §Responsive keeps the narrow layout to the
       // dashboard/alerts/SOS/live-map subset, matching A-40's own reasoning in reverse.
       availableOnNarrowLayout: false,
-      // PERM-STAFF-MANAGE's holders, verbatim from PERMISSION_MATRIX.md.
-      requiredAnyRole: ['SUPER_ADMIN', 'ORG_ADMIN', 'SCHOOL_ADMIN', 'TRANSPORT_MANAGER'],
+      // PERM-STAFF-VIEW's holders, verbatim from PERMISSION_MATRIX.md. A PRINCIPAL reads the
+      // register without managing it, to delete mistaken entries (ADR-0019); StaffListScreen
+      // hides the affordances they cannot use.
+      requiredAnyRole: [
+        'SUPER_ADMIN',
+        'ORG_ADMIN',
+        'SCHOOL_ADMIN',
+        'PRINCIPAL',
+        'TRANSPORT_MANAGER',
+      ],
     ),
     ConsoleDestination(
       id: 'A-20',

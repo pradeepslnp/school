@@ -61,3 +61,27 @@ final class GuardianAdded extends StudentGuardiansEvent {
         isPrimary,
       ];
 }
+
+/// The operator corrected a parent's name, phone, or email (GRD-001). A changed phone moves the
+/// parent's sign-in to the new number (BR-IAM-014) — the form says so before saving.
+final class GuardianUpdated extends StudentGuardiansEvent {
+  const GuardianUpdated({
+    required this.studentId,
+    required this.guardianId,
+    required this.firstName,
+    required this.lastName,
+    required this.phone,
+    this.email,
+  });
+
+  /// The student whose panel is open, to re-list after the save.
+  final String studentId;
+  final String guardianId;
+  final String firstName;
+  final String lastName;
+  final String phone;
+  final String? email;
+
+  @override
+  List<Object?> get props => [studentId, guardianId, firstName, lastName, phone, email];
+}

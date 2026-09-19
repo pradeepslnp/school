@@ -12,6 +12,7 @@ import com.guardian.routes.application.usecase.ReplaceStopsUseCase;
 import com.guardian.routes.domain.Route;
 import com.guardian.routes.domain.RouteId;
 import com.guardian.routes.domain.SchoolId;
+import com.guardian.routes.domain.StopId;
 import com.guardian.routes.domain.VehicleId;
 import com.guardian.routes.interfaces.rest.dto.CreateRouteRequest;
 import com.guardian.routes.interfaces.rest.dto.ReplaceStopsRequest;
@@ -98,6 +99,7 @@ public class RouteController {
                 .map(
                     stop ->
                         new StopInput(
+                            stop.id() == null ? null : StopId.of(stop.id()),
                             stop.sequenceNo(),
                             stop.name(),
                             stop.latitude(),

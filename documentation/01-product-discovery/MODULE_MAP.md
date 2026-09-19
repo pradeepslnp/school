@@ -28,7 +28,7 @@ The platform's functional decomposition. Module boundaries are also **code bound
 | MOD-15 | Reporting | `com.guardian.reporting` | Reports, exports, dashboards |
 | MOD-16 | Audit | `com.guardian.audit` | Audit records, access logs |
 | MOD-17 | Configuration | `com.guardian.config` | Tenant configuration, region profiles, reference data |
-| MOD-18 | Parent Experience | `com.guardian.parent` | **Owns nothing.** Read-only composition of the parent app's screens (ADR-0010) |
+| MOD-18 | Parent Experience | `com.guardian.parent` | **Owns nothing.** Read-only composition of a child's transport and journey, for the parent app and for staff on the student record (ADR-0010, ADR-0020) |
 | MOD-19 | Search | `com.guardian.search` | **Owns nothing.** Read-only global search for the admin console (ADR-0017) |
 
 ---
@@ -136,6 +136,8 @@ Composes the parent app's read surfaces — the dashboard (P-02) and child detai
 **Read-only, and owns no tables.** It sits above every module it reads, which is what lets `GET /guardians/me/students` carry live journey state without MOD-04 depending upward on MOD-08 — the cycle that made the documented endpoint unbuildable. Every parent-app *write* stays in the owning module: absences in MOD-14, pickup persons in MOD-04, notification reads in MOD-12.
 
 Its cross-module table access is a deliberate, bounded exception to cross-module rule 1, argued and constrained in [`ADR-0010`](../00-governance/adr/ADR-0010-parent-read-composition.md).
+
+It also serves **school staff** on the student record (A-11): the bus and crew a child is assigned to (`GET /students/{id}/transport`, STU-009), and later the child's live journey and history. For that it reads MOD-05 vehicles and MOD-06 duty assignments too. Staff reads are scoped to the caller's schools in the query and recorded as data access (BR-IAM-012). The journey-state rules stay in one place for both audiences ([`ADR-0020`](../00-governance/adr/ADR-0020-staff-student-journey-reads.md)).
 
 ### MOD-19 Search
 Finds any record the caller may already see — students, guardians, transport staff, vehicles, routes, administrators, schools, organizations — from one query, for the admin console's header search (SRC-001).

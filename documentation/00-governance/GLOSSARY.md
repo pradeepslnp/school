@@ -173,6 +173,9 @@ The boundary within which a permission applies: platform, organization, school, 
 **Audit Record**
 Append-only entry: actor, action, subject, timestamp, source, reason. Written in the same transaction as the change it describes.
 
+**Discard**
+Permanently removing a student or transport staff record that was entered by mistake. Refused whenever the record has any safety history; people with history are withdrawn or deactivated instead (ADR-0019).
+
 **Soft Delete**
 Marking a row inactive rather than removing it. Safety and audit records are never deleted, soft or otherwise, before their retention period elapses.
 

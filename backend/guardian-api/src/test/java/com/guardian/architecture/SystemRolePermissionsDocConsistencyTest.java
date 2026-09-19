@@ -72,11 +72,11 @@ class SystemRolePermissionsDocConsistencyTest {
   @Test
   @DisplayName("grant set sizes match the matrix")
   void grantSetSizesMatchTheMatrix() {
-    assertThat(SystemRolePermissions.permissionsOf("SUPER_ADMIN")).hasSize(59);
-    assertThat(SystemRolePermissions.permissionsOf("ORG_ADMIN")).hasSize(54);
-    assertThat(SystemRolePermissions.permissionsOf("SCHOOL_ADMIN")).hasSize(55);
-    assertThat(SystemRolePermissions.permissionsOf("PRINCIPAL")).hasSize(22);
-    assertThat(SystemRolePermissions.permissionsOf("TRANSPORT_MANAGER")).hasSize(44);
+    assertThat(SystemRolePermissions.permissionsOf("SUPER_ADMIN")).hasSize(62);
+    assertThat(SystemRolePermissions.permissionsOf("ORG_ADMIN")).hasSize(55);
+    assertThat(SystemRolePermissions.permissionsOf("SCHOOL_ADMIN")).hasSize(56);
+    assertThat(SystemRolePermissions.permissionsOf("PRINCIPAL")).hasSize(25);
+    assertThat(SystemRolePermissions.permissionsOf("TRANSPORT_MANAGER")).hasSize(45);
     assertThat(SystemRolePermissions.permissionsOf("VENDOR_STAFF")).hasSize(11);
     assertThat(SystemRolePermissions.permissionsOf("DRIVER")).hasSize(14);
     assertThat(SystemRolePermissions.permissionsOf("ATTENDANT")).hasSize(19);

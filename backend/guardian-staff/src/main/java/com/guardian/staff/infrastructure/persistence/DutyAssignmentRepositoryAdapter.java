@@ -55,4 +55,9 @@ class DutyAssignmentRepositoryAdapter implements DutyAssignmentRepository {
 
     return mapper.toDomain(jpaRepository.save(entity));
   }
+
+  @Override
+  public int deleteAllForStaff(StaffId staffId) {
+    return jpaRepository.deleteAllByStaffId(staffId.value());
+  }
 }

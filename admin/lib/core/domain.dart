@@ -124,6 +124,10 @@ enum ErrorCode {
   // First met by the Drivers screen's edit dialog (STF-001) — see the note above on when a
   // domain code is added.
   staffEmployeeCodeExists,
+  // First met by the Drivers screen's "Delete entry" (STF-007, ADR-0019): someone who has signed
+  // in or has any history is deactivated, never deleted.
+  staffNotFound,
+  staffHasSafetyRecords,
 
   // --- Students ---
   // First met by the student register (A-10, STU-001). `studentAdmissionNoExists` is the one
@@ -135,6 +139,23 @@ enum ErrorCode {
   // First met by the student route-assignment flow (RTE-003).
   studentHasNoActiveGuardian,
   studentAlreadyAssignedForDirection,
+  // First met by the register's "Delete entry" (STU-008, ADR-0019): a student with any history is
+  // withdrawn, never deleted.
+  studentHasSafetyRecords,
+
+  // --- Routes ---
+  // First met by the route stops editor (RTE-001). Each names a rule the operator can fix, so
+  // each gets its own message rather than "try again" (BR-ROUTE-001/003/008).
+  routeMinimumStopsRequired,
+  routeGeofenceOutOfBounds,
+  routeStopTimesNotIncreasing,
+  routeStopNotFound,
+  routeStopHasAssignedStudents,
+
+  // --- Guardians ---
+  // First met by correcting a parent's details on the student record (A-11, BR-IAM-014).
+  guardianNotFound,
+  guardianPhoneInUse,
 
   // Bulk student import (A-12, STU-002). These are the whole-file rejections the upload
   // screen must explain before any row is processed; per-row failures come back inside
@@ -186,11 +207,21 @@ enum ErrorCode {
         'SCHOOL_CODE_ALREADY_EXISTS' => schoolCodeAlreadyExists,
         'ORG_CANNOT_SUSPEND_OWN_ORGANIZATION' => orgCannotSuspendOwnOrganization,
         'STAFF_EMPLOYEE_CODE_EXISTS' => staffEmployeeCodeExists,
+        'STAFF_NOT_FOUND' => staffNotFound,
+        'STAFF_HAS_SAFETY_RECORDS' => staffHasSafetyRecords,
         'STUDENT_NOT_FOUND' => studentNotFound,
         'STUDENT_ADMISSION_NO_EXISTS' => studentAdmissionNoExists,
         'STUDENT_NOT_ACTIVE' => studentNotActive,
         'STUDENT_HAS_NO_ACTIVE_GUARDIAN' => studentHasNoActiveGuardian,
         'STUDENT_ALREADY_ASSIGNED_FOR_DIRECTION' => studentAlreadyAssignedForDirection,
+        'STUDENT_HAS_SAFETY_RECORDS' => studentHasSafetyRecords,
+        'ROUTE_MINIMUM_STOPS_REQUIRED' => routeMinimumStopsRequired,
+        'ROUTE_GEOFENCE_OUT_OF_BOUNDS' => routeGeofenceOutOfBounds,
+        'ROUTE_STOP_TIMES_NOT_INCREASING' => routeStopTimesNotIncreasing,
+        'ROUTE_STOP_NOT_FOUND' => routeStopNotFound,
+        'ROUTE_STOP_HAS_ASSIGNED_STUDENTS' => routeStopHasAssignedStudents,
+        'GUARDIAN_NOT_FOUND' => guardianNotFound,
+        'GUARDIAN_PHONE_IN_USE' => guardianPhoneInUse,
         'STUDENT_IMPORT_NOT_FOUND' => studentImportNotFound,
         'STUDENT_IMPORT_FILE_EMPTY' => studentImportFileEmpty,
         'STUDENT_IMPORT_FILE_UNREADABLE' => studentImportFileUnreadable,

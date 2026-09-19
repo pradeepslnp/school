@@ -71,8 +71,8 @@ Every screen across the three clients, with its feature IDs and the permission t
 
 | ID | Screen | Features | Permission |
 |---|---|---|---|
-| A-10 | Student register | STU-001 | `PERM-STUDENT-VIEW` |
-| A-11 | Student detail | STU-001, STU-006, STU-007 | `PERM-STUDENT-VIEW` |
+| A-10 | Student register | STU-001, STU-008 | `PERM-STUDENT-VIEW` |
+| A-11 | Student detail | STU-001, STU-006, STU-007, STU-009 | `PERM-STUDENT-VIEW` |
 | A-12 | Bulk student import | STU-002 | `PERM-STUDENT-IMPORT` |
 | A-13 | Guardian links & rights | GRD-001, GRD-002, GRD-003 | `PERM-GUARDIAN-LINK` |
 | A-14 | Custody restrictions | GRD-006 | `PERM-CUSTODY-RESTRICTION-MANAGE` |
@@ -85,7 +85,7 @@ Every screen across the three clients, with its feature IDs and the permission t
 | A-20 | Vehicle register | FLT-001 | `PERM-VEHICLE-VIEW` |
 | A-21 | Vehicle documents & expiry | FLT-002, FLT-003 | `PERM-VEHICLE-DOCUMENT-MANAGE` |
 | A-22 | Device assignment | FLT-004 | `PERM-DEVICE-MANAGE` |
-| A-23 | Staff register | STF-001 | `PERM-STAFF-MANAGE` |
+| A-23 | Staff register | STF-001, STF-007 | `PERM-STAFF-VIEW` |
 | A-24 | Staff credentials & verification | STF-002, STF-003 | `PERM-STAFF-VERIFY` |
 | A-25 | Duty assignments | STF-004 | `PERM-DUTY-ASSIGN` |
 | A-26 | Compliance overview | RPT-004 | `PERM-REPORT-COMPLIANCE` |

@@ -11,8 +11,12 @@ Sign-in — staff email + password (IAM-001), guardian phone + OTP (IAM-002) —
 with rotation and reuse detection (IAM-003), self-service and administrator session management
 (IAM-004), administrative user CRUD and invitations, role and scope assignment over the nine fixed
 system-role templates (IAM-005, IAM-007), password reset (IAM-009), staff deactivation with session
-and duty revocation (IAM-008), per-request permission resolution (BR-IAM-004 → V14), and child
-data-access logging (IAM-010, enforced in MOD-03's `GetStudentUseCase`).
+and duty revocation (IAM-008), per-request permission resolution (BR-IAM-004 → V14), child
+data-access logging (IAM-010, enforced in MOD-03's `GetStudentUseCase`), and releasing a sign-in
+account when a guardian's or staff member's phone is corrected or a mistaken staff entry is
+discarded — role and every session removed, account inactive with no role left, never deleted
+(BR-IAM-014, [ADR-0019](../../documentation/00-governance/adr/ADR-0019-discarding-mistaken-entries-and-phone-correction.md),
+`ReleaseAccountRoleUseCase`).
 
 Not built: **IAM-006** (a tenant defining its own roles and choosing their permissions — the nine
 templates resolve from `SystemRolePermissions` in code, and `role_permissions` exists only for

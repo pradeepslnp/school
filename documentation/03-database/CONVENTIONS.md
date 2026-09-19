@@ -54,6 +54,8 @@ deleted_by   UUID
 
 **Safety and audit tables have no soft delete and no delete path at all** (BR-AUD-001, BR-BOARD-001). Corrections are compensating records.
 
+**The one hard delete** is discarding a student or staff record entered by mistake ([ADR-0019](../00-governance/adr/ADR-0019-discarding-mistaken-entries-and-phone-correction.md), BR-STU-007, BR-STAFF-007). It is safe only because of the `RESTRICT` rule below: once the record's own setup rows are removed, any remaining reference makes the database refuse the delete. A new table referencing a student or staff member must therefore declare `RESTRICT` unless it is setup that the discard explicitly removes.
+
 ---
 
 ## Types

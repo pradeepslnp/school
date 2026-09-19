@@ -8,9 +8,12 @@ import '../domain/guardian_models.dart';
 /// them, and — as small chips — the rights that decide what they may do. "Can collect" is the
 /// one that matters for safety, so it reads in the platform's safe/positive colour when held.
 class GuardianTile extends StatelessWidget {
-  const GuardianTile({super.key, required this.guardian});
+  const GuardianTile({super.key, required this.guardian, this.onEdit});
 
   final StudentGuardian guardian;
+
+  /// Opens the correction form; null for a caller without `PERM-GUARDIAN-MANAGE`.
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +75,14 @@ class GuardianTile extends StatelessWidget {
         ],
       ),
       isThreeLine: true,
+      trailing: onEdit == null
+          ? null
+          : IconButton(
+              key: Key('guardian_tile_edit_${guardian.linkId}'),
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: context.l10n.guardianEditTooltip(guardian.displayName),
+              onPressed: onEdit,
+            ),
     );
   }
 

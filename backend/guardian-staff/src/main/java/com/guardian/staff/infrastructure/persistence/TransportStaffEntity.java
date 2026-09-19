@@ -111,12 +111,14 @@ public class TransportStaffEntity {
   }
 
   void applyMutableState(
+      UUID userId,
       String firstName,
       String lastName,
       String phone,
       String verificationStatus,
       LocalDate verifiedUntil,
       boolean active) {
+    this.userId = userId;
     this.firstName = firstName;
     this.lastName = lastName;
     this.phone = phone;

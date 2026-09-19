@@ -26,6 +26,8 @@ CONSTRAINT ck_users_status        CHECK (status IN ('ACTIVE','INACTIVE','LOCKED'
 
 `ck_users_identifier` matters: guardians authenticate by phone (many have no email), staff by email. At least one must exist.
 
+**`users.phone` is never rewritten to correct a mistake.** When a guardian's or transport staff member's phone is corrected, the record is relinked to the new number's account and the old account is *released*: the role removed, every session revoked, and `status = 'INACTIVE'` if no role remains (BR-IAM-014, ADR-0019). Rows are never deleted — `notifications` cascade from `users`, and anything done under an account stays attributed to the number that did it. An `INACTIVE` account holding no role is reactivated when its number is given a role again.
+
 **Indexes:** `idx_users_tenant_status (tenant_id, status) WHERE status = 'ACTIVE'`
 
 ---

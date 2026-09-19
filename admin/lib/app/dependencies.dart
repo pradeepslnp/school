@@ -26,6 +26,8 @@ import '../features/routes/repository/duty_assignment_repository.dart';
 import '../features/routes/repository/route_repository.dart';
 import '../features/route_assignments/data_provider/route_assignment_data_provider.dart';
 import '../features/route_assignments/repository/route_assignment_repository.dart';
+import '../features/student_transport/data_provider/student_transport_data_provider.dart';
+import '../features/student_transport/repository/student_transport_repository.dart';
 import '../features/routes/repository/stop_repository.dart';
 import '../features/search/data_provider/search_data_provider.dart';
 import '../features/search/repository/search_repository.dart';
@@ -66,6 +68,7 @@ class AppDependencies {
     required this.routeRepository,
     required this.stopRepository,
     required this.routeAssignmentRepository,
+    required this.studentTransportRepository,
     required this.dutyAssignmentRepository,
     required this.userRepository,
     required this.platformHealthRepository,
@@ -122,6 +125,10 @@ class AppDependencies {
   /// A student's pickup/drop assignments (RTE-003, A-11) — reached from the student detail
   /// screen; written with `PERM-ROUTE-ASSIGN-STUDENT`.
   final RouteAssignmentRepository routeAssignmentRepository;
+
+  /// A student's assigned bus and today's crew (STU-009, A-11) — read-only, `PERM-STUDENT-VIEW`
+  /// within the operator's school scope.
+  final StudentTransportRepository studentTransportRepository;
 
   /// Duty (crew) assignment (STF-004) — reached from the Routes screen by roles holding
   /// `PERM-DUTY-ASSIGN` (PERMISSION_MATRIX.md); see `RouteCrewDialog`.
@@ -230,6 +237,10 @@ class AppDependencies {
       dataProvider: RouteAssignmentDataProvider(client: restClient),
     );
 
+    final studentTransportRepository = StudentTransportRepository(
+      dataProvider: StudentTransportDataProvider(client: restClient),
+    );
+
     final dutyAssignmentRepository = DutyAssignmentRepository(
       dataProvider: DutyAssignmentDataProvider(client: restClient),
     );
@@ -296,6 +307,7 @@ class AppDependencies {
       routeRepository: routeRepository,
       stopRepository: stopRepository,
       routeAssignmentRepository: routeAssignmentRepository,
+      studentTransportRepository: studentTransportRepository,
       dutyAssignmentRepository: dutyAssignmentRepository,
       userRepository: userRepository,
       platformHealthRepository: platformHealthRepository,

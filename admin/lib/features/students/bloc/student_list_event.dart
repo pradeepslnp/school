@@ -86,3 +86,15 @@ final class StudentWithdrawn extends StudentListEvent {
   @override
   List<Object?> get props => [studentId, reason];
 }
+
+/// The operator deleted a student entered by mistake (STU-008, ADR-0019). Confirmed in the UI
+/// with a required reason first — this cannot be undone.
+final class StudentDiscarded extends StudentListEvent {
+  const StudentDiscarded({required this.studentId, required this.reason});
+
+  final String studentId;
+  final String reason;
+
+  @override
+  List<Object?> get props => [studentId, reason];
+}

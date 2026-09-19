@@ -9,6 +9,7 @@ import com.guardian.student.domain.StudentId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Component;
 
@@ -73,5 +74,22 @@ class StudentRepositoryAdapter implements StudentRepository {
             .orElseGet(() -> mapper.toEntity(student));
 
     return mapper.toDomain(jpaRepository.save(entity));
+  }
+
+  @Override
+  public int deleteCredentials(StudentId id) {
+    return jpaRepository.deleteCredentialsByStudentId(id.value());
+  }
+
+  @Override
+  public boolean discard(StudentId id) {
+    try {
+      jpaRepository.discardById(id.value());
+      return true;
+    } catch (DataIntegrityViolationException stillReferenced) {
+      // A DELETE can violate nothing but a foreign key: some other row still points at this
+      // student, which is exactly the history BR-STU-007 protects.
+      return false;
+    }
   }
 }

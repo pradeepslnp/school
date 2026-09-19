@@ -1,12 +1,14 @@
 package com.guardian.student.interfaces.rest;
 
 import com.guardian.common.rest.CursorPage;
+import com.guardian.common.security.CallerAccess;
 import com.guardian.common.security.CurrentActor;
 import com.guardian.common.security.RequiresPermission;
 import com.guardian.student.application.command.CreateStudentCommand;
 import com.guardian.student.application.command.UpdateStudentCommand;
 import com.guardian.student.application.port.StudentPage;
 import com.guardian.student.application.usecase.CreateStudentUseCase;
+import com.guardian.student.application.usecase.DiscardStudentUseCase;
 import com.guardian.student.application.usecase.GetStudentUseCase;
 import com.guardian.student.application.usecase.UpdateStudentUseCase;
 import com.guardian.student.application.usecase.WithdrawStudentUseCase;
@@ -17,6 +19,7 @@ import com.guardian.student.domain.Student;
 import com.guardian.student.domain.StudentClassId;
 import com.guardian.student.domain.StudentId;
 import com.guardian.student.interfaces.rest.dto.CreateStudentRequest;
+import com.guardian.student.interfaces.rest.dto.DiscardStudentRequest;
 import com.guardian.student.interfaces.rest.dto.StudentResponse;
 import com.guardian.student.interfaces.rest.dto.UpdateStudentRequest;
 import com.guardian.student.interfaces.rest.dto.WithdrawStudentRequest;
@@ -35,7 +38,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Student endpoints (features STU-001, STU-004). See
+ * Student endpoints (features STU-001, STU-004, STU-008). See
  * guardian-docs/04-api/STUDENTS_GUARDIANS_API.md.
  *
  * <p>Every method declares a permission from the permission matrix, and the declaration is now
@@ -57,16 +60,19 @@ public class StudentController {
   private final GetStudentUseCase getStudent;
   private final UpdateStudentUseCase updateStudent;
   private final WithdrawStudentUseCase withdrawStudent;
+  private final DiscardStudentUseCase discardStudent;
 
   public StudentController(
       CreateStudentUseCase createStudent,
       GetStudentUseCase getStudent,
       UpdateStudentUseCase updateStudent,
-      WithdrawStudentUseCase withdrawStudent) {
+      WithdrawStudentUseCase withdrawStudent,
+      DiscardStudentUseCase discardStudent) {
     this.createStudent = createStudent;
     this.getStudent = getStudent;
     this.updateStudent = updateStudent;
     this.withdrawStudent = withdrawStudent;
+    this.discardStudent = discardStudent;
   }
 
   @PostMapping
@@ -162,6 +168,24 @@ public class StudentController {
 
     return StudentResponse.from(
         withdrawStudent.execute(StudentId.of(studentId), actor.userId(), actor.role(), reason));
+  }
+
+  /**
+   * Permanently removes a student entered by mistake (feature STU-008, BR-STU-007). A named {@code
+   * POST} rather than {@code DELETE}: {@code DELETE} never hard-deletes on this platform, and a
+   * {@code POST} is not retried by clients (ADR-0019). Refused if the student has any history.
+   */
+  @PostMapping("/{studentId}/discard")
+  @RequiresPermission("PERM-STUDENT-DELETE")
+  public ResponseEntity<Void> discard(
+      @PathVariable UUID studentId,
+      @Valid @RequestBody DiscardStudentRequest request,
+      CurrentActor actor,
+      CallerAccess access) {
+
+    discardStudent.execute(
+        StudentId.of(studentId), request.reason(), access.scope(), actor.userId(), actor.role());
+    return ResponseEntity.noContent().build();
   }
 
   private static int clamp(Integer requested) {

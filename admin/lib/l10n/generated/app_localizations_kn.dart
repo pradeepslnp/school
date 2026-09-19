@@ -2058,4 +2058,165 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get globalSearchNoScreen =>
       'There is no screen for this record in your console.';
+
+  @override
+  String get discardEntryTitle => 'Delete this entry?';
+
+  @override
+  String get discardEntryReasonLabel => 'Reason';
+
+  @override
+  String get discardEntryReasonHelper =>
+      'Required. Say what the mistake was, e.g. \"Duplicate of admission 2024-118\". It is kept on the audit trail.';
+
+  @override
+  String get discardEntryConfirmButton => 'Delete permanently';
+
+  @override
+  String get discardEntryDeletingSpinnerLabel => 'Deleting entry';
+
+  @override
+  String get discardEntryDeletedSnackbar => 'Entry deleted';
+
+  @override
+  String studentDiscardTooltip(String name) {
+    return 'Delete entry for $name';
+  }
+
+  @override
+  String studentDiscardBody(String name, String admissionNo) {
+    return 'Use this only for a student entered by mistake, such as a duplicate or a wrong admission number.\n\n$name ($admissionNo) will be permanently removed, with their parent links, pickup and drop, and boarding credentials. Parent records are kept.\n\nA student with any history (boarding, absences, notifications) cannot be deleted. Withdraw them instead.';
+  }
+
+  @override
+  String get studentErrorHasSafetyRecords =>
+      'This student has history and cannot be deleted. A school admin can withdraw them instead.';
+
+  @override
+  String staffDiscardTooltip(String name) {
+    return 'Delete entry for $name';
+  }
+
+  @override
+  String staffDiscardBody(String name) {
+    return 'Use this only for a driver or attendant entered by mistake.\n\n$name will be permanently removed, with their credential documents and duty assignments, and their app sign-in will be switched off.\n\nSomeone who has signed in to the app, or has any history, cannot be deleted. Deactivate them instead.';
+  }
+
+  @override
+  String get staffErrorHasSafetyRecords =>
+      'This person has signed in or has history, so they cannot be deleted. A school admin or transport manager can deactivate them instead.';
+
+  @override
+  String get staffErrorNotFound =>
+      'This driver or attendant no longer exists, or is outside your school. Refresh the list.';
+
+  @override
+  String get staffEditPhoneHelper =>
+      'Changing the number moves their app sign-in to it and signs the old number out.';
+
+  @override
+  String guardianEditTooltip(String name) {
+    return 'Edit $name\'s details';
+  }
+
+  @override
+  String editGuardianTitle(String name) {
+    return 'Edit $name';
+  }
+
+  @override
+  String get editGuardianPhoneHelper =>
+      'Changing the number moves this parent\'s app sign-in to it and signs the old number out straight away.';
+
+  @override
+  String get studentErrorGuardianPhoneInUse =>
+      'That number already belongs to another parent on file. Check which record is right before changing it.';
+
+  @override
+  String get studentErrorGuardianNotFound =>
+      'This parent\'s record could not be found. Refresh the page and try again.';
+
+  @override
+  String get studentTransportCaption =>
+      'Bus and crew shown are the route\'s usual assignment for today. Where the child is right now will appear here once trips are running.';
+
+  @override
+  String studentTransportBus(String name, String registration) {
+    return 'Bus: $name ($registration)';
+  }
+
+  @override
+  String studentTransportBusNotInService(String name, String registration) {
+    return 'Bus: $name ($registration), not in service. Set another bus on the route.';
+  }
+
+  @override
+  String get studentTransportNoBus => 'No bus set for this route';
+
+  @override
+  String studentTransportDriver(String names) {
+    return 'Driver: $names';
+  }
+
+  @override
+  String get studentTransportNoDriver =>
+      'No driver on duty for this route today';
+
+  @override
+  String studentTransportAttendant(String names) {
+    return 'Attendant: $names';
+  }
+
+  @override
+  String get studentTransportNoAttendant =>
+      'No attendant on duty for this route today';
+
+  @override
+  String get studentTransportLoadError =>
+      'Couldn\'t load the assigned bus and crew. Reopen the record to try again.';
+
+  @override
+  String get routeStopsUnsavedHint =>
+      'Not saved yet. Press Save to keep these stops.';
+
+  @override
+  String get routeStopsDiscardTitle => 'Discard unsaved stops?';
+
+  @override
+  String get routeStopsDiscardBody =>
+      'The stops you added or removed have not been saved. If you close now, the changes are lost and students cannot be given these stops.';
+
+  @override
+  String get routeStopsKeepEditingButton => 'Keep editing';
+
+  @override
+  String get routeStopsDiscardButton => 'Discard changes';
+
+  @override
+  String get routeStopsErrorMinimum =>
+      'A route needs at least two stops. Add another stop, then save.';
+
+  @override
+  String get routeStopsErrorGeofence =>
+      'A stop\'s arrival radius must be between 20 and 500 metres. Correct it, then save.';
+
+  @override
+  String get routeStopsErrorTimesNotIncreasing =>
+      'Pickup times must get later going down the list of stops. Drop times run the other way: the afternoon bus drops the last stop first, so drop times must get later going up the list. Check the times, then save.';
+
+  @override
+  String get stopFormDropTimeHelper =>
+      'Afternoon runs in reverse: the last stop is dropped first.';
+
+  @override
+  String get routeStopsSavedSnackbar =>
+      'Stops saved. Students can now be given these stops for pickup and drop.';
+
+  @override
+  String get routeStopsErrorStale =>
+      'These stops were changed somewhere else since you opened them. Close and reopen the stops, then make your change again.';
+
+  @override
+  String get routeStopsErrorHasAssignedStudents =>
+      'A stop you removed still has students assigned to it. Move those students to another stop from their student record first, then remove the stop.';
 }

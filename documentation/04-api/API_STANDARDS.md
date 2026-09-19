@@ -29,7 +29,7 @@ All requests and responses are `application/json; charset=utf-8`. TLS 1.2+ every
 | Max two levels of nesting | `/trips/{tripId}/boarding-events` |
 | Actions as sub-resources, not verbs | `POST /trips/{tripId}/start` |
 
-Verbs in paths are permitted **only** for state transitions that are not CRUD: `start`, `end`, `close`, `cancel`, `acknowledge`, `resolve`, `revoke`. `POST /trips/{id}/start` is clearer and safer than `PATCH /trips/{id}` with a status field, because it makes the transition explicit and separately permissionable.
+Verbs in paths are permitted **only** for state transitions that are not CRUD: `start`, `end`, `close`, `cancel`, `acknowledge`, `resolve`, `revoke`. `discard` is the one hard removal, for a record entered by mistake with no safety history, and is a `POST` action precisely so that `DELETE` keeps meaning "soft" ([ADR-0019](../00-governance/adr/ADR-0019-discarding-mistaken-entries-and-phone-correction.md)). `POST /trips/{id}/start` is clearer and safer than `PATCH /trips/{id}` with a status field, because it makes the transition explicit and separately permissionable.
 
 ---
 

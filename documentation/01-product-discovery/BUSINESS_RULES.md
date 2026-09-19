@@ -40,6 +40,7 @@ Rules marked 🔴 are **safety-critical**: they may not be disabled by configura
 | BR-IAM-010 | A person may hold both guardian and staff roles. Their guardian rights over their own child are independent of their staff scope. |
 | BR-IAM-011 | Failed authentication attempts are rate-limited per identifier and per source. Lockout thresholds are tenant configuration with a platform-enforced floor. |
 | BR-IAM-012 | 🔴 Every access to child personal data by a non-guardian user is recorded as a data-access audit event. |
+| BR-IAM-014 | Correcting the phone number on a guardian or transport staff record moves their sign-in to the new number. The account on the old number loses that role and every session it holds immediately, and becomes inactive if it holds no other role. Sign-in accounts are never deleted; an inactive account holding no role is reactivated if its number is given a role again (ADR-0019). |
 
 ---
 
@@ -51,8 +52,9 @@ Rules marked 🔴 are **safety-critical**: they may not be disabled by configura
 | BR-STU-002 | A student must have at least one active guardian relationship before they can be assigned to a route. |
 | BR-STU-003 | A student's admission number is unique within their school. |
 | BR-STU-004 | Only students with an active enrolment status may be assigned to routes or appear on a manifest. |
-| BR-STU-005 | Student records are never hard-deleted while any safety record references them. Withdrawal sets enrolment status and removes future route assignments. |
+| BR-STU-005 | Student records are never hard-deleted while any safety record references them. Withdrawal sets enrolment status and removes future route assignments. A record entered by mistake may be discarded under BR-STU-007. |
 | BR-STU-006 | Changing a student's school clears all route assignments in the previous school. |
+| BR-STU-007 | A student record entered by mistake may be permanently discarded only when nothing references it except its own guardian links, route assignments, and boarding credentials, which are removed with it. Any other reference (boarding, manifest, absence, notification, handover code, custody restriction, pickup nomination) refuses the discard. A reason is required and the discard is audited without the child's name (ADR-0019). |
 
 ---
 
@@ -94,6 +96,7 @@ Rules marked 🔴 are **safety-critical**: they may not be disabled by configura
 | BR-STAFF-004 | A staff member may be assigned to at most one active trip at a time. |
 | BR-STAFF-005 | Whether an attendant is mandatory for a trip is tenant configuration; where mandatory, a trip cannot start without one. |
 | BR-STAFF-006 | A substitute driver may be assigned to an in-progress trip; the change is recorded with both staff members and the time of handover. |
+| BR-STAFF-007 | A driver or attendant record entered by mistake may be permanently discarded only if their sign-in account has never signed in and nothing references the record except its own credential documents and duty assignments, which are removed with it. Their sign-in account is released (BR-IAM-014), never deleted. A reason is required and the discard is audited without their name or phone (ADR-0019). |
 
 ---
 
@@ -108,7 +111,8 @@ Rules marked 🔴 are **safety-critical**: they may not be disabled by configura
 | BR-ROUTE-005 | A student may hold assignments on different routes for pickup and drop. |
 | BR-ROUTE-006 | Changing a route or its stops does not alter trips already started; changes apply to trips generated after the change. |
 | BR-ROUTE-007 | Deactivating a route requires reassigning or explicitly releasing every student assigned to it. |
-| BR-ROUTE-008 | Scheduled stop times must be strictly increasing along the route sequence for a direction. |
+| BR-ROUTE-008 | Scheduled stop times must be strictly increasing in the order each run visits the stops. Pickup times increase along the route sequence. Drop times increase in reverse sequence, because the afternoon run travels back from school and drops the last stop first (confirmed by the product owner, 2026-09-19). |
+| BR-ROUTE-009 | A stop cannot be removed from a route while any student is actively assigned to it; the students are moved to another stop or released first. Editing a stop keeps its identity, so students assigned to it stay assigned. Applies BR-ROUTE-007's reasoning to a single stop: no child is left pointing at a stop the bus no longer makes. |
 
 ---
 

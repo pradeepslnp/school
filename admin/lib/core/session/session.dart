@@ -150,9 +150,14 @@ class AuthenticatedUser extends Equatable {
   /// `MOD-02-identity.md`'s `scope_level` column). This getter originally checked
   /// `'ORGANIZATION'`, a guess made before the backend's scope plumbing existed; it was
   /// never exercised end-to-end until now, which is how the mismatch stayed hidden.
+  ///
+  /// An `ORG` scope carries no `refId` on the wire — `user_scopes` forbids one (V15
+  /// `ck_user_scopes_ref`), because the organization it covers is the account's own. So the id
+  /// comes from [organizationId]; without it an `ORG_ADMIN` looks PLATFORM-scoped and is sent
+  /// to `GET /organizations`, which is `SUPER_ADMIN` only.
   String? get organizationScopeId {
     for (final scope in scopes) {
-      if (scope.level == 'ORG') return scope.refId;
+      if (scope.level == 'ORG') return scope.refId ?? organizationId;
     }
     return null;
   }
@@ -208,22 +213,26 @@ class AuthenticatedUser extends Equatable {
 
 /// One `{ level, refId }` pair from the login response — the reach of a role.
 class AuthScope extends Equatable {
-  const AuthScope({required this.level, required this.refId});
+  const AuthScope({required this.level, this.refId});
 
-  /// `PLATFORM`, `ORGANIZATION`, or `SCHOOL`. Kept as the wire string rather than parsed
+  /// `PLATFORM`, `ORG`, or `SCHOOL`. Kept as the wire string rather than parsed
   /// into an enum: the console does not branch on it, and an unrecognised level from a newer
   /// server must survive the round trip intact rather than collapse to a default.
   final String level;
 
-  final String refId;
+  /// The school (or route) the scope is bound to. Null for `PLATFORM` and `ORG`, which the
+  /// server sends without one (`IssuedSession.ScopeView`).
+  final String? refId;
 
   Map<String, Object?> toJson() => {'level': level, 'refId': refId};
 
+  /// Null only when `level` is missing. A missing `refId` is valid, and treating it as
+  /// malformed used to drop every `ORG` scope, so an `ORG_ADMIN` looked PLATFORM-scoped.
   static AuthScope? fromJson(Map<String, Object?> json) {
     final level = json['level'];
     final refId = json['refId'];
-    if (level is! String || refId is! String) return null;
-    return AuthScope(level: level, refId: refId);
+    if (level is! String) return null;
+    return AuthScope(level: level, refId: refId is String ? refId : null);
   }
 
   @override

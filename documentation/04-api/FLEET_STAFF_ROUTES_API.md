@@ -1,7 +1,7 @@
 # FLEET, STAFF & ROUTES API
 
 **Document tier:** 4 — API
-**Modules:** MOD-05, MOD-06, MOD-07 · **Features:** FLT-001…005, STF-001…006, RTE-001…007
+**Modules:** MOD-05, MOD-06, MOD-07 · **Features:** FLT-001…005, STF-001…007, RTE-001…007
 
 ---
 
@@ -83,13 +83,42 @@ Devices are **explicitly registered**. An unregistered device's position report 
 | Method | Path | Feature | Permission | Rules |
 |---|---|---|---|---|
 | `POST` | `/transport-staff` | STF-001 | `PERM-STAFF-MANAGE` | |
-| `GET` | `/transport-staff` | STF-001 | `PERM-STAFF-MANAGE` | BR-IAM-006 |
-| `PATCH` | `/transport-staff/{id}` | STF-001 | `PERM-STAFF-MANAGE` | |
+| `GET` | `/transport-staff` | STF-001 | `PERM-STAFF-VIEW` | BR-IAM-006 |
+| `GET` | `/transport-staff/{id}` | STF-001 | `PERM-STAFF-VIEW` | BR-IAM-006 |
+| `PATCH` | `/transport-staff/{id}` | STF-001 | `PERM-STAFF-MANAGE` | BR-IAM-014 |
 | `POST` | `/transport-staff/{id}/verify` | STF-003 | `PERM-STAFF-VERIFY` | BR-STAFF-002 |
 | `POST` | `/transport-staff/{id}/credentials` | STF-002 | `PERM-STAFF-MANAGE` | BR-STAFF-001 |
 | `GET` | `/transport-staff/{id}/eligibility` | STF-003 | `PERM-STAFF-MANAGE` | BR-STAFF-001/002 |
 | `GET` | `/transport-staff/credentials/expiring` | STF-002 | `PERM-STAFF-MANAGE` | BR-STAFF-003 |
 | `POST` | `/transport-staff/{id}/deactivate` | IAM-008 | `PERM-STAFF-MANAGE` | BR-IAM-008 |
+| `POST` | `/transport-staff/{id}/discard` | STF-007 | `PERM-STAFF-DELETE` | BR-STAFF-007 |
+
+Reading the register needs only `PERM-STAFF-VIEW`, which `PRINCIPAL` holds without `PERM-STAFF-MANAGE` (ADR-0019).
+
+### `PATCH /transport-staff/{id}`
+
+Corrects name, phone, employee code, and vendor name. **Changing the phone moves the staff member's sign-in to the new number** (BR-IAM-014, [ADR-0019](../00-governance/adr/ADR-0019-discarding-mistaken-entries-and-phone-correction.md)):
+
+1. The new number's account is reused or created, and granted `DRIVER` or `ATTENDANT`.
+2. The record is relinked to it.
+3. The old number's account loses that role and **every session, immediately**. With no role left it becomes `INACTIVE`.
+
+Correcting only the roster copy would leave the one-time codes going to the wrong phone.
+
+### `POST /transport-staff/{id}/discard`
+
+Permanently removes a driver or attendant record **entered by mistake** (STF-007, BR-STAFF-007).
+
+```json
+{ "reason": "Entered under the wrong school" }
+```
+
+- `reason` is required, 1–500 characters.
+- **Refused with `422 STAFF_HAS_SAFETY_RECORDS` if their sign-in account has ever signed in**, or if anything besides their own credential documents and duty assignments references the record. Deactivate such a staff member instead (BR-IAM-008).
+- In one transaction: credential documents and duty assignments are removed, then the record. The sign-in account is released — role and sessions revoked, `INACTIVE` with no role left — never deleted.
+- A school-scoped caller may discard only within their school; any other record answers `404 STAFF_NOT_FOUND`.
+- Audited as `TRANSPORT_STAFF_DISCARDED` with the reason, staff type, employee code, school, and counts removed — never name or phone.
+- Answers `204 No Content`.
 
 ### `POST /transport-staff/{id}/verify`
 
@@ -124,7 +153,7 @@ The **standing roster**. Actual crew for a specific trip is `trip_staff` — sep
 | `GET` | `/routes/{id}` | RTE-001 | `PERM-ROUTE-VIEW` | |
 | `PATCH` | `/routes/{id}` | RTE-005 | `PERM-ROUTE-MANAGE` | BR-ROUTE-006 |
 | `DELETE` | `/routes/{id}` | RTE-006 | `PERM-ROUTE-MANAGE` | BR-ROUTE-007 |
-| `PUT` | `/routes/{id}/stops` | RTE-001 | `PERM-ROUTE-MANAGE` | BR-ROUTE-002/003/008 |
+| `PUT` | `/routes/{id}/stops` | RTE-001 | `PERM-ROUTE-MANAGE` | BR-ROUTE-002/003/008/009 |
 | `GET` | `/routes/{id}/stops` | RTE-001 | `PERM-ROUTE-VIEW` | |
 
 ### `PUT /routes/{id}/stops`
@@ -132,7 +161,7 @@ The **standing roster**. Actual crew for a specific trip is `trip_staff` — sep
 ```json
 {
   "stops": [
-    { "sequenceNo": 1, "name": "Green Park", "latitude": 28.5601, "longitude": 77.2065,
+    { "id": "…", "sequenceNo": 1, "name": "Green Park", "latitude": 28.5601, "longitude": 77.2065,
       "geofenceRadiusM": 100, "scheduledPickupTime": "07:40", "scheduledDropTime": "15:20",
       "landmark": "Opposite the metro gate 3" }
   ]
@@ -141,10 +170,14 @@ The **standing roster**. Actual crew for a specific trip is `trip_staff` — sep
 
 Replaces the full ordered list — partial stop edits invite sequence gaps and ordering bugs.
 
+**A kept stop keeps its identity.** Send an existing stop's `id` to keep it: it is updated in place, so every student assigned to it stays assigned. A stop without `id` is new. An existing stop left out of the list is removed — deactivated, never deleted, because trips that already ran reference it.
+
 **Validation:**
 - At least two stops (BR-ROUTE-001) → `422 ROUTE_MINIMUM_STOPS_REQUIRED`
 - Geofence radius 20–500 m (BR-ROUTE-003, BR-CFG-003 🔴) → `422 ROUTE_GEOFENCE_OUT_OF_BOUNDS`
-- Strictly increasing times along the sequence (BR-ROUTE-008) → `422 ROUTE_STOP_TIMES_NOT_INCREASING`
+- An `id` that is not one of this route's current stops, or appears twice → `404 ROUTE_STOP_NOT_FOUND`
+- Removing a stop a student is still assigned to (BR-ROUTE-009) → `422 ROUTE_STOP_HAS_ASSIGNED_STUDENTS`, with the stop ids in `details`. Move the students first.
+- Strictly increasing times in visiting order (BR-ROUTE-008) → `422 ROUTE_STOP_TIMES_NOT_INCREASING`. Pickup times increase with `sequenceNo`; drop times increase as `sequenceNo` *decreases*, since the afternoon run returns from school and drops the last stop first. The `details` entry with `field: "sequenceNo"` names the offending stop.
 
 The geofence bounds are not arbitrary: below 20 m, GPS drift means arrival is never detected and parents get no notification; above 500 m, geofences overlap and arrival events become meaningless ([`MOD-07-routes.md`](../03-database/tables/MOD-07-routes.md)).
 
@@ -193,6 +226,8 @@ Bulk assignment reports per-row results like student import.
 2. A second active device for one vehicle is rejected.
 3. An unregistered device's position report is ignored, not auto-registered.
 4. Verifying staff without `verifiedUntil` is rejected.
+4a. Discarding a staff member whose account has signed in returns `422` and changes no row.
+4b. Correcting a driver's phone leaves the old number's account without the role and with no live session.
 5. A stop with a geofence radius of 10 m or 800 m is rejected.
 6. Stop times not strictly increasing are rejected.
 7. Editing stops does not change an in-progress trip's manifest.

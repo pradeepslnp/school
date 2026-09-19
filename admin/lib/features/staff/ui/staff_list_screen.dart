@@ -6,6 +6,7 @@ import '../../../app/theme.dart';
 import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_error_text.dart';
 import '../../school_scope/widgets/school_picker_field.dart';
+import '../../students/widgets/discard_entry_form.dart';
 import '../bloc/staff_list_bloc.dart';
 import '../bloc/staff_list_event.dart';
 import '../bloc/staff_list_state.dart';
@@ -14,8 +15,9 @@ import '../widgets/create_staff_form.dart';
 import '../widgets/edit_staff_form.dart';
 
 /// A-23 — Drivers: register transport staff and see who already has a working sign-in
-/// (STF-001). Reached only by roles holding `PERM-STAFF-MANAGE` (PERMISSION_MATRIX.md) — see
-/// `ConsoleDestinations`.
+/// (STF-001, STF-007). Reached by roles holding `PERM-STAFF-VIEW` (PERMISSION_MATRIX.md) — see
+/// `ConsoleDestinations`. A `PRINCIPAL` holds that without `PERM-STAFF-MANAGE`, so for them the
+/// screen is read-only apart from *Delete entry* (ADMIN_WEB.md §Discarding a Mistaken Entry).
 ///
 /// Holds the "which school" text the operator is looking at — everything else is
 /// [StaffListState]. Matching `OrganizationListScreen`: no decisions here, only rendering and
@@ -34,6 +36,12 @@ class StaffListScreen extends StatefulWidget {
 }
 
 class _StaffListScreenState extends State<StaffListScreen> {
+  /// `PERM-STAFF-MANAGE`'s holders (PERMISSION_MATRIX.md): add a driver, open the editor.
+  static const _managingRoles = {'SUPER_ADMIN', 'ORG_ADMIN', 'SCHOOL_ADMIN', 'TRANSPORT_MANAGER'};
+
+  /// `PERM-STAFF-DELETE`'s holders — deliberately not the roles that enter staff (ADR-0019).
+  static const _discardRoles = {'SUPER_ADMIN', 'PRINCIPAL'};
+
   /// The school currently loaded — from [widget.initialSchoolId], from `WorkspaceContext`, or
   /// from `SchoolPickerField` (shown only when neither of those is set; see [build]).
   String? _selectedSchoolId;
@@ -58,6 +66,11 @@ class _StaffListScreenState extends State<StaffListScreen> {
   void dispose() {
     _search.dispose();
     super.dispose();
+  }
+
+  bool _holdsAny(BuildContext context, Set<String> roles) {
+    final user = DependencyScope.of(context).sessionManager.currentUser;
+    return (user?.roles ?? const <String>[]).any(roles.contains);
   }
 
   void _load(BuildContext context, String schoolId) {
@@ -178,6 +191,50 @@ class _StaffListScreenState extends State<StaffListScreen> {
     }
   }
 
+  /// Deleting an entry made by mistake (STF-007) — confirmed with a required reason, because it
+  /// cannot be undone. The server refuses anyone who has signed in or has history, and the dialog
+  /// then says to deactivate them instead.
+  Future<void> _confirmDiscard(BuildContext context, CreatedStaff staff) async {
+    final bloc = context.read<StaffListBloc>();
+    final messenger = ScaffoldMessenger.of(context);
+    final deletedMessage = context.l10n.discardEntryDeletedSnackbar;
+
+    final deleted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AdminSpacing.lg),
+            child: BlocProvider.value(
+              value: bloc,
+              child: BlocBuilder<StaffListBloc, StaffListState>(
+                builder: (context, state) => DiscardEntryForm(
+                  body: context.l10n.staffDiscardBody(staff.displayName),
+                  isSubmitting: state.isSubmitting,
+                  error: state.error == null
+                      ? null
+                      : OnboardingErrorText(
+                          code: state.error!,
+                          messageKey: state.errorMessageKey,
+                        ),
+                  onCancel: () => Navigator.of(dialogContext).pop(),
+                  onConfirm: (reason) =>
+                      bloc.add(StaffDiscarded(staffId: staff.id, reason: reason)),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // `true` only when the listener in [build] closed the dialog after the deletion succeeded.
+    if (deleted ?? false) {
+      messenger.showSnackBar(SnackBar(content: Text(deletedMessage)));
+    }
+  }
+
   /// Instant, client-side, over whatever roster is already loaded — no server round trip. See
   /// `StaffDataProvider`'s own note on `GET /transport-staff` taking only `schoolId`: a
   /// real search endpoint does not exist yet, so this is what "type a name or phone and see
@@ -196,6 +253,8 @@ class _StaffListScreenState extends State<StaffListScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final canManage = _holdsAny(context, _managingRoles);
+    final canDiscard = _holdsAny(context, _discardRoles);
 
     return BlocListener<StaffListBloc, StaffListState>(
       listenWhen: (previous, current) =>
@@ -216,10 +275,11 @@ class _StaffListScreenState extends State<StaffListScreen> {
                 Expanded(
                   child: Text(context.l10n.staffListTitle, style: theme.textTheme.headlineSmall),
                 ),
-_AddDriverButton(
-                  enabled: _selectedSchoolId != null,
-                  onPressed: () => _openAddForm(context),
-                ),
+                if (canManage)
+                  _AddDriverButton(
+                    enabled: _selectedSchoolId != null,
+                    onPressed: () => _openAddForm(context),
+                  ),
               ],
             ),
             if (widget.initialSchoolId == null) ...[
@@ -299,7 +359,9 @@ _AddDriverButton(
 
                   return _StaffTable(
                     staff: filtered,
-                    onTapStaff: (person) => _openEditForm(context, person),
+                    onTapStaff: canManage ? (person) => _openEditForm(context, person) : null,
+                    onDiscardStaff:
+                        canDiscard ? (person) => _confirmDiscard(context, person) : null,
                   );
                 },
               ),
@@ -312,10 +374,15 @@ _AddDriverButton(
 }
 
 class _StaffTable extends StatelessWidget {
-  const _StaffTable({required this.staff, required this.onTapStaff});
+  const _StaffTable({required this.staff, this.onTapStaff, this.onDiscardStaff});
 
   final List<CreatedStaff> staff;
-  final ValueChanged<CreatedStaff> onTapStaff;
+
+  /// Opens the editor; null for a caller who may read the register but not manage it.
+  final ValueChanged<CreatedStaff>? onTapStaff;
+
+  /// Offers *Delete entry*; null for a caller without `PERM-STAFF-DELETE`.
+  final ValueChanged<CreatedStaff>? onDiscardStaff;
 
   @override
   Widget build(BuildContext context) {
@@ -341,15 +408,29 @@ class _StaffTable extends StatelessWidget {
             minVerticalPadding: AdminSpacing.md,
             title: Text(person.displayName),
             subtitle: Text(context.l10n.staffListRowSubtitle(person.staffType, person.phone)),
-            onTap: () => onTapStaff(person),
-            trailing: Tooltip(
-              message: person.hasLogin
-                  ? context.l10n.staffListHasLoginTooltip
-                  : context.l10n.staffListNoLoginTooltip,
-              child: Icon(
-                person.hasLogin ? Icons.check_circle_outline : Icons.error_outline,
-                color: loginColor,
-              ),
+            onTap: onTapStaff == null ? null : () => onTapStaff!(person),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Tooltip(
+                  message: person.hasLogin
+                      ? context.l10n.staffListHasLoginTooltip
+                      : context.l10n.staffListNoLoginTooltip,
+                  child: Icon(
+                    person.hasLogin ? Icons.check_circle_outline : Icons.error_outline,
+                    color: loginColor,
+                  ),
+                ),
+                if (onDiscardStaff != null) ...[
+                  const SizedBox(width: AdminSpacing.sm),
+                  IconButton(
+                    key: Key('staff_list_discard_${person.id}'),
+                    icon: Icon(Icons.delete_forever_outlined, color: theme.colorScheme.error),
+                    tooltip: context.l10n.staffDiscardTooltip(person.displayName),
+                    onPressed: () => onDiscardStaff!(person),
+                  ),
+                ],
+              ],
             ),
           );
         },
