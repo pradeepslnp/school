@@ -2219,4 +2219,48 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get routeStopsErrorHasAssignedStudents =>
       'A stop you removed still has students assigned to it. Move those students to another stop from their student record first, then remove the stop.';
+
+  @override
+  String get routeCrewUnfilledSlot => 'Nobody assigned';
+
+  @override
+  String get routeCrewReplaceTooltip => 'Put someone else on this duty';
+
+  @override
+  String get routeCrewRemoveTooltip => 'Take off this route';
+
+  @override
+  String get routeCrewRemoveTitle => 'Take this crew member off the route?';
+
+  @override
+  String routeCrewRemoveBody(String name, String role, String routeName) {
+    return '$name will no longer be the $role on $routeName. The route is left with nobody in that role until you assign someone.';
+  }
+
+  @override
+  String get routeCrewRemoveButton => 'Take off route';
+
+  @override
+  String replaceDutyTitle(String name, String role) {
+    return 'Replace $name as $role';
+  }
+
+  @override
+  String get replaceDutyStandingRosterNote =>
+      'This changes who normally runs this route. A stand-in for a single day is recorded against that day\'s trip, which this build cannot do yet.';
+
+  @override
+  String replaceDutyStaffLabel(String role) {
+    return 'New $role';
+  }
+
+  @override
+  String get replaceDutyReasonLabel => 'Reason';
+
+  @override
+  String get replaceDutyReasonHelper =>
+      'Required, e.g. \"Suresh on leave from today\". Kept on the audit trail with both names.';
+
+  @override
+  String get replaceDutySubmitButton => 'Replace';
 }

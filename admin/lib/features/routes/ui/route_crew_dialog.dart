@@ -13,6 +13,7 @@ import '../bloc/duty_assignment_state.dart';
 import '../domain/duty_assignment_models.dart';
 import '../domain/route_models.dart';
 import '../widgets/assign_duty_form.dart';
+import '../widgets/replace_duty_form.dart';
 
 /// The standing crew for one route (STF-004), reached by tapping a row on the Routes screen
 /// (A-30). A dialog rather than a second console location — matching `OrganizationListRoute`'s
@@ -35,7 +36,7 @@ class RouteCrewDialog extends StatelessWidget {
   }
 }
 
-class _RouteCrewView extends StatelessWidget {
+class _RouteCrewView extends StatefulWidget {
   const _RouteCrewView({required this.route});
 
   /// `PERM-DUTY-ASSIGN`'s holders (PERMISSION_MATRIX.md). Narrower than the roles that open
@@ -45,21 +46,124 @@ class _RouteCrewView extends StatelessWidget {
 
   final CreatedRoute route;
 
+  @override
+  State<_RouteCrewView> createState() => _RouteCrewViewState();
+}
+
+class _RouteCrewViewState extends State<_RouteCrewView> {
+  /// True while an assign or replace form is open over this dialog. The listener below closes
+  /// that form when its write lands — without this it would close the crew dialog itself after a
+  /// removal, which has no form open.
+  bool _formOpen = false;
+
+  CreatedRoute get route => widget.route;
+
+  /// This route's own school's roster, fetched when a form needs it rather than on open.
+  Future<List<CreatedStaff>> _roster(BuildContext context) async {
+    final dependencies = DependencyScope.of(context);
+    final staffResult = await dependencies.staffRepository.listStaff(schoolId: route.schoolId);
+    return switch (staffResult) {
+      Success<List<CreatedStaff>>(:final value) => value,
+      Failure() => const <CreatedStaff>[],
+    };
+  }
+
+  /// Puts a different person on an existing duty (STF-004) — the standing roster, with a reason.
+  Future<void> _openReplaceForm(BuildContext context, CreatedDutyAssignment assignment) async {
+    final bloc = context.read<DutyAssignmentBloc>();
+    final staffOptions = await _roster(context);
+    if (!context.mounted) return;
+
+    setState(() => _formOpen = true);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AdminSpacing.lg),
+            child: BlocProvider.value(
+              value: bloc,
+              child: BlocBuilder<DutyAssignmentBloc, DutyAssignmentState>(
+                builder: (context, state) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ReplaceDutyForm(
+                      current: assignment,
+                      staffOptions: staffOptions,
+                      isSubmitting: state.isSubmitting,
+                      onCancel: () => Navigator.of(dialogContext).pop(),
+                      onSubmit: ({required String staffId, required String reason}) {
+                        bloc.add(DutyReplaced(
+                          routeId: route.id,
+                          assignmentId: assignment.id,
+                          staffId: staffId,
+                          reason: reason,
+                        ));
+                      },
+                    ),
+                    if (state.error != null)
+                      OnboardingErrorText(code: state.error!, messageKey: state.errorMessageKey),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (mounted) setState(() => _formOpen = false);
+  }
+
+  /// Takes a crew member off the route, leaving the slot empty until someone is assigned.
+  Future<void> _confirmRemove(BuildContext context, CreatedDutyAssignment assignment) async {
+    final bloc = context.read<DutyAssignmentBloc>();
+    final role = assignment.role == 'DRIVER'
+        ? context.l10n.staffTypeDriver
+        : context.l10n.staffTypeAttendant;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(context.l10n.routeCrewRemoveTitle),
+        content: Text(
+          context.l10n.routeCrewRemoveBody(assignment.displayName, role, route.name),
+        ),
+        actions: [
+          TextButton(
+            key: const Key('route_crew_remove_cancel_button'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(context.l10n.commonCancelButton),
+          ),
+          FilledButton(
+            key: const Key('route_crew_remove_confirm_button'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(context.l10n.routeCrewRemoveButton),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed ?? false) {
+      bloc.add(DutyRemoved(routeId: route.id, assignmentId: assignment.id));
+    }
+  }
+
   Future<void> _openAssignForm(BuildContext context) async {
     final bloc = context.read<DutyAssignmentBloc>();
 
     // The driver/attendant dropdown below needs this route's own school's roster — fetched
-    // once, here, rather than inside the dialog, so the dialog itself never needs its own
-    // loading state.
-    final dependencies = DependencyScope.of(context);
-    final staffResult = await dependencies.staffRepository.listStaff(schoolId: route.schoolId);
-    final staffOptions = switch (staffResult) {
-      Success<List<CreatedStaff>>(:final value) => value,
-      Failure() => const <CreatedStaff>[],
-    };
+    // here rather than inside the dialog, so the dialog itself never needs its own loading state.
+    final staffOptions = await _roster(context);
 
     if (!context.mounted) return;
 
+    setState(() => _formOpen = true);
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => Dialog(
@@ -103,13 +207,14 @@ class _RouteCrewView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final roles = DependencyScope.of(context).sessionManager.currentUser?.roles ?? const [];
-    final canAssign = roles.any(_dutyAssigningRoles.contains);
+    final canAssign = roles.any(_RouteCrewView._dutyAssigningRoles.contains);
 
     return BlocListener<DutyAssignmentBloc, DutyAssignmentState>(
       listenWhen: (previous, current) =>
           previous.isSubmitting && !current.isSubmitting && current.error == null,
       listener: (context, state) {
-        if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+        // Only the form's own route, never this dialog (see [_formOpen]).
+        if (_formOpen && Navigator.of(context).canPop()) Navigator.of(context).pop();
       },
       child: Dialog(
         child: ConstrainedBox(
@@ -156,7 +261,12 @@ class _RouteCrewView extends StatelessWidget {
                         );
                       }
 
-                      return _CrewList(assignments: state.assignments);
+                      return _CrewList(
+                        assignments: state.assignments,
+                        onReplace:
+                            canAssign ? (duty) => _openReplaceForm(context, duty) : null,
+                        onRemove: canAssign ? (duty) => _confirmRemove(context, duty) : null,
+                      );
                     },
                   ),
                 ),
@@ -179,9 +289,13 @@ class _RouteCrewView extends StatelessWidget {
 }
 
 class _CrewList extends StatelessWidget {
-  const _CrewList({required this.assignments});
+  const _CrewList({required this.assignments, this.onReplace, this.onRemove});
 
   final List<CreatedDutyAssignment> assignments;
+
+  /// Null for a caller without `PERM-DUTY-ASSIGN` — they read the crew, they do not change it.
+  final ValueChanged<CreatedDutyAssignment>? onReplace;
+  final ValueChanged<CreatedDutyAssignment>? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -196,8 +310,38 @@ class _CrewList extends StatelessWidget {
           leading: Icon(
             assignment.role == 'DRIVER' ? Icons.airline_seat_recline_normal : Icons.badge,
           ),
-          title: Text(_roleLabel(context, assignment.role)),
-          subtitle: Text(_directionLabel(context, assignment.direction)),
+          // The person first: a roster that reads "Driver · Both directions" answers nothing
+          // for someone replacing an absent driver.
+          title: Text(
+            assignment.displayName.isEmpty
+                ? context.l10n.routeCrewUnfilledSlot
+                : assignment.displayName,
+          ),
+          subtitle: Text(
+            '${_roleLabel(context, assignment.role)} · '
+            '${_directionLabel(context, assignment.direction)}',
+          ),
+          trailing: onReplace == null && onRemove == null
+              ? null
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (onReplace != null)
+                      IconButton(
+                        key: Key('route_crew_replace_${assignment.id}'),
+                        icon: const Icon(Icons.swap_horiz),
+                        tooltip: context.l10n.routeCrewReplaceTooltip,
+                        onPressed: () => onReplace!(assignment),
+                      ),
+                    if (onRemove != null)
+                      IconButton(
+                        key: Key('route_crew_remove_${assignment.id}'),
+                        icon: const Icon(Icons.person_remove_outlined),
+                        tooltip: context.l10n.routeCrewRemoveTooltip,
+                        onPressed: () => onRemove!(assignment),
+                      ),
+                  ],
+                ),
         );
       },
     );

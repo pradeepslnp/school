@@ -637,5 +637,17 @@
   "stopFormDropTimeHelper": "Afternoon runs in reverse: the last stop is dropped first.",
   "routeStopsSavedSnackbar": "Stops saved. Students can now be given these stops for pickup and drop.",
   "routeStopsErrorStale": "These stops were changed somewhere else since you opened them. Close and reopen the stops, then make your change again.",
-  "routeStopsErrorHasAssignedStudents": "A stop you removed still has students assigned to it. Move those students to another stop from their student record first, then remove the stop."
+  "routeStopsErrorHasAssignedStudents": "A stop you removed still has students assigned to it. Move those students to another stop from their student record first, then remove the stop.",
+  "routeCrewUnfilledSlot": "Nobody assigned",
+  "routeCrewReplaceTooltip": "Put someone else on this duty",
+  "routeCrewRemoveTooltip": "Take off this route",
+  "routeCrewRemoveTitle": "Take this crew member off the route?",
+  "routeCrewRemoveBody": "{name} will no longer be the {role} on {routeName}. The route is left with nobody in that role until you assign someone.",
+  "routeCrewRemoveButton": "Take off route",
+  "replaceDutyTitle": "Replace {name} as {role}",
+  "replaceDutyStandingRosterNote": "This changes who normally runs this route. A stand-in for a single day is recorded against that day's trip, which this build cannot do yet.",
+  "replaceDutyStaffLabel": "New {role}",
+  "replaceDutyReasonLabel": "Reason",
+  "replaceDutyReasonHelper": "Required, e.g. \"Suresh on leave from today\". Kept on the audit trail with both names.",
+  "replaceDutySubmitButton": "Replace"
 }

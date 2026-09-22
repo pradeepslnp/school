@@ -138,9 +138,27 @@ Deactivation revokes all sessions immediately and removes future duty assignment
 |---|---|---|---|---|
 | `POST` | `/routes/{routeId}/duty-assignments` | STF-004 | `PERM-DUTY-ASSIGN` | BR-STAFF-004, BR-STAFF-005 |
 | `GET` | `/routes/{routeId}/duty-assignments` | STF-004 | `PERM-ROUTE-VIEW` | |
+| `POST` | `/duty-assignments/{id}/replace` | STF-004 | `PERM-DUTY-ASSIGN` | BR-STAFF-004, BR-IAM-008, BR-AUD-002 |
 | `DELETE` | `/duty-assignments/{id}` | STF-004 | `PERM-DUTY-ASSIGN` | |
 
 The **standing roster**. Actual crew for a specific trip is `trip_staff` — separated so a substitution does not rewrite the roster (BR-STAFF-006).
+
+`GET` returns each duty with the holder's name (`staffFirstName`, `staffLastName`) as well as `staffId`: a roster of ids cannot be read by the person replacing an absent driver. A duty whose staff record has gone keeps its row with empty names, so an unfilled crew slot stays visible.
+
+### `POST /duty-assignments/{id}/replace`
+
+Puts a different person on an existing duty — the regular driver has left, or is away long enough that the roster itself should change.
+
+```json
+{ "staffId": "…", "reason": "Suresh on leave from today" }
+```
+
+- The replacement **inherits the role and direction** of the duty it takes over; neither is sent. Changing who drives and what they drive are two decisions.
+- Old off and new on **in one transaction**: the route is never left with two active crew in one role, nor with none because a second call failed.
+- `reason` is required, 1–500 characters, and is audited as `DUTY_ASSIGNMENT_REPLACED` with both staff ids — every driver and attendant change is recorded with why.
+- A deactivated staff member cannot take the duty (BR-IAM-008) → `404 STAFF_NOT_FOUND`, as for an unknown one. Licence and verification are checked when a trip starts (BR-STAFF-001/002), not here.
+- Replacing someone with themselves is refused (`422`).
+- **This is not a one-day substitution.** A stand-in for a single run belongs to that trip (`trip_staff`, BR-STAFF-006, STF-005) and needs MOD-08.
 
 ---
 

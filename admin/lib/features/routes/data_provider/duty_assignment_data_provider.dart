@@ -35,4 +35,26 @@ class DutyAssignmentDataProvider {
   Future<ApiResponse> listDutyAssignments({required String routeId}) {
     return client.get('/routes/$routeId/duty-assignments');
   }
+
+  /// `POST /duty-assignments/{id}/replace` (`PERM-DUTY-ASSIGN`) — puts a different person on this
+  /// duty, in one audited step. The replacement inherits the role and direction.
+  ///
+  /// A `POST`, so [RestClient] never retries it: a retried replacement would take the new crew
+  /// member off again and put a third one on.
+  Future<ApiResponse> replaceDuty({
+    required String assignmentId,
+    required String staffId,
+    required String reason,
+  }) {
+    return client.post(
+      '/duty-assignments/$assignmentId/replace',
+      body: {'staffId': staffId, 'reason': reason},
+    );
+  }
+
+  /// `DELETE /duty-assignments/{id}` (`PERM-DUTY-ASSIGN`) — takes the crew member off this route's
+  /// standing roster, leaving the slot empty.
+  Future<ApiResponse> removeDuty({required String assignmentId}) {
+    return client.delete('/duty-assignments/$assignmentId');
+  }
 }

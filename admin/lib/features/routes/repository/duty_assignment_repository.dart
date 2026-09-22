@@ -47,6 +47,26 @@ class DutyAssignmentRepository {
     return Success<List<CreatedDutyAssignment>>(assignments);
   }
 
+  Future<Result<void>> replaceDuty({
+    required String assignmentId,
+    required String staffId,
+    required String reason,
+  }) async {
+    final response = await dataProvider.replaceDuty(
+      assignmentId: assignmentId,
+      staffId: staffId,
+      reason: reason.trim(),
+    );
+    if (!response.isSuccess) return _toFailure<void>(response);
+    return const Success<void>(null);
+  }
+
+  Future<Result<void>> removeDuty({required String assignmentId}) async {
+    final response = await dataProvider.removeDuty(assignmentId: assignmentId);
+    if (!response.isSuccess) return _toFailure<void>(response);
+    return const Success<void>(null);
+  }
+
   Result<T> _toFailure<T>(ApiResponse response) {
     if (response.isTransportFailure) {
       return Failure<T>(ErrorCode.dependencyUnavailable);
@@ -73,6 +93,8 @@ class DutyAssignmentRepository {
       routeId: routeId,
       role: role,
       direction: data['direction'] as String?,
+      staffFirstName: data['staffFirstName'] as String?,
+      staffLastName: data['staffLastName'] as String?,
       active: active,
     );
   }

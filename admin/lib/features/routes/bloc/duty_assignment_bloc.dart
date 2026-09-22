@@ -16,6 +16,8 @@ class DutyAssignmentBloc extends Bloc<DutyAssignmentEvent, DutyAssignmentState> 
         super(const DutyAssignmentState()) {
     on<DutyAssignmentListRequested>(_onRequested);
     on<DutyAssigned>(_onAssigned);
+    on<DutyReplaced>(_onReplaced);
+    on<DutyRemoved>(_onRemoved);
   }
 
   final DutyAssignmentRepository _repository;
@@ -50,14 +52,59 @@ class DutyAssignmentBloc extends Bloc<DutyAssignmentEvent, DutyAssignmentState> 
     );
 
     switch (result) {
-      case Success<CreatedDutyAssignment>(:final value):
-        emit(state.copyWith(
-          isSubmitting: false,
-          clearError: true,
-          assignments: [value, ...state.assignments],
-        ));
+      case Success<CreatedDutyAssignment>():
+        // Re-read rather than prepend what came back: the crew list carries each person's name,
+        // and the write responses do not.
+        await _reload(event.routeId, emit);
       case Failure(:final code, :final messageKey):
         emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));
+    }
+  }
+
+  Future<void> _onReplaced(DutyReplaced event, Emitter<DutyAssignmentState> emit) async {
+    if (event.staffId.trim().isEmpty || event.reason.trim().isEmpty) {
+      emit(state.copyWith(error: ErrorCode.validationRequiredFieldMissing));
+      return;
+    }
+
+    emit(state.copyWith(isSubmitting: true, clearError: true));
+
+    final result = await _repository.replaceDuty(
+      assignmentId: event.assignmentId,
+      staffId: event.staffId,
+      reason: event.reason,
+    );
+
+    switch (result) {
+      case Success<void>():
+        await _reload(event.routeId, emit);
+      case Failure(:final code, :final messageKey):
+        emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));
+    }
+  }
+
+  Future<void> _onRemoved(DutyRemoved event, Emitter<DutyAssignmentState> emit) async {
+    emit(state.copyWith(isSubmitting: true, clearError: true));
+
+    final result = await _repository.removeDuty(assignmentId: event.assignmentId);
+
+    switch (result) {
+      case Success<void>():
+        await _reload(event.routeId, emit);
+      case Failure(:final code, :final messageKey):
+        emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));
+    }
+  }
+
+  /// Re-reads the roster after a write. A failed re-read is not reported as a failed write — the
+  /// change was saved; only the refresh was not.
+  Future<void> _reload(String routeId, Emitter<DutyAssignmentState> emit) async {
+    final refreshed = await _repository.listDutyAssignments(routeId: routeId);
+    switch (refreshed) {
+      case Success<List<CreatedDutyAssignment>>(:final value):
+        emit(state.copyWith(isSubmitting: false, clearError: true, assignments: value));
+      case Failure():
+        emit(state.copyWith(isSubmitting: false, clearError: true));
     }
   }
 }

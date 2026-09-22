@@ -218,6 +218,20 @@ Restrictions are **never** exposed in any parent-facing surface. The console war
 
 ---
 
+## A-25 — Route Crew (Duty Assignments)
+
+Reached from a route on A-30. Lists the route's standing crew — **the person's name first**, then role and direction, because the question being asked is "who is on this bus, and who replaces them".
+
+Holders of `PERM-DUTY-ASSIGN` (`SUPER_ADMIN`, `ORG_ADMIN`, `TRANSPORT_MANAGER`) get three actions; everyone else reads the list. A `SCHOOL_ADMIN` sees it read-only, which is why the *Assign crew* button is hidden from them rather than failing at the server.
+
+- **Assign crew** — adds a driver or attendant, picked from that school's roster.
+- **Replace** (per row) — puts a different person on that duty. Role and direction carry over; **a reason is required** and is recorded with both names. The form states plainly that this changes who *normally* runs the route.
+- **Take off route** (per row) — confirms, then leaves the slot empty. The empty slot is shown as "Nobody assigned" rather than the row disappearing.
+
+**A one-day stand-in is not this screen.** An absence covered for a single run belongs to that day's trip (BR-STAFF-006, STF-005) and cannot be recorded until MOD-08 exists; the replace form says so, so nobody records a permanent roster change meaning "just today".
+
+---
+
 ## A-31 — Route Editor
 
 Map-based: drag stops, reorder, adjust geofence radius visually.

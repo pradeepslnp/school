@@ -2,7 +2,7 @@
 
 Per [ADR-0013](../../../documentation/00-governance/adr/ADR-0013-interim-client-bundled-flutter-localisation.md), `app_en.arb` is the complete, real source of truth. `app_kn.arb` currently carries the **English value as an explicit, tracked placeholder** for every key below — not a silent gap, not an inline `TODO`. Every key in `app_en.arb` has a mirrored key in `app_kn.arb` (parity is verified as part of this pass); none of the Kannada values are a real translation yet.
 
-**Total resource keys: 625. Kannada status for all of them: `pending-kn-translation`.**
+**Total resource keys: 637. Kannada status for all of them: `pending-kn-translation`.**
 
 ## Safety-critical — requires native-speaker sign-off before a Kannada value ships
 
@@ -774,9 +774,27 @@ table at the top).
 | `routeStopsErrorGeofence` | A stop's arrival radius must be between 20 and 500 metres. Correct it, then save. | pending-kn-translation |
 | `routeStopsErrorTimesNotIncreasing` | Pickup times must get later going down the list of stops. Drop times run the other way: the afternoon bus drops the last stop first, so drop times must get later going up the list. Check the times, then save. | pending-kn-translation |
 | `stopFormDropTimeHelper` | Afternoon runs in reverse: the last stop is dropped first. | pending-kn-translation |
+| `replaceDutyStandingRosterNote` | This changes who normally runs this route. A stand-in for a single day is recorded against that day's trip, which this build cannot do yet. | pending-kn-translation — native-speaker review required |
 | `routeStopsSavedSnackbar` | Stops saved. Students can now be given these stops for pickup and drop. | pending-kn-translation |
 | `routeStopsErrorStale` | These stops were changed somewhere else since you opened them. Close and reopen the stops, then make your change again. | pending-kn-translation |
 | `routeStopsErrorHasAssignedStudents` | A stop you removed still has students assigned to it. Move those students to another stop from their student record first, then remove the stop. | pending-kn-translation |
+
+### Route crew — replace and remove (STF-004, A-25)
+
+| Key | English value | Kannada status |
+|---|---|---|
+| `routeCrewUnfilledSlot` | Nobody assigned | pending-kn-translation |
+| `routeCrewReplaceTooltip` | Put someone else on this duty | pending-kn-translation |
+| `routeCrewRemoveTooltip` | Take off this route | pending-kn-translation |
+| `routeCrewRemoveTitle` | Take this crew member off the route? | pending-kn-translation |
+| `routeCrewRemoveBody` ⚠️ | {name} will no longer be the {role} on {routeName}. The route is left with nobody in that role until you assign someone. | pending-kn-translation — native-speaker review required |
+| `routeCrewRemoveButton` | Take off route | pending-kn-translation |
+| `replaceDutyTitle` | Replace {name} as {role} | pending-kn-translation |
+| `replaceDutyStandingRosterNote` ⚠️ | This changes who normally runs this route. A stand-in for a single day is recorded against that day's trip, which this build cannot do yet. | pending-kn-translation — native-speaker review required |
+| `replaceDutyStaffLabel` | New {role} | pending-kn-translation |
+| `replaceDutyReasonLabel` | Reason | pending-kn-translation |
+| `replaceDutyReasonHelper` | Required, e.g. "Suresh on leave from today". Kept on the audit trail with both names. | pending-kn-translation |
+| `replaceDutySubmitButton` | Replace | pending-kn-translation |
 
 ### Other
 

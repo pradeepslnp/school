@@ -6,6 +6,7 @@ import com.guardian.staff.application.command.AssignDutyCommand;
 import com.guardian.staff.application.usecase.AssignDutyUseCase;
 import com.guardian.staff.application.usecase.ListDutyAssignmentsUseCase;
 import com.guardian.staff.application.usecase.RemoveDutyAssignmentUseCase;
+import com.guardian.staff.application.usecase.ReplaceDutyAssignmentUseCase;
 import com.guardian.staff.domain.Direction;
 import com.guardian.staff.domain.DutyAssignment;
 import com.guardian.staff.domain.DutyAssignmentId;
@@ -14,6 +15,7 @@ import com.guardian.staff.domain.StaffId;
 import com.guardian.staff.domain.StaffType;
 import com.guardian.staff.interfaces.rest.dto.AssignDutyRequest;
 import com.guardian.staff.interfaces.rest.dto.DutyAssignmentResponse;
+import com.guardian.staff.interfaces.rest.dto.ReplaceDutyRequest;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -40,14 +42,17 @@ public class DutyAssignmentController {
   private final AssignDutyUseCase assignDuty;
   private final ListDutyAssignmentsUseCase listDutyAssignments;
   private final RemoveDutyAssignmentUseCase removeDutyAssignment;
+  private final ReplaceDutyAssignmentUseCase replaceDutyAssignment;
 
   public DutyAssignmentController(
       AssignDutyUseCase assignDuty,
       ListDutyAssignmentsUseCase listDutyAssignments,
-      RemoveDutyAssignmentUseCase removeDutyAssignment) {
+      RemoveDutyAssignmentUseCase removeDutyAssignment,
+      ReplaceDutyAssignmentUseCase replaceDutyAssignment) {
     this.assignDuty = assignDuty;
     this.listDutyAssignments = listDutyAssignments;
     this.removeDutyAssignment = removeDutyAssignment;
+    this.replaceDutyAssignment = replaceDutyAssignment;
   }
 
   @PostMapping("/api/v1/routes/{routeId}/duty-assignments")
@@ -78,6 +83,25 @@ public class DutyAssignmentController {
     return listDutyAssignments.forRoute(RouteId.of(routeId)).stream()
         .map(DutyAssignmentResponse::from)
         .toList();
+  }
+
+  /**
+   * Puts a different driver or attendant on this duty (feature STF-004) — the standing roster, not
+   * a substitute for one trip (BR-STAFF-006, STF-005). Old off and new on in one transaction,
+   * audited with both people and the reason.
+   */
+  @PostMapping("/api/v1/duty-assignments/{id}/replace")
+  @RequiresPermission("PERM-DUTY-ASSIGN")
+  public DutyAssignmentResponse replace(
+      @PathVariable UUID id, @Valid @RequestBody ReplaceDutyRequest request, CurrentActor actor) {
+
+    return DutyAssignmentResponse.from(
+        replaceDutyAssignment.execute(
+            DutyAssignmentId.of(id),
+            StaffId.of(request.staffId()),
+            request.reason(),
+            actor.userId(),
+            actor.role()));
   }
 
   @DeleteMapping("/api/v1/duty-assignments/{id}")

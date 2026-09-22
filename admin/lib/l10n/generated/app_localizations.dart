@@ -3864,6 +3864,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A stop you removed still has students assigned to it. Move those students to another stop from their student record first, then remove the stop.'**
   String get routeStopsErrorHasAssignedStudents;
+
+  /// No description provided for @routeCrewUnfilledSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody assigned'**
+  String get routeCrewUnfilledSlot;
+
+  /// No description provided for @routeCrewReplaceTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Put someone else on this duty'**
+  String get routeCrewReplaceTooltip;
+
+  /// No description provided for @routeCrewRemoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Take off this route'**
+  String get routeCrewRemoveTooltip;
+
+  /// No description provided for @routeCrewRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Take this crew member off the route?'**
+  String get routeCrewRemoveTitle;
+
+  /// Safety-relevant: removing a driver or attendant from a route's standing crew.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} will no longer be the {role} on {routeName}. The route is left with nobody in that role until you assign someone.'**
+  String routeCrewRemoveBody(String name, String role, String routeName);
+
+  /// No description provided for @routeCrewRemoveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Take off route'**
+  String get routeCrewRemoveButton;
+
+  /// No description provided for @replaceDutyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace {name} as {role}'**
+  String replaceDutyTitle(String name, String role);
+
+  /// Safety-relevant: distinguishes a roster change from a one-day substitution (BR-STAFF-006).
+  ///
+  /// In en, this message translates to:
+  /// **'This changes who normally runs this route. A stand-in for a single day is recorded against that day\'s trip, which this build cannot do yet.'**
+  String get replaceDutyStandingRosterNote;
+
+  /// No description provided for @replaceDutyStaffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New {role}'**
+  String replaceDutyStaffLabel(String role);
+
+  /// No description provided for @replaceDutyReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get replaceDutyReasonLabel;
+
+  /// No description provided for @replaceDutyReasonHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Required, e.g. \"Suresh on leave from today\". Kept on the audit trail with both names.'**
+  String get replaceDutyReasonHelper;
+
+  /// No description provided for @replaceDutySubmitButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get replaceDutySubmitButton;
 }
 
 class _AppLocalizationsDelegate
