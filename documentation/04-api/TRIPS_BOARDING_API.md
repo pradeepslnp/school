@@ -5,21 +5,44 @@
 
 **The most safety-critical API surface in the platform.** Every endpoint here is audited; the boarding endpoints are append-only and idempotent by design.
 
+> **Implementation status.** The trip endpoints marked ✅ below are live (MOD-08). Everything under *Boarding* is still specified-only — MOD-09 owns handover code issuance and nothing else. [`IMPLEMENTATION_STATUS.md`](../06-development/IMPLEMENTATION_STATUS.md) is the single place that tracks this; the ✅ marks here are a convenience, not a second source of truth.
+
 ---
 
 # Trips
 
-| Method | Path | Feature | Permission | Rules |
-|---|---|---|---|---|
-| `GET` | `/trips` | TRP-004 | `PERM-TRIP-VIEW` | BR-IAM-006, BR-TRACK-002 |
-| `GET` | `/trips/{id}` | TRP-004 | `PERM-TRIP-VIEW` | |
-| `POST` | `/trips/{id}/start` | TRP-002 | `PERM-TRIP-START` | BR-TRIP-004/005/006 |
-| `POST` | `/trips/{id}/end` | TRP-004 | `PERM-TRIP-END` | BR-TRIP-002 |
-| `POST` | `/trips/{id}/close` | TRP-008 | `PERM-TRIP-CLOSE` | BR-TRIP-009, BR-SAFE-001 🔴 |
-| `POST` | `/trips/{id}/cancel` | TRP-005 | `PERM-TRIP-CANCEL` | BR-TRIP-007 |
-| `GET` | `/trips/{id}/manifest` | TRP-003 | `PERM-TRIP-VIEW` | BR-TRIP-003 |
-| `POST` | `/trips/{id}/manifest/amendments` | TRP-006 | `PERM-MANIFEST-AMEND` | BR-TRIP-003, BR-AUD-004 |
-| `POST` | `/trips/{id}/staff` | STF-005 | `PERM-DUTY-ASSIGN` | BR-STAFF-006 |
+| Method | Path | Feature | Permission | Rules | Built |
+|---|---|---|---|---|---|
+| `GET` | `/trips?schoolId=&serviceDate=` | TRP-004 | `PERM-TRIP-VIEW` | BR-IAM-006, BR-TRACK-002 | ✅ |
+| `GET` | `/trips/mine?serviceDate=` | TRP-004 | `PERM-TRIP-VIEW` | BR-IAM-006 | ✅ |
+| `POST` | `/trips/generate?serviceDate=` | TRP-001 | `PERM-ROUTE-MANAGE` | BR-TRIP-011 | ✅ |
+| `GET` | `/trips/{id}` | TRP-004 | `PERM-TRIP-VIEW` | | |
+| `POST` | `/trips/{id}/start` | TRP-002 | `PERM-TRIP-START` | BR-TRIP-004/005/006 | ✅ |
+| `POST` | `/trips/{id}/end` | TRP-004 | `PERM-TRIP-END` | BR-TRIP-002 | ✅ |
+| `POST` | `/trips/{id}/close` | TRP-008 | `PERM-TRIP-CLOSE` | BR-TRIP-009, BR-SAFE-001 🔴 | |
+| `POST` | `/trips/{id}/cancel` | TRP-005 | `PERM-TRIP-CANCEL` | BR-TRIP-007 | ✅ |
+| `GET` | `/trips/{id}/manifest` | TRP-003 | `PERM-TRIP-VIEW` | BR-TRIP-003 | |
+| `POST` | `/trips/{id}/manifest/amendments` | TRP-006 | `PERM-MANIFEST-AMEND` | BR-TRIP-003, BR-AUD-004 | |
+| `POST` | `/trips/{id}/staff` | STF-005 | `PERM-DUTY-ASSIGN` | BR-STAFF-006 | |
+
+### Where trips come from
+
+A trip row is **generated ahead of the day it runs** (BR-TRIP-011), not created when a driver taps start. The generator reads the timetable — a route's `operating_days`, its stops' `scheduled_pickup_time` / `scheduled_drop_time`, and the school's calendar exceptions — and writes one `SCHEDULED` trip per route per direction per operating day.
+
+It runs two ways, and they are the same code path:
+
+- **Nightly**, for a rolling horizon (`guardian.trips.generation-horizon-days`, default 3). Covering several days rather than only tomorrow means a night the worker was down repairs itself on the next run instead of leaving a school with no buses.
+- **On demand**, via `POST /trips/generate`, for when a timetable is corrected after generation has already run.
+
+Generation is **idempotent at the database**: `uq_trips_route_date_direction` plus `ON CONFLICT DO NOTHING`. That is what lets the job, a manual re-run and a second application instance all run it at once without a distributed lock — and it is why a second call returning `created: 0` is success, not a failure.
+
+It never touches a trip that already exists. A run a transport manager cancelled stays cancelled the next time the job passes over that date.
+
+`POST /trips/generate` is guarded by `PERM-ROUTE-MANAGE` rather than a permission of its own: generation materialises the route timetable and nothing else, so the people entitled to run it are exactly the people entitled to define it. If the permission matrix later separates the two, one annotation changes.
+
+### `POST /trips/{id}/end` and `/close`
+
+`end` moves a trip to `COMPLETED` — the crew has finished driving and no further boarding will be recorded. `close` additionally asserts that **every child on the manifest is accounted for**, which requires trip-close reconciliation (BR-TRIP-009 → BR-SAFE-001 🔴). Reconciliation is MOD-09 and is not built, so `close` **ships with it** rather than as an endpoint that moves a status without doing the check it claims.
 
 ### `GET /trips`
 
@@ -28,9 +51,16 @@ Guardian scope returns **only trips carrying one of their children** (BR-TRACK-0
 ### `POST /trips/{id}/start`
 
 ```json
-{ "vehicleId": "…", "driverStaffId": "…", "attendantStaffId": "…",
-  "deviceStartedAt": "2026-08-03T07:28:44Z" }
+{ "vehicleId": "…", "deviceStartedAt": "2026-08-03T07:28:44Z" }
 ```
+
+`vehicleId` is required — a trip cannot start without naming the bus that is running it, and the vehicle is chosen now rather than at generation because the yard substitutes buses (BR-TRIP-004).
+
+`deviceStartedAt` is the handset's own clock, optional, and **never used in place of server time** (BR-TRIP-008). An offline-first driver app (ADR-0008) may sync hours later, and a phone with a wrong clock must not be able to move a safety record in time.
+
+The crew is **not** named in the body. Who is driving comes from the standing duty roster, and the caller must be on it — or be a transport manager (BR-TRIP-006). A body that named a driver would be a body that could name someone else's. Per-trip crew substitution (`POST /trips/{id}/staff`, BR-STAFF-006) needs a `trip_staff` table that does not exist yet.
+
+Starting also **materialises the manifest** (BR-TRIP-003 🔴): the route's active assignments for this direction, valid on the service date, still enrolled, minus every child with an active absence covering that date and run (BR-ABS-002), with names snapshotted. A start that would produce an **empty** manifest is refused with `TRIP_MANIFEST_EMPTY` — a timetable or assignment mistake is far better caught at 06:30 than at reconciliation.
 
 Runs the full eligibility gate (BR-TRIP-004). **Each failure returns its specific check**, never a generic refusal:
 

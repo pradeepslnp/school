@@ -29,6 +29,8 @@ include(
     // the module that owns the record rather than in the read module below.
     "guardian-absence",
     "guardian-notification",
+    // MOD-08. Trip lifecycle and manifests — the row every safety event anchors to.
+    "guardian-trip",
     // MOD-09, minimal slice (code issuance only — see guardian-boarding/build.gradle.kts).
     "guardian-boarding",
     // MOD-18. Read-only composition for the parent app; owns no tables (ADR-0010).

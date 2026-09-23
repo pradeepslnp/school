@@ -17,7 +17,7 @@ The platform's functional decomposition. Module boundaries are also **code bound
 | MOD-04 | Guardian Management | `com.guardian.guardian` | Guardians, relationships, authorised pickup persons |
 | MOD-05 | Fleet | `com.guardian.fleet` | Vehicles, devices, vehicle documents |
 | MOD-06 | Transport Staff | `com.guardian.staff` | Drivers, attendants, credentials, duty assignment |
-| MOD-07 | Routes & Stops | `com.guardian.route` | Routes, stops, schedules, student assignments |
+| MOD-07 | Routes & Stops | `com.guardian.routes` | Routes, stops, schedules (operating days, school calendar), student assignments |
 | MOD-08 | Trip Execution | `com.guardian.trip` | Trip lifecycle, manifests, trip staff |
 | MOD-09 | Boarding & Attendance | `com.guardian.boarding` | Boarding events, handovers, reconciliation |
 | MOD-10 | Tracking | `com.guardian.tracking` | Position ingestion, live position, history, ETA |
@@ -108,6 +108,8 @@ Route definition, ordered stops with geofence radius and scheduled times, and st
 
 ### MOD-08 Trip Execution
 The operational centre. Owns the trip lifecycle, materialises the manifest at trip start, and holds trip-level state. Every safety event is anchored to a trip.
+
+Trips are **generated ahead of the day they run** from MOD-07's timetable (BR-TRIP-011), idempotently, so the nightly job and a manual re-run cannot produce duplicates. Start combines the vehicle and crew halves of the eligibility gate by calling MOD-05 and MOD-06 — a downward dependency, and the only two this module has besides `guardian-common`. It does not own trip *crew*: per-trip substitution needs a `trip_staff` table that does not exist, so the standing duty roster in MOD-06 answers "who is on this run". See [`IMPLEMENTATION_STATUS.md`](../06-development/IMPLEMENTATION_STATUS.md) for what of this is built.
 
 ### MOD-09 Boarding & Attendance
 Boarding and alighting events, handover verification, and trip-close reconciliation. **The most safety-critical module.** Records are append-only; corrections are compensating records.

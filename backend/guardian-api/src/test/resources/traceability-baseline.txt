@@ -16,7 +16,6 @@
 # the platform does not keep.
 
 # --- Areas with no module yet -------------------------------------------------------
-BR-TRIP
 BR-BOARD
 BR-SAFE
 BR-ALERT
@@ -37,11 +36,22 @@ BR-GRD-003
 BR-GRD-004
 BR-GRD-008
 
+# --- MOD-08 Trip Execution: generation, start, end and cancel are enforced ------------
+# (BR-TRIP-001/002/003/004/005/006/007/008/011). What remains needs work that is not built:
+#   009  closing requires trip-close reconciliation (BR-SAFE-001), which is MOD-09 proper;
+#        this module deliberately ships no close endpoint rather than one that moves the
+#        status without reconciling
+#   010  the not-started-on-time delay alert is a scheduled MOD-11/MOD-12 evaluation; MOD-08
+#        records the scheduled start time the alert would read, and nothing evaluates it
+BR-TRIP-009
+BR-TRIP-010
+
 # --- MOD-14 Absence: declaring, refusing after trip start, and cancelling are ---------
 # enforced (BR-ABS-001/003/004).
-#   002  manifest materialisation subtracts absences — that is MOD-08, not built
 #   005  no-show suppression needs the alerting path (MOD-11)
-BR-ABS-002
+#
+# BR-ABS-002 came off this list with MOD-08: JdbcTripManifestRepository excludes every child
+# with an active absence covering the service date and run when the manifest is materialised.
 BR-ABS-005
 
 # --- Partially delivered modules: specific rules still outstanding -------------------
@@ -129,10 +139,11 @@ BR-CFG-005
 # 003, 005). What remains needs modules that do not exist:
 #   002  "a student needs an active guardian before route assignment" is checked at assignment
 #        time, which is MOD-07's; MOD-03 does not own the moment the rule fires
-#   004  only-active-students-on-a-manifest is likewise enforced where manifests are built
 #   006  transfer between schools is STU-005, staged R2 in FEATURE_INVENTORY.md
+#
+# BR-STU-004 came off this list with MOD-08: manifest materialisation joins students on
+# enrolment_status = 'ACTIVE', so a withdrawn child is never expected on a bus.
 BR-STU-002
-BR-STU-004
 BR-STU-006
 
 # MOD-09 Handover — the verification code a guardian presents at drop is issued and checked

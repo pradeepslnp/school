@@ -169,6 +169,7 @@ class BusinessRuleTraceabilityTest {
           Path.of("../guardian-fleet/src"),
           Path.of("../guardian-staff/src"),
           Path.of("../guardian-routes/src"),
+          Path.of("../guardian-trip/src"),
           Path.of("../guardian-boarding/src"),
           Path.of("../guardian-absence/src"),
           Path.of("../guardian-notification/src"),

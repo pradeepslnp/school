@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":guardian-fleet"))
     implementation(project(":guardian-staff"))
     implementation(project(":guardian-routes"))
+    implementation(project(":guardian-trip"))
     implementation(project(":guardian-absence"))
     implementation(project(":guardian-notification"))
     implementation(project(":guardian-boarding"))

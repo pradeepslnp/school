@@ -16,11 +16,32 @@ These tables define what *should* happen. [`MOD-08-trips.md`](MOD-08-trips.md) r
 | `default_vehicle_id` | `UUID` | → `vehicles` |
 | `corridor_width_m` | `INTEGER` | Deviation threshold (BR-ALERT-002); null = tenant default |
 | `path_geometry` | `JSONB` | Encoded polyline for corridor calculation and map display |
+| `operating_days` | `VARCHAR(27)` | `NOT NULL DEFAULT 'MON,TUE,WED,THU,FRI'` — which days this route runs (BR-TRIP-011) |
 | `is_active` | `BOOLEAN` | `NOT NULL DEFAULT true` |
 
 ```sql
 CONSTRAINT uq_routes_school_code UNIQUE (tenant_id, school_id, code)
+CONSTRAINT ck_routes_operating_days CHECK (
+    operating_days ~ '^(MON|TUE|WED|THU|FRI|SAT|SUN)(,(MON|TUE|WED|THU|FRI|SAT|SUN))*$')
 ```
+
+`operating_days` is a comma-separated list of three-letter codes rather than seven booleans or a bitmask (V22). It is read far more often than it is computed with, and `'MON,TUE,WED,THU,FRI'` is legible in a `psql` session during an incident, which `31` is not. Order is not significant; `OperatingDays` normalises. It is the *only* per-route scheduling field — the times themselves stay on `stops`, and which directions a route runs is derived from which of `stops.scheduled_pickup_time` / `scheduled_drop_time` are populated, so there is no flag that can claim a run the timetable cannot support.
+
+### `school_calendar_exceptions`
+
+| Column | Type | Notes |
+|---|---|---|
+| `school_id` | `UUID` | `NOT NULL` → `schools` |
+| `exception_date` | `DATE` | `NOT NULL` |
+| `exception_type` | `VARCHAR(16)` | `NOT NULL` — `HOLIDAY` \| `WORKING_DAY` |
+| `reason` | `VARCHAR(255)` | Optional, strongly encouraged |
+
+```sql
+CONSTRAINT uq_school_calendar_exception UNIQUE (tenant_id, school_id, exception_date)
+CONSTRAINT ck_school_calendar_type CHECK (exception_type IN ('HOLIDAY', 'WORKING_DAY'))
+```
+
+Two types because a school calendar needs both directions: `HOLIDAY` suppresses a day the weekday pattern would run, `WORKING_DAY` enables one it would not (a Saturday exam day, a make-up day). Without the second, running a one-off Saturday service would mean editing every route's `operating_days` and remembering to change them back. A date is either an exception or it is not, hence the unique key — which also makes "holiday and working day on the same date" unrepresentable rather than a precedence rule someone has to remember.
 
 `path_geometry` is `JSONB` — one of the few permitted uses ([`CONVENTIONS.md`](../CONVENTIONS.md)). It is read as a whole for map rendering and corridor computation, never queried by its internal structure, and no business rule depends on a field inside it.
 

@@ -154,6 +154,30 @@ public enum ErrorCode {
   // uq_rsa_student_direction is the guarantee; this names the conflict for the client.
   STUDENT_ALREADY_ASSIGNED_FOR_DIRECTION(409),
 
+  // --- Trip execution (MOD-08) --------------------------------------------------------------
+  TRIP_NOT_FOUND(404),
+  // BR-TRIP-002: the requested transition is not one this status allows — starting a trip that
+  // is already running, closing one that never completed. The detail names the current status
+  // and what it may become, because "invalid transition" alone tells a crew nothing.
+  TRIP_INVALID_TRANSITION(422),
+  // BR-TRIP-004: no vehicle given, or the vehicle is not eligible to run (BR-FLEET-002).
+  TRIP_VEHICLE_NOT_ELIGIBLE(422),
+  // BR-TRIP-004 via BR-STAFF-001/002: the driver's licence or a mandatory credential has
+  // expired, or they are not verified. Separate from the vehicle code so the crew is told which
+  // half blocked them — "cannot start" without saying why sends a driver to the office blind.
+  TRIP_CREW_NOT_ELIGIBLE(422),
+  // BR-TRIP-005: that vehicle, or that driver, is already out on another trip right now.
+  TRIP_RESOURCE_ALREADY_ON_TRIP(409),
+  // BR-TRIP-006: the caller is neither the assigned crew for this route nor a transport manager.
+  // Distinct from a permission denial: the caller holds PERM-TRIP-START, just not for this run.
+  TRIP_NOT_ASSIGNED_CREW(403),
+  // BR-TRIP-003: a trip generated for a route whose students have all been withdrawn, or whose
+  // stops carry no timetable, would start with an empty manifest and record nothing.
+  TRIP_MANIFEST_EMPTY(422),
+  // BR-TRIP-007: cancelling requires a reason — an unexplained cancelled run is a safety gap
+  // nobody can account for afterwards.
+  TRIP_CANCELLATION_REASON_REQUIRED(422),
+
   // --- Absence ----------------------------------------------------------------------------
   // The manifest is already materialised and immutable; a change after this point is a
   // manifest amendment by staff, not a parent's declaration (BR-ABS-003).
