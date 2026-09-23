@@ -35,6 +35,9 @@ public class RouteEntity {
   @Column(name = "default_vehicle_id")
   private UUID defaultVehicleId;
 
+  @Column(name = "operating_days", nullable = false, length = 27)
+  private String operatingDays;
+
   @Column(name = "is_active", nullable = false)
   private boolean active;
 
@@ -59,6 +62,7 @@ public class RouteEntity {
       String code,
       String name,
       UUID defaultVehicleId,
+      String operatingDays,
       boolean active,
       long version) {
     this.id = id;
@@ -67,6 +71,7 @@ public class RouteEntity {
     this.code = code;
     this.name = name;
     this.defaultVehicleId = defaultVehicleId;
+    this.operatingDays = operatingDays;
     this.active = active;
     this.version = version;
     Instant now = Instant.now();
@@ -74,9 +79,11 @@ public class RouteEntity {
     this.updatedAt = now;
   }
 
-  void applyMutableState(String name, UUID defaultVehicleId, boolean active) {
+  void applyMutableState(
+      String name, UUID defaultVehicleId, String operatingDays, boolean active) {
     this.name = name;
     this.defaultVehicleId = defaultVehicleId;
+    this.operatingDays = operatingDays;
     this.active = active;
     this.updatedAt = Instant.now();
   }
@@ -103,6 +110,10 @@ public class RouteEntity {
 
   UUID getDefaultVehicleId() {
     return defaultVehicleId;
+  }
+
+  String getOperatingDays() {
+    return operatingDays;
   }
 
   boolean isActive() {

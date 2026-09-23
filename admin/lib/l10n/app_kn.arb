@@ -649,5 +649,24 @@
   "replaceDutyStaffLabel": "New {role}",
   "replaceDutyReasonLabel": "Reason",
   "replaceDutyReasonHelper": "Required, e.g. \"Suresh on leave from today\". Kept on the audit trail with both names.",
-  "replaceDutySubmitButton": "Replace"
+  "replaceDutySubmitButton": "Replace",
+  "routeOperatingDaysLabel": "Operating days",
+  "@routeOperatingDaysLabel": {
+    "description": "Which days of the week this route runs (BR-TRIP-011). Trips are only generated for these days."
+  },
+  "routeOperatingDaysHelper": "Trips are generated only for the days selected here. School holidays are set separately, on the school calendar.",
+  "routeOperatingDaysNoneSelected": "Select at least one day, or this route will never run.",
+  "routeOperatingDaysWeekdaysPreset": "Mon–Fri",
+  "routeOperatingDaysAllPreset": "Every day",
+  "routeDayMonShort": "Mon",
+  "routeDayTueShort": "Tue",
+  "routeDayWedShort": "Wed",
+  "routeDayThuShort": "Thu",
+  "routeDayFriShort": "Fri",
+  "routeDaySatShort": "Sat",
+  "routeDaySunShort": "Sun",
+  "routeListOperatingDaysColumn": "Runs",
+  "routeEditTitle": "Edit route",
+  "routeEditSubmitButton": "Save changes",
+  "routeListEditTooltip": "Edit this route"
 }

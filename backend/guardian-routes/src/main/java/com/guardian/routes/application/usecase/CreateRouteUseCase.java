@@ -55,7 +55,8 @@ public class CreateRouteUseCase {
             command.schoolId(),
             command.code(),
             command.name(),
-            command.defaultVehicleId());
+            command.defaultVehicleId(),
+            command.operatingDays());
 
     Route saved = routeRepository.save(route);
 
@@ -76,6 +77,7 @@ public class CreateRouteUseCase {
     values.put("code", route.code());
     values.put("name", route.name());
     values.put("defaultVehicleId", route.defaultVehicleId().map(Object::toString).orElse(null));
+    values.put("operatingDays", route.operatingDays().toStoredValue());
     return values;
   }
 }

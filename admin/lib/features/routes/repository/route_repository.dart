@@ -19,12 +19,36 @@ class RouteRepository {
     required String code,
     required String name,
     String? defaultVehicleId,
+    String? operatingDays,
   }) async {
     final response = await dataProvider.createRoute(
       schoolId: schoolId,
       code: code.trim(),
       name: name.trim(),
       defaultVehicleId: defaultVehicleId?.trim(),
+      operatingDays: operatingDays?.trim(),
+    );
+    if (!response.isSuccess) return _toFailure<CreatedRoute>(response);
+
+    final route = _parseRoute(response.data);
+    if (route == null) {
+      return const Failure<CreatedRoute>(ErrorCode.internalError);
+    }
+    return Success<CreatedRoute>(route);
+  }
+
+  /// Edits a route (RTE-001). Only the named fields are sent; the rest are left alone.
+  Future<Result<CreatedRoute>> updateRoute({
+    required String routeId,
+    String? name,
+    String? defaultVehicleId,
+    String? operatingDays,
+  }) async {
+    final response = await dataProvider.updateRoute(
+      routeId: routeId,
+      name: name?.trim(),
+      defaultVehicleId: defaultVehicleId?.trim(),
+      operatingDays: operatingDays?.trim(),
     );
     if (!response.isSuccess) return _toFailure<CreatedRoute>(response);
 
@@ -64,7 +88,11 @@ class RouteRepository {
     final code = data['code'];
     final name = data['name'];
     final active = data['active'];
-    if (id is! String || schoolId is! String || code is! String || name is! String || active is! bool) {
+    if (id is! String ||
+        schoolId is! String ||
+        code is! String ||
+        name is! String ||
+        active is! bool) {
       return null;
     }
     return CreatedRoute(
@@ -73,6 +101,9 @@ class RouteRepository {
       code: code,
       name: name,
       defaultVehicleId: data['defaultVehicleId'] as String?,
+      // Defaulted rather than required: a console built against a server that predates V22
+      // should show the five-day week, not refuse to render the route at all.
+      operatingDays: data['operatingDays'] as String? ?? 'MON,TUE,WED,THU,FRI',
       active: active,
     );
   }

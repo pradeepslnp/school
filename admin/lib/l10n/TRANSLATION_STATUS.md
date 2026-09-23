@@ -2,7 +2,9 @@
 
 Per [ADR-0013](../../../documentation/00-governance/adr/ADR-0013-interim-client-bundled-flutter-localisation.md), `app_en.arb` is the complete, real source of truth. `app_kn.arb` currently carries the **English value as an explicit, tracked placeholder** for every key below — not a silent gap, not an inline `TODO`. Every key in `app_en.arb` has a mirrored key in `app_kn.arb` (parity is verified as part of this pass); none of the Kannada values are a real translation yet.
 
-**Total resource keys: 637. Kannada status for all of them: `pending-kn-translation`.**
+**Total resource keys: 653. Kannada status for all of them: `pending-kn-translation`.**
+
+The 16 most recent keys are the route operating-days editor (`routeOperatingDays*`, `routeDay*Short`, `routeEdit*`, `routeListEditTooltip`, `routeListOperatingDaysColumn`). They are ordinary operator-facing labels, not in the safety-critical table below — but a mistranslated day name is a route that runs on the wrong day, so they are worth a careful pass rather than a quick one.
 
 ## Safety-critical — requires native-speaker sign-off before a Kannada value ships
 

@@ -1,6 +1,7 @@
 package com.guardian.routes.infrastructure.persistence;
 
 import com.guardian.common.tenant.TenantId;
+import com.guardian.routes.domain.OperatingDays;
 import com.guardian.routes.domain.Route;
 import com.guardian.routes.domain.RouteId;
 import com.guardian.routes.domain.SchoolId;
@@ -19,6 +20,7 @@ class RoutePersistenceMapper {
         entity.getCode(),
         entity.getName(),
         entity.getDefaultVehicleId() == null ? null : VehicleId.of(entity.getDefaultVehicleId()),
+        OperatingDays.parse(entity.getOperatingDays()),
         entity.isActive(),
         entity.getVersion());
   }
@@ -31,6 +33,7 @@ class RoutePersistenceMapper {
         route.code(),
         route.name(),
         route.defaultVehicleId().map(VehicleId::value).orElse(null),
+        route.operatingDays().toStoredValue(),
         route.active(),
         route.version());
   }
@@ -42,6 +45,9 @@ class RoutePersistenceMapper {
    */
   void applyTo(RouteEntity managed, Route route) {
     managed.applyMutableState(
-        route.name(), route.defaultVehicleId().map(VehicleId::value).orElse(null), route.active());
+        route.name(),
+        route.defaultVehicleId().map(VehicleId::value).orElse(null),
+        route.operatingDays().toStoredValue(),
+        route.active());
   }
 }

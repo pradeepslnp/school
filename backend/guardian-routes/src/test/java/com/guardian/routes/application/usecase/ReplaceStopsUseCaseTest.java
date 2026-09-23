@@ -55,7 +55,8 @@ class ReplaceStopsUseCaseTest {
     when(routeRepository.findById(ROUTE))
         .thenReturn(
             Optional.of(
-                Route.create(TENANT, SchoolId.of(UUID.randomUUID()), "R3", "Green Park", null)));
+                Route.create(
+                    TENANT, SchoolId.of(UUID.randomUUID()), "R3", "Green Park", null, null)));
   }
 
   @AfterEach

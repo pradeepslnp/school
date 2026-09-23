@@ -3936,6 +3936,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Replace'**
   String get replaceDutySubmitButton;
+
+  /// Which days of the week this route runs (BR-TRIP-011). Trips are only generated for these days.
+  ///
+  /// In en, this message translates to:
+  /// **'Operating days'**
+  String get routeOperatingDaysLabel;
+
+  /// No description provided for @routeOperatingDaysHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Trips are generated only for the days selected here. School holidays are set separately, on the school calendar.'**
+  String get routeOperatingDaysHelper;
+
+  /// No description provided for @routeOperatingDaysNoneSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one day, or this route will never run.'**
+  String get routeOperatingDaysNoneSelected;
+
+  /// No description provided for @routeOperatingDaysWeekdaysPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Mon–Fri'**
+  String get routeOperatingDaysWeekdaysPreset;
+
+  /// No description provided for @routeOperatingDaysAllPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get routeOperatingDaysAllPreset;
+
+  /// No description provided for @routeDayMonShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Mon'**
+  String get routeDayMonShort;
+
+  /// No description provided for @routeDayTueShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Tue'**
+  String get routeDayTueShort;
+
+  /// No description provided for @routeDayWedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Wed'**
+  String get routeDayWedShort;
+
+  /// No description provided for @routeDayThuShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Thu'**
+  String get routeDayThuShort;
+
+  /// No description provided for @routeDayFriShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Fri'**
+  String get routeDayFriShort;
+
+  /// No description provided for @routeDaySatShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Sat'**
+  String get routeDaySatShort;
+
+  /// No description provided for @routeDaySunShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Sun'**
+  String get routeDaySunShort;
+
+  /// No description provided for @routeListOperatingDaysColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs'**
+  String get routeListOperatingDaysColumn;
+
+  /// No description provided for @routeEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit route'**
+  String get routeEditTitle;
+
+  /// No description provided for @routeEditSubmitButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get routeEditSubmitButton;
+
+  /// No description provided for @routeListEditTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit this route'**
+  String get routeListEditTooltip;
 }
 
 class _AppLocalizationsDelegate

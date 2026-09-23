@@ -1,4 +1,4 @@
-package com.guardian.trip.domain;
+package com.guardian.routes.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

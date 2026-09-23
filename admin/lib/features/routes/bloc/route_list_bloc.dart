@@ -16,6 +16,7 @@ class RouteListBloc extends Bloc<RouteListEvent, RouteListState> {
         super(const RouteListState()) {
     on<RouteListRequested>(_onRequested);
     on<RouteCreated>(_onCreated);
+    on<RouteEdited>(_onEdited);
   }
 
   final RouteRepository _repository;
@@ -36,7 +37,10 @@ class RouteListBloc extends Bloc<RouteListEvent, RouteListState> {
   Future<void> _onCreated(RouteCreated event, Emitter<RouteListState> emit) async {
     if (event.schoolId.trim().isEmpty ||
         event.code.trim().isEmpty ||
-        event.name.trim().isEmpty) {
+        event.name.trim().isEmpty ||
+        // A route with no operating days would be generated for no day: it would exist, carry
+        // nobody, and show nothing anywhere to explain why (BR-TRIP-011).
+        event.operatingDays.trim().isEmpty) {
       emit(state.copyWith(error: ErrorCode.validationRequiredFieldMissing));
       return;
     }
@@ -48,6 +52,7 @@ class RouteListBloc extends Bloc<RouteListEvent, RouteListState> {
       code: event.code,
       name: event.name,
       defaultVehicleId: event.defaultVehicleId,
+      operatingDays: event.operatingDays,
     );
 
     switch (result) {
@@ -56,6 +61,38 @@ class RouteListBloc extends Bloc<RouteListEvent, RouteListState> {
           isSubmitting: false,
           clearError: true,
           routes: [value, ...state.routes],
+        ));
+      case Failure(:final code, :final messageKey):
+        emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));
+    }
+  }
+
+  Future<void> _onEdited(RouteEdited event, Emitter<RouteListState> emit) async {
+    if (event.operatingDays != null && event.operatingDays!.trim().isEmpty) {
+      emit(state.copyWith(error: ErrorCode.validationRequiredFieldMissing));
+      return;
+    }
+
+    emit(state.copyWith(isSubmitting: true, clearError: true));
+
+    final result = await _repository.updateRoute(
+      routeId: event.routeId,
+      name: event.name,
+      defaultVehicleId: event.defaultVehicleId,
+      operatingDays: event.operatingDays,
+    );
+
+    switch (result) {
+      case Success<CreatedRoute>(:final value):
+        // The edited route replaces its own row in place rather than the list being refetched.
+        // A reload would cost a round trip and move the row the operator is looking at.
+        emit(state.copyWith(
+          isSubmitting: false,
+          clearError: true,
+          routes: [
+            for (final route in state.routes)
+              if (route.id == value.id) value else route,
+          ],
         ));
       case Failure(:final code, :final messageKey):
         emit(state.copyWith(isSubmitting: false, error: code, errorMessageKey: messageKey));

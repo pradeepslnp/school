@@ -2263,4 +2263,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get replaceDutySubmitButton => 'Replace';
+
+  @override
+  String get routeOperatingDaysLabel => 'Operating days';
+
+  @override
+  String get routeOperatingDaysHelper => 'Trips are generated only for the days selected here. School holidays are set separately, on the school calendar.';
+
+  @override
+  String get routeOperatingDaysNoneSelected => 'Select at least one day, or this route will never run.';
+
+  @override
+  String get routeOperatingDaysWeekdaysPreset => 'Mon–Fri';
+
+  @override
+  String get routeOperatingDaysAllPreset => 'Every day';
+
+  @override
+  String get routeDayMonShort => 'Mon';
+
+  @override
+  String get routeDayTueShort => 'Tue';
+
+  @override
+  String get routeDayWedShort => 'Wed';
+
+  @override
+  String get routeDayThuShort => 'Thu';
+
+  @override
+  String get routeDayFriShort => 'Fri';
+
+  @override
+  String get routeDaySatShort => 'Sat';
+
+  @override
+  String get routeDaySunShort => 'Sun';
+
+  @override
+  String get routeListOperatingDaysColumn => 'Runs';
+
+  @override
+  String get routeEditTitle => 'Edit route';
+
+  @override
+  String get routeEditSubmitButton => 'Save changes';
+
+  @override
+  String get routeListEditTooltip => 'Edit this route';
 }

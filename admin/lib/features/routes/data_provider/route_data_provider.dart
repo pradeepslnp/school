@@ -20,6 +20,7 @@ class RouteDataProvider {
     required String code,
     required String name,
     String? defaultVehicleId,
+    String? operatingDays,
   }) {
     return client.post(
       '/routes',
@@ -29,6 +30,28 @@ class RouteDataProvider {
         'name': name,
         if (defaultVehicleId != null && defaultVehicleId.isNotEmpty)
           'defaultVehicleId': defaultVehicleId,
+        if (operatingDays != null && operatingDays.isNotEmpty)
+          'operatingDays': operatingDays,
+      },
+    );
+  }
+
+  /// `PATCH /routes/{routeId}` — edits a route (`PERM-ROUTE-MANAGE`).
+  ///
+  /// Only the fields being changed are sent. A PATCH that resent every field would overwrite a
+  /// colleague's concurrent rename with a stale value this screen never meant to change.
+  Future<ApiResponse> updateRoute({
+    required String routeId,
+    String? name,
+    String? defaultVehicleId,
+    String? operatingDays,
+  }) {
+    return client.patch(
+      '/routes/$routeId',
+      body: {
+        if (name != null) 'name': name,
+        if (defaultVehicleId != null) 'defaultVehicleId': defaultVehicleId,
+        if (operatingDays != null) 'operatingDays': operatingDays,
       },
     );
   }

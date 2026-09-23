@@ -49,7 +49,10 @@ public class MaterialiseTripsUseCase {
    *     second run for the same date.
    */
   @Transactional
-  @BusinessRule({"BR-TRIP-001", "BR-TRIP-011"})
+  // BR-ROUTE-006 is enforced here rather than in MOD-07: "changes apply to trips generated
+  // after the change" is a property of generation never rewriting an existing trip, not of
+  // the edit that changed the route.
+  @BusinessRule({"BR-TRIP-001", "BR-TRIP-011", "BR-ROUTE-006"})
   public int execute(LocalDate serviceDate, UUID actorUserId) {
     List<ScheduledRun> runs = timetable.runsFor(serviceDate);
     if (runs.isEmpty()) {

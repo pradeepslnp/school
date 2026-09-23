@@ -163,10 +163,14 @@ BR-HAND-007
 
 # MOD-07 Routes — stop geofence radius (BR-ROUTE-003) covered via School. Minimum stops
 # (BR-ROUTE-001) and stop-time ordering (BR-ROUTE-008) came off this list with guardian-routes.
+#
+# BR-ROUTE-006 came off with MOD-08: editing a route changes only what later generation reads.
+# Trips already created are never rewritten (createScheduled is ON CONFLICT DO NOTHING) and a
+# started trip's manifest is materialised and immutable, so a timetable edit cannot reach back
+# into a run already under way.
 BR-ROUTE-002
 BR-ROUTE-004
 BR-ROUTE-005
-BR-ROUTE-006
 BR-ROUTE-007
 
 # MOD-10 Tracking — retention (BR-TRACK-004) covered via School configuration.

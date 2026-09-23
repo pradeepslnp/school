@@ -25,14 +25,46 @@ final class RouteCreated extends RouteListEvent {
     required this.schoolId,
     required this.code,
     required this.name,
+    required this.operatingDays,
     this.defaultVehicleId,
   });
 
   final String schoolId;
   final String code;
   final String name;
+
+  /// Comma-separated day codes (BR-TRIP-011). Required rather than optional: the form always
+  /// has a value for it, and a route created with no days would never generate a trip.
+  final String operatingDays;
+
   final String? defaultVehicleId;
 
   @override
-  List<Object?> get props => [schoolId, code, name, defaultVehicleId];
+  List<Object?> get props => [schoolId, code, name, operatingDays, defaultVehicleId];
+}
+
+/// The operator edited an existing route (RTE-001).
+///
+/// Every field but the id is nullable and null means *leave unchanged*, matching the `PATCH`
+/// the server exposes: a screen that resent everything would overwrite a colleague's concurrent
+/// rename with a value it never meant to change.
+final class RouteEdited extends RouteListEvent {
+  const RouteEdited({
+    required this.schoolId,
+    required this.routeId,
+    this.name,
+    this.defaultVehicleId,
+    this.operatingDays,
+  });
+
+  /// Kept so the bloc can reload the list afterwards without the screen telling it again.
+  final String schoolId;
+
+  final String routeId;
+  final String? name;
+  final String? defaultVehicleId;
+  final String? operatingDays;
+
+  @override
+  List<Object?> get props => [schoolId, routeId, name, defaultVehicleId, operatingDays];
 }

@@ -174,6 +174,25 @@ Puts a different person on an existing duty — the regular driver has left, or 
 | `PUT` | `/routes/{id}/stops` | RTE-001 | `PERM-ROUTE-MANAGE` | BR-ROUTE-002/003/008/009 |
 | `GET` | `/routes/{id}/stops` | RTE-001 | `PERM-ROUTE-VIEW` | |
 
+### `POST /routes` and `PATCH /routes/{id}`
+
+```json
+{ "schoolId": "…", "code": "R3", "name": "Green Park",
+  "defaultVehicleId": "…", "operatingDays": "MON,TUE,WED,THU,FRI" }
+```
+
+`operatingDays` is a comma-separated list of three-letter day codes, and it is the field that decides whether a bus runs at all: MOD-08 generates a trip only for a day listed here (BR-TRIP-011). Omitting it on `POST` means the five-day school week, matching the column default. Order is not significant on the way in and is normalised to calendar order on the way out, so two routes running the same days store the same string. An unrecognised code is **refused**, never skipped — a silently dropped `TEU` produces a route that stops running on Tuesdays and tells nobody.
+
+`PATCH` carries only the fields being changed; anything omitted is left alone. Three fields are **not** accepted:
+
+| Field | Why |
+|---|---|
+| `code` | It is printed on lists, quoted to parents, and stamped on every trip generated under the route. Changing it re-labels history that has already been acted on; retire the route and create its replacement instead. |
+| `schoolId` | Moving a route between schools would orphan its stops, its student assignments and its duty roster in one statement. |
+| `active` | Deactivating is conditional on reassigning or explicitly releasing every student on the route (BR-ROUTE-007). That check is not built, and a flag that flipped without it would strand children on a route that silently stops generating trips. **`DELETE /routes/{id}` ships with that rule.** |
+
+Both are audited with before and after values (BR-AUD-002). "Who stopped the Saturday service?" is a question asked on a Saturday morning, and a record holding only the new value cannot answer it.
+
 ### `PUT /routes/{id}/stops`
 
 ```json

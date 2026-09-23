@@ -4,6 +4,7 @@ import '../../../app/theme.dart';
 import '../../../l10n/app_localizations_extension.dart';
 import '../../organizations/widgets/onboarding_button_spinner.dart';
 import '../../vehicles/domain/vehicle_models.dart';
+import 'operating_days_field.dart';
 
 /// Creates a route (RTE-001).
 ///
@@ -37,6 +38,7 @@ class CreateRouteForm extends StatefulWidget {
     required String code,
     required String name,
     String? defaultVehicleId,
+    required String operatingDays,
   }) onSubmit;
 
   final VoidCallback onCancel;
@@ -50,6 +52,10 @@ class _CreateRouteFormState extends State<CreateRouteForm> {
   final _code = TextEditingController();
   final _name = TextEditingController();
   String? _defaultVehicleId;
+
+  /// Pre-selected to the five-day school week: that is what the column defaults to, and it is
+  /// what almost every route runs. An operator creating an ordinary route answers nothing.
+  String _operatingDays = kDefaultOperatingDays;
 
   @override
   void dispose() {
@@ -65,8 +71,13 @@ class _CreateRouteFormState extends State<CreateRouteForm> {
       code: _code.text,
       name: _name.text,
       defaultVehicleId: _defaultVehicleId,
+      operatingDays: _operatingDays,
     );
   }
+
+  /// A route running on no day would be generated for no day — it would exist and never carry
+  /// anyone, with nothing on any screen to say why. Refused here rather than saved.
+  bool get _canSubmit => !widget.isSubmitting && _operatingDays.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -138,6 +149,12 @@ class _CreateRouteFormState extends State<CreateRouteForm> {
               ? null
               : (value) => setState(() => _defaultVehicleId = value),
         ),
+        const SizedBox(height: AdminSpacing.md),
+        OperatingDaysField(
+          value: _operatingDays,
+          enabled: !widget.isSubmitting,
+          onChanged: (value) => setState(() => _operatingDays = value),
+        ),
         const SizedBox(height: AdminSpacing.lg),
         Row(
           children: [
@@ -152,7 +169,7 @@ class _CreateRouteFormState extends State<CreateRouteForm> {
             Expanded(
               child: FilledButton(
                 key: const Key('route_form_submit_button'),
-                onPressed: widget.isSubmitting ? null : _submit,
+                onPressed: _canSubmit ? _submit : null,
                 child: widget.isSubmitting
                     ? OnboardingButtonSpinner(semanticsLabel: context.l10n.commonAddingSpinnerLabel)
                     : Text(context.l10n.commonAddButton),

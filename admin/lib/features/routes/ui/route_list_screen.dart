@@ -14,6 +14,7 @@ import '../bloc/route_list_state.dart';
 import '../domain/route_models.dart';
 import '../widgets/create_route_form.dart';
 import 'route_crew_dialog.dart';
+import 'route_edit_dialog.dart';
 import 'route_stops_dialog.dart';
 
 /// A-30 — Route list: the school's standing routes (RTE-001). Reached only by roles holding
@@ -100,12 +101,14 @@ class _RouteListScreenState extends State<RouteListScreen> {
                         required String code,
                         required String name,
                         String? defaultVehicleId,
+                        required String operatingDays,
                       }) {
                         bloc.add(RouteCreated(
                           schoolId: schoolId,
                           code: code,
                           name: name,
                           defaultVehicleId: defaultVehicleId,
+                          operatingDays: operatingDays,
                         ));
                       },
                     ),
@@ -196,6 +199,18 @@ _AddRouteButton(
                       context: context,
                       builder: (_) => RouteStopsDialog(route: route),
                     ),
+                    onEditRoute: (route) => showDialog<void>(
+                      context: context,
+                      // The bloc is provided explicitly: showDialog builds under the navigator,
+                      // not under this subtree, so the dialog cannot read it from context.
+                      builder: (_) => BlocProvider<RouteListBloc>.value(
+                        value: context.read<RouteListBloc>(),
+                        child: RouteEditDialog(
+                          route: route,
+                          schoolId: _selectedSchoolId!,
+                        ),
+                      ),
+                    ),
                   );
                 },
               ),
@@ -212,11 +227,13 @@ class _RouteTable extends StatelessWidget {
     required this.routes,
     required this.onOpenRoute,
     required this.onOpenStops,
+    required this.onEditRoute,
   });
 
   final List<CreatedRoute> routes;
   final ValueChanged<CreatedRoute> onOpenRoute;
   final ValueChanged<CreatedRoute> onOpenStops;
+  final ValueChanged<CreatedRoute> onEditRoute;
 
   @override
   Widget build(BuildContext context) {
@@ -239,10 +256,22 @@ class _RouteTable extends StatelessWidget {
             key: Key('route_list_row_${route.id}'),
             minVerticalPadding: AdminSpacing.md,
             title: Text(route.name),
-            subtitle: Text(route.code),
+            // The days it runs sit beside the code, because "which bus is this" and "does it
+            // run on Saturday" are asked together, and a route that runs fewer than five days
+            // is the case an operator most needs to spot at a glance (BR-TRIP-011).
+            subtitle: Text(
+              '${route.code} · ${context.l10n.routeListOperatingDaysColumn}: '
+              '${route.operatingDayCodes.join(', ')}',
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  key: Key('route_list_edit_${route.id}'),
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: context.l10n.routeListEditTooltip,
+                  onPressed: () => onEditRoute(route),
+                ),
                 IconButton(
                   key: Key('route_list_stops_${route.id}'),
                   icon: const Icon(Icons.alt_route_outlined),

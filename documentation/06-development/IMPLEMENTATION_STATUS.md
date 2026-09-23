@@ -11,7 +11,7 @@ It is maintained by hand and is only as current as its date. When a module lands
 that lands it updates this file — that is part of the
 [Definition of Done](DEFINITION_OF_DONE.md), not a follow-up.
 
-**Last verified:** 2026-09-22, by reading source rather than documentation.
+**Last verified:** 2026-09-23, by reading source rather than documentation.
 
 ---
 
@@ -35,7 +35,7 @@ that lands it updates this file — that is part of the
 | MOD-04 Guardians | `com.guardian.guardian` | ✅ | Guardian links with rights, pickup persons, custody restrictions. Linking a guardian provisions their login in the same transaction |
 | MOD-05 Fleet | `com.guardian.fleet` | ✅ | Vehicles, documents with expiry, GPS device registration. Device *registration* only — see MOD-10 |
 | MOD-06 Transport Staff | `com.guardian.staff` | ✅ | Staff, credentials, verification, duty assignments, eligibility |
-| MOD-07 Routes & Stops | `com.guardian.routes` | ✅ | Routes, stops with timetable, student assignment, operating days and school calendar (V22) |
+| MOD-07 Routes & Stops | `com.guardian.routes` | ✅ | Routes (create **and edit**), stops with timetable, student assignment, operating days (V22). `school_calendar_exceptions` exists but has **no endpoint and no screen** — holidays can only be set in SQL today. Route *deactivation* is still unbuilt (BR-ROUTE-007) |
 | **MOD-08 Trip Execution** | `com.guardian.trip` | 🟡 | **Generation, start, end, cancel and manifest materialisation are built.** No `close` — closing requires reconciliation, which is MOD-09. No `trip_staff` table, so per-trip crew substitution (BR-STAFF-006) is unsupported; the standing roster is used instead |
 | MOD-09 Boarding | `com.guardian.boarding` | 🟡 | Handover **code issuance** only (P-12). Boarding and alighting events, handover redemption, and trip-close reconciliation are **not built** — this is the largest remaining gap |
 | MOD-10 Tracking | — | ⛔ | No module. No position ingestion, no live position, no ETA, no history. ADR-0004 is still `Proposed` |
@@ -89,10 +89,11 @@ This is the client half of the MOD-09 gap.
 | A-10 Students (+ guardians, custody, transport, route assignment) | ✅ |
 | A-20 Vehicles | ✅ |
 | A-23 Staff | ✅ |
-| A-30 Routes (+ stops, crew) | ✅ |
+| A-30 Routes (+ stops, crew, operating days) | ✅ |
 | A-43 Users · A-44 Roles (read-only reference) | ✅ |
 | A-54 Audit trail · A-55 Override register | ✅ |
 | A-62 Platform health | ✅ |
+| School holiday calendar | ⛔ — the table exists (V22); no API, no screen, so a holiday can only be set in SQL |
 | Trip day view, live map, configuration, notification templates, region profiles | ⛔ |
 
 **The admin console is not what blocks the parent app.** Every piece of setup data the parent app
