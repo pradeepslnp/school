@@ -24,7 +24,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -120,10 +119,12 @@ public class StartTripUseCase {
     requireEntitledToStart(trip, staffId, command.actorRole());
 
     if (command.vehicleId() == null) {
+      // Not an eligibility failure — nothing was named to check. A missing required field is a
+      // 400, and the DTO's @NotNull catches it first for any caller that goes through the API.
       throw new BusinessRuleViolationException(
-          ErrorCode.TRIP_VEHICLE_NOT_ELIGIBLE,
+          ErrorCode.VALIDATION_REQUIRED_FIELD_MISSING,
           "BR-TRIP-004",
-          Map.of("reason", "A trip cannot start without the vehicle that is running it"));
+          Map.of("field", "vehicleId"));
     }
     requireVehicleEligible(command.vehicleId());
     staffId.ifPresent(this::requireCrewEligible);
@@ -152,7 +153,7 @@ public class StartTripUseCase {
       // Another caller started it between the read above and this update. The guarded UPDATE is
       // what makes that safe; this is how the loser is told.
       throw new BusinessRuleViolationException(
-          ErrorCode.TRIP_INVALID_TRANSITION,
+          ErrorCode.TRIP_INVALID_STATUS_TRANSITION,
           "BR-TRIP-002",
           Map.of("reason", "This trip was started by someone else a moment ago"));
     }
@@ -181,7 +182,7 @@ public class StartTripUseCase {
   private void requireTransitionAllowed(Trip trip, TripStatus target) {
     if (!trip.status().canTransitionTo(target)) {
       throw new BusinessRuleViolationException(
-          ErrorCode.TRIP_INVALID_TRANSITION,
+          ErrorCode.TRIP_INVALID_STATUS_TRANSITION,
           "BR-TRIP-002",
           Map.of(
               "currentStatus", trip.status().name(),
@@ -204,58 +205,87 @@ public class StartTripUseCase {
     boolean rostered = staffId.map(id -> trips.isRosteredCrewFor(trip.id(), id)).orElse(false);
     if (!rostered) {
       throw new BusinessRuleViolationException(
-          ErrorCode.TRIP_NOT_ASSIGNED_CREW,
+          ErrorCode.TRIP_NOT_AUTHORISED_ACTOR,
           "BR-TRIP-006",
           Map.of("tripId", trip.id().toString()));
     }
   }
 
+  /**
+   * BR-TRIP-004, vehicle half — refused with the <em>specific</em> failing check.
+   *
+   * <p>ERROR_CATALOG.md states the reason plainly: "A generic 'cannot start trip' at 6:30 AM is
+   * not actionable." A driver told the fitness certificate expired can phone the office and be
+   * given another bus; a driver told "not eligible" can only stand there.
+   */
   private void requireVehicleEligible(UUID vehicleId) {
     VehicleEligibilityResult result = vehicleEligibility.execute(VehicleId.of(vehicleId));
-    if (!result.eligible()) {
-      throw new BusinessRuleViolationException(
-          ErrorCode.TRIP_VEHICLE_NOT_ELIGIBLE,
-          "BR-FLEET-002",
-          Map.of(
-              "vehicleId", vehicleId.toString(),
-              "failedChecks",
-                  result.checks().stream()
-                      .filter(check -> !check.passed())
-                      .map(check -> check.check())
-                      .collect(Collectors.joining(", "))));
+    if (result.eligible()) {
+      return;
     }
+
+    String failed =
+        result.checks().stream()
+            .filter(check -> !check.passed())
+            .map(check -> check.check())
+            .findFirst()
+            .orElse("");
+
+    ErrorCode code =
+        switch (failed) {
+          case "VEHICLE_ACTIVE" -> ErrorCode.VEHICLE_NOT_ACTIVE;
+          case "MANDATORY_DOCUMENTS_VALID" -> ErrorCode.VEHICLE_DOCUMENT_EXPIRED;
+          // A check MOD-05 adds later, before this switch learns about it. Falling back to the
+          // documents code would name the wrong cause, so the generic vehicle code is used and
+          // the detail still carries the check's own name.
+          default -> ErrorCode.VEHICLE_NOT_ACTIVE;
+        };
+
+    throw new BusinessRuleViolationException(
+        code,
+        "BR-FLEET-002",
+        Map.of("vehicleId", vehicleId.toString(), "failedCheck", failed));
   }
 
+  /** BR-TRIP-004, crew half. Same reasoning as the vehicle half above. */
   private void requireCrewEligible(UUID staffId) {
     StaffEligibilityResult result = staffEligibility.execute(StaffId.of(staffId));
-    if (!result.eligible()) {
-      throw new BusinessRuleViolationException(
-          ErrorCode.TRIP_CREW_NOT_ELIGIBLE,
-          "BR-STAFF-001",
-          Map.of(
-              "staffId", staffId.toString(),
-              "failedChecks",
-                  result.checks().stream()
-                      .filter(check -> !check.passed())
-                      .map(check -> check.check())
-                      .collect(Collectors.joining(", "))));
+    if (result.eligible()) {
+      return;
     }
+
+    String failed =
+        result.checks().stream()
+            .filter(check -> !check.passed())
+            .map(check -> check.check())
+            .findFirst()
+            .orElse("");
+
+    ErrorCode code =
+        switch (failed) {
+          case "STAFF_VERIFIED" -> ErrorCode.STAFF_NOT_VERIFIED;
+          case "MANDATORY_CREDENTIALS_VALID" -> ErrorCode.STAFF_LICENCE_EXPIRED;
+          default -> ErrorCode.STAFF_NOT_VERIFIED;
+        };
+
+    throw new BusinessRuleViolationException(
+        code, "BR-STAFF-001", Map.of("staffId", staffId.toString(), "failedCheck", failed));
   }
 
   private void requireNotAlreadyOut(StartTripCommand command, Optional<UUID> staffId) {
     if (trips.vehicleIsOnAnotherTrip(command.vehicleId(), command.tripId())) {
       throw new BusinessRuleViolationException(
-          ErrorCode.TRIP_RESOURCE_ALREADY_ON_TRIP,
+          ErrorCode.TRIP_VEHICLE_ON_ANOTHER_TRIP,
           "BR-TRIP-005",
-          Map.of("resource", "vehicle", "vehicleId", command.vehicleId().toString()));
+          Map.of("vehicleId", command.vehicleId().toString()));
     }
     staffId.ifPresent(
         id -> {
           if (trips.staffIsOnAnotherTrip(id, command.tripId())) {
             throw new BusinessRuleViolationException(
-                ErrorCode.TRIP_RESOURCE_ALREADY_ON_TRIP,
-                "BR-TRIP-005",
-                Map.of("resource", "crew", "staffId", id.toString()));
+                ErrorCode.STAFF_ALREADY_ON_ACTIVE_TRIP,
+                "BR-STAFF-004",
+                Map.of("staffId", id.toString()));
           }
         });
   }

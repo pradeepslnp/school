@@ -14,7 +14,7 @@
 | Method | Path | Feature | Permission | Rules | Built |
 |---|---|---|---|---|---|
 | `GET` | `/trips?schoolId=&serviceDate=` | TRP-004 | `PERM-TRIP-VIEW` | BR-IAM-006, BR-TRACK-002 | ✅ |
-| `GET` | `/trips/mine?serviceDate=` | TRP-004 | `PERM-TRIP-VIEW` | BR-IAM-006 | ✅ |
+| `GET` | `/trips/mine?serviceDate=` | TRP-004 | `PERM-TRIP-VIEW` | BR-IAM-006, BR-TRIP-004 | ✅ |
 | `POST` | `/trips/generate?serviceDate=` | TRP-001 | `PERM-ROUTE-MANAGE` | BR-TRIP-011 | ✅ |
 | `GET` | `/trips/{id}` | TRP-004 | `PERM-TRIP-VIEW` | | |
 | `POST` | `/trips/{id}/start` | TRP-002 | `PERM-TRIP-START` | BR-TRIP-004/005/006 | ✅ |
@@ -47,6 +47,28 @@ It never touches a trip that already exists. A run a transport manager cancelled
 ### `GET /trips`
 
 Guardian scope returns **only trips carrying one of their children** (BR-TRACK-002). A guardian requesting an arbitrary trip ID receives `403`.
+
+### `GET /trips/mine`
+
+The crew's own runs for a date, and the screen the driver app opens onto. Takes **no identifier** — an endpoint that accepted a staff id could be asked about somebody else's day.
+
+Each run carries its route's code and name, its stop count, and the vehicle the route normally uses:
+
+```json
+{ "id": "…", "routeCode": "R3", "routeName": "Green Park", "stopCount": "9",
+  "direction": "PICKUP", "status": "SCHEDULED", "scheduledStartTime": "07:15",
+  "vehicleId": null,
+  "expectedVehicleId": "…", "expectedVehicleDisplayName": "Bus 12",
+  "expectedVehicleRegistrationNo": "KA 05 MJ 1234" }
+```
+
+`expectedVehicle*` exists for one reason: a `DRIVER` holds no `PERM-VEHICLE-VIEW` (`PERMISSION_MATRIX.md`), so the app cannot list buses for the crew to choose from. It shows the route's usual bus and asks the driver to confirm it against the one in front of them — **confirming is still choosing**, which is what BR-TRIP-004 asks for, and it is why the app's start button reads *"Start · Bus 12 (KA 05 MJ 1234)"* rather than a bare "Start".
+
+It is null when the route has no default vehicle. The app then shows that the run cannot start and says to call the office, instead of offering a start the server would refuse.
+
+**Not yet answerable: "a different bus today."** With no vehicle-list permission and no registration lookup, a crew running a substitute vehicle cannot name it from the handset. Until that is decided, a substitution is a transport manager starting the trip from the console.
+
+`vehicleId` is the bus **actually** running the trip, and stays null until it starts.
 
 ### `POST /trips/{id}/start`
 

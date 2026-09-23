@@ -1,5 +1,6 @@
 package com.guardian.trip.infrastructure.persistence;
 
+import com.guardian.trip.application.port.CrewTrip;
 import com.guardian.trip.application.port.TripRepository;
 import com.guardian.trip.domain.ScheduledRun;
 import com.guardian.trip.domain.Trip;
@@ -102,27 +103,52 @@ public class JdbcTripRepository implements TripRepository {
   }
 
   @Override
-  public List<Trip> findForStaffOnDate(UUID staffId, LocalDate serviceDate) {
+  public List<CrewTrip> findForStaffOnDate(UUID staffId, LocalDate serviceDate) {
     // The standing roster, not a per-trip crew table — trip_staff does not exist yet (V13 notes
     // the same). A duty assignment with a null direction covers both runs, which is how most crew
     // are rostered.
+    //
+    // The joins to routes and vehicles carry the run's identity and the bus it normally uses:
+    // a DRIVER holds no PERM-VEHICLE-VIEW, so the app has no other way to name the vehicle it is
+    // about to ask them to confirm. LEFT JOIN on the vehicle — a route with no default is a real
+    // state, and the app says so rather than showing a blank chip.
     return jdbc.query(
-        SELECT_COLUMNS
-            + """
-             WHERE service_date = ?
-               AND EXISTS (
-                   SELECT 1
-                   FROM duty_assignments da
-                   WHERE da.route_id = trips.route_id
-                     AND da.staff_id = ?
-                     AND da.is_active
-                     AND (da.direction IS NULL OR da.direction = trips.direction)
-                     AND da.effective_from <= trips.service_date
-                     AND (da.effective_until IS NULL OR da.effective_until >= trips.service_date)
-               )
-             ORDER BY scheduled_start_time NULLS LAST, direction
-            """,
-        MAPPER,
+        """
+        SELECT t.id, t.school_id, t.route_id, t.vehicle_id, t.service_date, t.direction, t.status,
+               t.scheduled_start_time, t.started_at, t.ended_at, t.closed_at, t.device_started_at,
+               t.cancelled_reason,
+               r.code AS route_code,
+               r.name AS route_name,
+               (SELECT count(*) FROM stops s WHERE s.route_id = r.id AND s.is_active)
+                   AS stop_count,
+               dv.id              AS expected_vehicle_id,
+               dv.display_name    AS expected_vehicle_display_name,
+               dv.registration_no AS expected_vehicle_registration_no
+        FROM trips t
+        JOIN routes r ON r.id = t.route_id
+        LEFT JOIN vehicles dv ON dv.id = r.default_vehicle_id
+        WHERE t.service_date = ?
+          AND EXISTS (
+              SELECT 1
+              FROM duty_assignments da
+              WHERE da.route_id = t.route_id
+                AND da.staff_id = ?
+                AND da.is_active
+                AND (da.direction IS NULL OR da.direction = t.direction)
+                AND da.effective_from <= t.service_date
+                AND (da.effective_until IS NULL OR da.effective_until >= t.service_date)
+          )
+        ORDER BY t.scheduled_start_time NULLS LAST, t.direction
+        """,
+        (rs, rowNum) ->
+            new CrewTrip(
+                MAPPER.mapRow(rs, rowNum),
+                rs.getString("route_code"),
+                rs.getString("route_name"),
+                String.valueOf(rs.getInt("stop_count")),
+                rs.getObject("expected_vehicle_id", UUID.class),
+                rs.getString("expected_vehicle_display_name"),
+                rs.getString("expected_vehicle_registration_no")),
         serviceDate,
         staffId);
   }

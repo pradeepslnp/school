@@ -66,7 +66,7 @@ public class CancelTripUseCase {
 
     if (!trip.status().canTransitionTo(TripStatus.CANCELLED)) {
       throw new BusinessRuleViolationException(
-          ErrorCode.TRIP_INVALID_TRANSITION,
+          ErrorCode.TRIP_INVALID_STATUS_TRANSITION,
           "BR-TRIP-002",
           Map.of(
               "currentStatus", trip.status().name(),
@@ -78,7 +78,7 @@ public class CancelTripUseCase {
     boolean moved = trips.transition(tripId, trip.status(), TripStatus.CANCELLED, at, trimmed);
     if (!moved) {
       throw new BusinessRuleViolationException(
-          ErrorCode.TRIP_INVALID_TRANSITION,
+          ErrorCode.TRIP_INVALID_STATUS_TRANSITION,
           "BR-TRIP-002",
           Map.of("reason", "This trip changed status a moment ago"));
     }

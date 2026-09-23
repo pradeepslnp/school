@@ -184,6 +184,8 @@ Each of these names the exact failing check. A generic "cannot start trip" at 6:
 | `TRIP_AMENDMENT_REASON_REQUIRED` | 422 | BR-AUD-004 | |
 | `TRIP_RECONCILIATION_INCOMPLETE` | 422 | BR-TRIP-009, BR-SAFE-001 🔴 | **Cannot close with an unaccounted child** |
 | `TRIP_NOT_AUTHORISED_ACTOR` | 403 | BR-TRIP-006 | |
+| `TRIP_NOT_FOUND` | 404 | | Not found, or not visible to the caller at all |
+| `TRIP_MANIFEST_EMPTY` | 422 | BR-TRIP-003 🔴 | Start refused: no student is assigned to this route for this direction, or every one is declared absent. Reachable only since trips are generated ahead of the day they run (BR-TRIP-011) — a timetable or assignment mistake, far better caught at 06:30 than at reconciliation |
 
 ---
 

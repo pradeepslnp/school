@@ -5,7 +5,7 @@ real source of truth. `lib/l10n/app_kn.arb` currently carries the **same English
 explicit, tracked placeholder for every key — not a silent gap, not an inline `TODO`. This
 file is that tracking. Every key below has `pending-kn-translation` unless noted otherwise.
 
-**Total resource keys: 46.** Both ARB files carry all 46 (verified: `app_kn.arb` mirrors
+**Total resource keys: 74.** Both ARB files carry all 74 (verified: `app_kn.arb` mirrors
 `app_en.arb` key-for-key).
 
 **When Kannada translation happens:** update the value in `app_kn.arb` and change that row's
@@ -47,6 +47,25 @@ call is documented, not hidden.
 
 ## Everything else — pending-kn-translation, standard review
 
+### Crew's day — trips (MOD-08, TRP-002/004)
+
+Added with the driver's Today screen. The refusal strings are listed as **safety-relevant**:
+each one is the reason a crew member is being stopped from driving, and a mistranslation that
+softens "you cannot drive this run" into something ambiguous is how an unfit driver sets off.
+
+| Key | English value | Kannada status |
+|---|---|---|
+| `dutyErrorLicenceExpired` | `Your licence has expired. Call the office — you cannot drive this run.` | pending-kn-translation — native-speaker review required |
+| `dutyErrorLicenceClass` | `Your licence class does not cover this vehicle. Call the office.` | pending-kn-translation — native-speaker review required |
+| `dutyErrorNotVerified` | `Your record is not verified yet. Call the office — you cannot start a run.` | pending-kn-translation — native-speaker review required |
+| `dutyErrorVerificationLapsed` | `Your verification has lapsed. Call the office — you cannot start a run.` | pending-kn-translation — native-speaker review required |
+| `dutyErrorVehicleDocumentExpired` | `This bus cannot carry children: a document has expired. Call the office for another vehicle.` | pending-kn-translation — native-speaker review required |
+| `dutyErrorManifestEmpty` | `No children are expected on this run. Check with the office before driving it.` | pending-kn-translation — native-speaker review required |
+| `dutyErrorNotCrew` | `This sign-in is not linked to a staff record…` | pending-kn-translation |
+| `dutyStartTripWithVehicle` · `dutyEndTrip` · `dutyNoVehicleOnRoute` · `dutyTripFinished` · `dutyTripCancelled` | run controls | pending-kn-translation |
+| `dutyDirection*` · `dutyStatus*` · `dutyStopCount` | run labels | pending-kn-translation |
+| `dutyNoRunsTitle` · `dutyNoRunsExplanation` · `dutyError*` (remaining) | empty state and refusals | pending-kn-translation |
+
 ### General / duty screen
 
 | Key | English value |
@@ -55,8 +74,6 @@ call is documented, not hidden.
 | `signOut` | `Sign out` |
 | `launchScreenStartingLabel` | `Starting` |
 | `dutyScreenTitle` | `Today` |
-| `dutyScreenNoTripLoaded` | `No trip loaded` |
-| `dutyScreenSignedInGeneric` | `Signed in.` |
 | `dutyScreenSignedInAs` | `Signed in as {name}.` |
 | `signOutDialogTitle` | `Sign out?` |
 | `signOutDialogBodyNoPending` | `Records on this device will be erased.` |

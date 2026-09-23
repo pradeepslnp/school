@@ -38,13 +38,13 @@ public interface TripRepository {
   List<Trip> findBySchoolAndDate(UUID schoolId, LocalDate serviceDate);
 
   /**
-   * The trips the given staff member is crewed for on a date, across every school they serve.
+   * The trips the given staff member is crewed for on a date, with the context the app needs.
    *
    * <p>Resolved through {@code duty_assignments} — the standing roster — rather than through a
    * per-trip crew table, which does not exist yet (V13 notes the same thing). A driver opening the
    * app sees the runs their roster says they are on.
    */
-  List<Trip> findForStaffOnDate(UUID staffId, LocalDate serviceDate);
+  List<CrewTrip> findForStaffOnDate(UUID staffId, LocalDate serviceDate);
 
   /**
    * Moves a trip to {@code IN_PROGRESS}, recording the vehicle and both clocks.

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'app/app_config.dart';
 import 'app/dependencies.dart';
@@ -7,6 +8,8 @@ import 'app/theme.dart';
 import 'core/session/session_manager.dart';
 import 'features/login/ui/login_route.dart';
 import 'features/sync/widgets/live_sync_status_banner.dart';
+import 'features/trips/bloc/duty_bloc.dart';
+import 'features/trips/ui/duty_screen.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/l10n_extensions.dart';
 
@@ -147,35 +150,29 @@ class _DutyScreen extends StatelessWidget {
       body: Column(
         children: [
           const LiveSyncStatusBanner(),
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(DriverSpacing.xl),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.directions_bus_outlined,
-                      size: 56,
-                      color: theme.colorScheme.outline,
-                    ),
-                    const SizedBox(height: DriverSpacing.md),
-                    Text(
-                      l10n.dutyScreenNoTripLoaded,
-                      style: theme.textTheme.titleLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: DriverSpacing.sm),
-                    Text(
-                      user == null
-                          ? l10n.dutyScreenSignedInGeneric
-                          : l10n.dutyScreenSignedInAs(user.displayName),
-                      style: theme.textTheme.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+          if (user != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DriverSpacing.md,
+                vertical: DriverSpacing.sm,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.dutyScreenSignedInAs(user.displayName),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
+            ),
+          Expanded(
+            child: BlocProvider<DutyBloc>(
+              create: (_) => DutyBloc(
+                repository: dependencies.tripRepository,
+                clock: dependencies.clock,
+              ),
+              child: const DutyBody(),
             ),
           ),
         ],

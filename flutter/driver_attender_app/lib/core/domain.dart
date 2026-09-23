@@ -78,6 +78,11 @@ enum ErrorCode {
   tripAmendmentReasonRequired,
   tripReconciliationIncomplete,
   tripNotAuthorisedActor,
+  tripNotFound,
+  /// BR-TRIP-003 🔴 — the run has no children on it: nobody assigned to the route for this
+  /// direction, or every one of them declared absent. A timetable or assignment mistake, and the
+  /// crew is told at the kerb rather than at reconciliation.
+  tripManifestEmpty,
 
   // --- Trip-start eligibility gate (BR-TRIP-004) ---
   //
@@ -152,6 +157,8 @@ enum ErrorCode {
         'TRIP_AMENDMENT_REASON_REQUIRED' => tripAmendmentReasonRequired,
         'TRIP_RECONCILIATION_INCOMPLETE' => tripReconciliationIncomplete,
         'TRIP_NOT_AUTHORISED_ACTOR' => tripNotAuthorisedActor,
+        'TRIP_NOT_FOUND' => tripNotFound,
+        'TRIP_MANIFEST_EMPTY' => tripManifestEmpty,
         'VEHICLE_DOCUMENT_EXPIRED' => vehicleDocumentExpired,
         'VEHICLE_NOT_ACTIVE' => vehicleNotActive,
         'VEHICLE_CAPACITY_EXCEEDED' => vehicleCapacityExceeded,

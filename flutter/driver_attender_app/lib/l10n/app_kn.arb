@@ -5,8 +5,6 @@
   "signOut": "Sign out",
   "launchScreenStartingLabel": "Starting",
   "dutyScreenTitle": "Today",
-  "dutyScreenNoTripLoaded": "No trip loaded",
-  "dutyScreenSignedInGeneric": "Signed in.",
   "dutyScreenSignedInAs": "Signed in as {name}.",
   "signOutDialogTitle": "Sign out?",
   "signOutDialogBodyNoPending": "Records on this device will be erased.",
@@ -46,5 +44,82 @@
   "languagePickerTitle": "Language",
   "languageOptionSystemDefault": "Match device",
   "languageOptionEnglish": "English",
-  "languageOptionKannada": "ಕನ್ನಡ"
+  "languageOptionKannada": "ಕನ್ನಡ",
+
+  "dutyStartTripWithVehicle": "Start · {vehicle} ({registration})",
+  "@dutyStartTripWithVehicle": {
+    "description": "The start button names the bus so the driver confirms it against the one in front of them (BR-TRIP-004).",
+    "placeholders": {
+      "vehicle": {
+        "type": "String"
+      },
+      "registration": {
+        "type": "String"
+      }
+    }
+  },
+  "dutyEndTrip": "End run",
+  "dutyNoVehicleOnRoute": "This route has no bus on file. Call the transport office — the run cannot start until one is set.",
+  "dutyTripFinished": "This run is finished.",
+  "dutyTripCancelled": "Cancelled: {reason}",
+  "@dutyTripCancelled": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "dutyDirectionPickup": "Morning pickup",
+  "dutyDirectionDrop": "Afternoon drop",
+  "dutyDirectionUnknown": "Run",
+  "dutyStatusScheduled": "Not started",
+  "dutyStatusInProgress": "Running",
+  "dutyStatusCompleted": "Ended",
+  "dutyStatusClosed": "Closed",
+  "dutyStatusCancelled": "Cancelled",
+  "dutyStatusUnknown": "Unknown status — update the app",
+  "dutyStopCount": "{count} stops",
+  "@dutyStopCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "dutyNoRunsTitle": "No runs for you today",
+  "dutyNoRunsExplanation": "A run appears here when you are on the route's crew list, the route runs today, and the office has generated today's trips.",
+  "dutyErrorNotCrew": "This sign-in is not linked to a staff record, so it has no runs. The office needs to add you under Staff, not just as a user.",
+  "@dutyErrorNotCrew": {
+    "description": "Safety-relevant: distinguishes 'you are not crew' from 'you have no runs', which look identical on an empty screen."
+  },
+  "dutyErrorAlreadyChanged": "This run already changed — someone else may have started or ended it. Pull down to refresh.",
+  "dutyErrorManifestEmpty": "No children are expected on this run. Check with the office before driving it.",
+  "@dutyErrorManifestEmpty": {
+    "description": "Safety-relevant (BR-TRIP-003): an empty manifest means the run would record nothing."
+  },
+  "dutyErrorVehicleBusy": "That bus is already out on another run.",
+  "dutyErrorCrewBusy": "You are already on a run that has not ended.",
+  "dutyErrorVehicleDocumentExpired": "This bus cannot carry children: a document has expired. Call the office for another vehicle.",
+  "@dutyErrorVehicleDocumentExpired": {
+    "description": "Safety-relevant (BR-FLEET-002)."
+  },
+  "dutyErrorVehicleNotActive": "This bus is not in service. Call the office for another vehicle.",
+  "dutyErrorLicenceExpired": "Your licence has expired. Call the office — you cannot drive this run.",
+  "@dutyErrorLicenceExpired": {
+    "description": "Safety-relevant (BR-STAFF-001)."
+  },
+  "dutyErrorLicenceClass": "Your licence class does not cover this vehicle. Call the office.",
+  "@dutyErrorLicenceClass": {
+    "description": "Safety-relevant (BR-STAFF-001)."
+  },
+  "dutyErrorNotVerified": "Your record is not verified yet. Call the office — you cannot start a run.",
+  "@dutyErrorNotVerified": {
+    "description": "Safety-relevant (BR-STAFF-002)."
+  },
+  "dutyErrorVerificationLapsed": "Your verification has lapsed. Call the office — you cannot start a run.",
+  "@dutyErrorVerificationLapsed": {
+    "description": "Safety-relevant (BR-STAFF-002)."
+  },
+  "dutyErrorOffline": "No connection. Your runs will appear when the signal comes back.",
+  "dutyErrorGeneric": "That did not work. Pull down to refresh, and call the office if it keeps happening."
 }

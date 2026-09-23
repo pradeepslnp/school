@@ -144,7 +144,7 @@ class StartTripUseCaseTest {
     assertThatThrownBy(() -> useCase.execute(command()))
         .isInstanceOf(BusinessRuleViolationException.class)
         .extracting(e -> ((BusinessRuleViolationException) e).errorCode())
-        .isEqualTo(ErrorCode.TRIP_INVALID_TRANSITION);
+        .isEqualTo(ErrorCode.TRIP_INVALID_STATUS_TRANSITION);
 
     verify(manifests, never()).materialiseFor(any());
     verify(audit, never()).record(any());
@@ -160,7 +160,7 @@ class StartTripUseCaseTest {
     assertThatThrownBy(() -> useCase.execute(command()))
         .isInstanceOf(BusinessRuleViolationException.class)
         .extracting(e -> ((BusinessRuleViolationException) e).errorCode())
-        .isEqualTo(ErrorCode.TRIP_NOT_ASSIGNED_CREW);
+        .isEqualTo(ErrorCode.TRIP_NOT_AUTHORISED_ACTOR);
 
     verify(trips, never()).start(any(), any(), any(), any());
   }
@@ -185,7 +185,7 @@ class StartTripUseCaseTest {
   }
 
   @Test
-  @DisplayName("an ineligible vehicle blocks the start and names the failed check")
+  @DisplayName("an expired vehicle document blocks the start and names that exact check")
   void refusesIneligibleVehicle() {
     when(trips.findById(TRIP)).thenReturn(Optional.of(tripWith(TripStatus.SCHEDULED)));
     when(crew.staffIdForUser(DRIVER_USER)).thenReturn(Optional.of(DRIVER_STAFF));
@@ -201,7 +201,7 @@ class StartTripUseCaseTest {
     assertThatThrownBy(() -> useCase.execute(command()))
         .isInstanceOf(BusinessRuleViolationException.class)
         .extracting(e -> ((BusinessRuleViolationException) e).errorCode())
-        .isEqualTo(ErrorCode.TRIP_VEHICLE_NOT_ELIGIBLE);
+        .isEqualTo(ErrorCode.VEHICLE_DOCUMENT_EXPIRED);
 
     verify(manifests, never()).materialiseFor(any());
   }
@@ -233,7 +233,7 @@ class StartTripUseCaseTest {
     assertThatThrownBy(() -> useCase.execute(command()))
         .isInstanceOf(BusinessRuleViolationException.class)
         .extracting(e -> ((BusinessRuleViolationException) e).errorCode())
-        .isEqualTo(ErrorCode.TRIP_INVALID_TRANSITION);
+        .isEqualTo(ErrorCode.TRIP_INVALID_STATUS_TRANSITION);
 
     verify(audit, never()).record(any());
   }
@@ -248,6 +248,19 @@ class StartTripUseCaseTest {
     assertThatThrownBy(() -> useCase.execute(command()))
         .isInstanceOf(BusinessRuleViolationException.class)
         .extracting(e -> ((BusinessRuleViolationException) e).errorCode())
-        .isEqualTo(ErrorCode.TRIP_RESOURCE_ALREADY_ON_TRIP);
+        .isEqualTo(ErrorCode.TRIP_VEHICLE_ON_ANOTHER_TRIP);
+  }
+
+  @Test
+  @DisplayName("a crew member already out on another run is refused with the staff code")
+  void refusesCrewAlreadyOnTrip() {
+    when(trips.findById(TRIP)).thenReturn(Optional.of(tripWith(TripStatus.SCHEDULED)));
+    givenRosteredDriverWithEligibleVehicle();
+    when(trips.staffIsOnAnotherTrip(DRIVER_STAFF, TRIP)).thenReturn(true);
+
+    assertThatThrownBy(() -> useCase.execute(command()))
+        .isInstanceOf(BusinessRuleViolationException.class)
+        .extracting(e -> ((BusinessRuleViolationException) e).errorCode())
+        .isEqualTo(ErrorCode.STAFF_ALREADY_ON_ACTIVE_TRIP);
   }
 }

@@ -16,6 +16,8 @@ import '../core/storage/secret_store.dart';
 import '../core/time/clock.dart';
 import '../features/login/data_provider/login_data_provider.dart';
 import '../features/login/repository/login_repository.dart';
+import '../features/trips/data_provider/trip_data_provider.dart';
+import '../features/trips/repository/trip_repository.dart';
 import 'app_config.dart';
 
 /// The app's composition root.
@@ -36,6 +38,7 @@ class AppDependencies {
     required this.loginRepository,
     required this.outboundQueue,
     required this.syncEngine,
+    required this.tripRepository,
     required this.localeController,
   });
 
@@ -48,6 +51,11 @@ class AppDependencies {
   final LoginRepository loginRepository;
   final OutboundQueue outboundQueue;
   final SyncEngine syncEngine;
+
+  /// The crew's runs (MOD-08). Online-only for now: starting a run is a decision the server
+  /// has to adjudicate (eligibility, double-booking, the start race), so unlike a boarding
+  /// event it cannot be queued and reconciled later.
+  final TripRepository tripRepository;
 
   /// The driver's language preference (ADR-0013). Loaded during [bootstrap], alongside the
   /// keychain and database reads it already awaits, so the first frame already renders in
@@ -133,6 +141,9 @@ class AppDependencies {
       loginRepository: loginRepository,
       outboundQueue: outboundQueue,
       syncEngine: syncEngine,
+      tripRepository: TripRepository(
+        dataProvider: TripDataProvider(client: restClient),
+      ),
       localeController: localeController,
     );
 

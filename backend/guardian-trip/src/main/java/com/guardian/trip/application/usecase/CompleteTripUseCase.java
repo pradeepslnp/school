@@ -63,7 +63,7 @@ public class CompleteTripUseCase {
 
     if (!trip.status().canTransitionTo(TripStatus.COMPLETED)) {
       throw new BusinessRuleViolationException(
-          ErrorCode.TRIP_INVALID_TRANSITION,
+          ErrorCode.TRIP_INVALID_STATUS_TRANSITION,
           "BR-TRIP-002",
           Map.of(
               "currentStatus", trip.status().name(),
@@ -78,7 +78,7 @@ public class CompleteTripUseCase {
         trips.transition(tripId, TripStatus.IN_PROGRESS, TripStatus.COMPLETED, endedAt, null);
     if (!moved) {
       throw new BusinessRuleViolationException(
-          ErrorCode.TRIP_INVALID_TRANSITION,
+          ErrorCode.TRIP_INVALID_STATUS_TRANSITION,
           "BR-TRIP-002",
           Map.of("reason", "This trip was ended by someone else a moment ago"));
     }
@@ -107,7 +107,7 @@ public class CompleteTripUseCase {
     boolean rostered = staffId.map(id -> trips.isRosteredCrewFor(trip.id(), id)).orElse(false);
     if (!rostered) {
       throw new BusinessRuleViolationException(
-          ErrorCode.TRIP_NOT_ASSIGNED_CREW,
+          ErrorCode.TRIP_NOT_AUTHORISED_ACTOR,
           "BR-TRIP-006",
           Map.of("tripId", trip.id().toString()));
     }

@@ -76,9 +76,13 @@ safety-critical copy are drafted and **held pending native-speaker sign-off** �
 
 ### Driver & attendant app (`flutter/driver_attender_app`)
 
-⛔ **Login and sync scaffolding only.** Two features exist (`login`, `sync`) and the only API calls
-are the three auth endpoints. There is no manifest screen, no boarding capture, no trip control.
-This is the client half of the MOD-09 gap.
+🟡 **Sign-in, sync scaffolding, and the crew's day.** `GET /trips/mine` is wired to a Today screen
+that lists the crew's runs and can **start** and **end** them, with the eligibility refusals shown
+one by one rather than as a generic "cannot start".
+
+Still ⛔: **no manifest screen and no boarding capture** — a crew can start a run and end it, but
+cannot record a single child boarding or alighting. That is the client half of the MOD-09 gap and
+it is what stands between the platform and its core safety claim.
 
 ### Admin console (`admin`)
 

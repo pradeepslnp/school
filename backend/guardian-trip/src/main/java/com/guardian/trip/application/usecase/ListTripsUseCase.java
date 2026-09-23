@@ -3,6 +3,7 @@ package com.guardian.trip.application.usecase;
 import com.guardian.common.error.BusinessRuleViolationException;
 import com.guardian.common.error.ErrorCode;
 import com.guardian.trip.application.port.CrewDirectory;
+import com.guardian.trip.application.port.CrewTrip;
 import com.guardian.trip.application.port.TripRepository;
 import com.guardian.trip.domain.Trip;
 import java.time.LocalDate;
@@ -48,13 +49,13 @@ public class ListTripsUseCase {
    * sends a driver looking for a rostering problem that does not exist.
    */
   @Transactional(readOnly = true)
-  public List<Trip> forCallingCrew(UUID actorUserId, LocalDate serviceDate) {
+  public List<CrewTrip> forCallingCrew(UUID actorUserId, LocalDate serviceDate) {
     UUID staffId =
         crew.staffIdForUser(actorUserId)
             .orElseThrow(
                 () ->
                     new BusinessRuleViolationException(
-                        ErrorCode.TRIP_NOT_ASSIGNED_CREW,
+                        ErrorCode.TRIP_NOT_AUTHORISED_ACTOR,
                         "BR-TRIP-006",
                         Map.of(
                             "reason",

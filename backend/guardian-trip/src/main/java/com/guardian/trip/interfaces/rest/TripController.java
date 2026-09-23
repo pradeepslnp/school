@@ -9,6 +9,7 @@ import com.guardian.trip.application.usecase.ListTripsUseCase;
 import com.guardian.trip.application.usecase.MaterialiseTripsUseCase;
 import com.guardian.trip.application.usecase.StartTripUseCase;
 import com.guardian.trip.interfaces.rest.dto.CancelTripRequest;
+import com.guardian.trip.interfaces.rest.dto.CrewTripResponse;
 import com.guardian.trip.interfaces.rest.dto.StartTripRequest;
 import com.guardian.trip.interfaces.rest.dto.TripGenerationResponse;
 import com.guardian.trip.interfaces.rest.dto.TripResponse;
@@ -84,7 +85,7 @@ public class TripController {
    */
   @GetMapping("/mine")
   @RequiresPermission("PERM-TRIP-VIEW")
-  public List<TripResponse> mine(
+  public List<CrewTripResponse> mine(
       @RequestParam(required = false)
           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate serviceDate,
@@ -92,7 +93,7 @@ public class TripController {
 
     LocalDate date = serviceDate == null ? LocalDate.now(clock) : serviceDate;
     return listTrips.forCallingCrew(actor.userId(), date).stream()
-        .map(TripResponse::from)
+        .map(CrewTripResponse::from)
         .toList();
   }
 

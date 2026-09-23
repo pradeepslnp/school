@@ -115,7 +115,7 @@ class CancelTripUseCaseTest {
     assertThatThrownBy(() -> useCase.execute(TRIP, "Breakdown", ACTOR, "TRANSPORT_MANAGER"))
         .isInstanceOf(BusinessRuleViolationException.class)
         .extracting(e -> ((BusinessRuleViolationException) e).errorCode())
-        .isEqualTo(ErrorCode.TRIP_INVALID_TRANSITION);
+        .isEqualTo(ErrorCode.TRIP_INVALID_STATUS_TRANSITION);
 
     verify(audit, never()).record(any());
   }
