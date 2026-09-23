@@ -45,8 +45,13 @@ class _ReplaceDutyFormState extends State<ReplaceDutyForm> {
   final _reason = TextEditingController();
   String? _staffId;
 
+  /// Everyone who could take this duty: the same role as the duty being replaced, and not the
+  /// person already on it. Filtering by role matters as much here as on the assign form — a
+  /// replacement is still a duty row, and the server refuses a mismatched one
+  /// (`STAFF_ROLE_MISMATCH`).
   late final List<CreatedStaff> _options = widget.staffOptions
-      .where((staff) => staff.id != widget.current.staffId)
+      .where((staff) =>
+          staff.id != widget.current.staffId && staff.staffType == widget.current.role)
       .toList(growable: false);
 
   @override
@@ -113,7 +118,8 @@ class _ReplaceDutyFormState extends State<ReplaceDutyForm> {
             for (final staff in _options)
               DropdownMenuItem<String>(
                 value: staff.id,
-                child: Text(l10n.dutyFormStaffOption(staff.displayName, staff.staffType)),
+                // No role suffix: every name here is the role named in the label above.
+                child: Text(staff.displayName),
               ),
           ],
           onChanged: widget.isSubmitting || _options.isEmpty

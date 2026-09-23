@@ -121,5 +121,64 @@
     "description": "Safety-relevant (BR-STAFF-002)."
   },
   "dutyErrorOffline": "No connection. Your runs will appear when the signal comes back.",
-  "dutyErrorGeneric": "That did not work. Pull down to refresh, and call the office if it keeps happening."
+  "dutyErrorGeneric": "That did not work. Pull down to refresh, and call the office if it keeps happening.",
+
+  "manifestOpenAction": "Children",
+  "@manifestOpenAction": {
+    "description": "Opens the run's manifest from its card on the Today screen."
+  },
+  "manifestAboardCount": "{aboard} aboard of {expected}",
+  "@manifestAboardCount": {
+    "description": "The count a crew checks at the end of a route. A non-zero aboard count on an empty bus is BR-SAFE-001's unaccounted child.",
+    "placeholders": {
+      "aboard": {
+        "type": "String"
+      },
+      "expected": {
+        "type": "String"
+      }
+    }
+  },
+  "manifestBoardAction": "On",
+  "@manifestBoardAction": {
+    "description": "Records a child boarding. Deliberately one short word — it is pressed with a thumb, in a queue, on a moving bus."
+  },
+  "manifestAlightAction": "Off",
+  "manifestStatusExpected": "Waiting",
+  "manifestStatusBoarded": "On board",
+  "manifestStatusAlighted": "Got off",
+  "manifestStatusNoShow": "Did not board",
+  "manifestStatusAbsent": "Absent today",
+  "manifestStatusUnknown": "Unknown — update the app",
+  "manifestPendingSync": "Saved on this device, not yet sent",
+  "@manifestPendingSync": {
+    "description": "Accessibility label for the queued marker. Says the record is safe, not that something failed."
+  },
+  "manifestConfirmAlightTitle": "Let {name} off?",
+  "@manifestConfirmAlightTitle": {
+    "description": "Safety-relevant: an alight recorded for the wrong child leaves a real one aboard while the platform believes they are home (BR-SAFE-001).",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "manifestConfirmAlightBody": "Only confirm once they are off the bus.",
+  "@manifestConfirmAlightBody": {
+    "description": "Safety-relevant (BR-SAFE-001)."
+  },
+  "manifestConfirmAlightAtStop": "Only confirm once they are off the bus at {stop}.",
+  "@manifestConfirmAlightAtStop": {
+    "description": "Safety-relevant (BR-SAFE-001).",
+    "placeholders": {
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "manifestConfirmAlightConfirm": "Yes, they are off",
+  "manifestUnavailable": "The children on this run could not be loaded. Pull down to try again — anything you record is saved on this device either way.",
+  "@manifestUnavailable": {
+    "description": "Safety-relevant: reassures the crew that the offline queue still holds their records (ADR-0008, BR-SAFE-005)."
+  }
 }

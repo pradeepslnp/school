@@ -5,7 +5,7 @@
 
 **The most safety-critical API surface in the platform.** Every endpoint here is audited; the boarding endpoints are append-only and idempotent by design.
 
-> **Implementation status.** The trip endpoints marked ✅ below are live (MOD-08). Everything under *Boarding* is still specified-only — MOD-09 owns handover code issuance and nothing else. [`IMPLEMENTATION_STATUS.md`](../06-development/IMPLEMENTATION_STATUS.md) is the single place that tracks this; the ✅ marks here are a convenience, not a second source of truth.
+> **Implementation status.** Endpoints marked ✅ are live. Trips (MOD-08) and boarding events with their offline batch (MOD-09) are built; **handover, corrections and reconciliation are not**. [`IMPLEMENTATION_STATUS.md`](../06-development/IMPLEMENTATION_STATUS.md) is the single place that tracks this; the ✅ marks here are a convenience, not a second source of truth.
 
 ---
 
@@ -21,7 +21,7 @@
 | `POST` | `/trips/{id}/end` | TRP-004 | `PERM-TRIP-END` | BR-TRIP-002 | ✅ |
 | `POST` | `/trips/{id}/close` | TRP-008 | `PERM-TRIP-CLOSE` | BR-TRIP-009, BR-SAFE-001 🔴 | |
 | `POST` | `/trips/{id}/cancel` | TRP-005 | `PERM-TRIP-CANCEL` | BR-TRIP-007 | ✅ |
-| `GET` | `/trips/{id}/manifest` | TRP-003 | `PERM-TRIP-VIEW` | BR-TRIP-003 | |
+| `GET` | `/trips/{id}/manifest` | TRP-003 | `PERM-TRIP-VIEW` | BR-TRIP-003 | ✅ |
 | `POST` | `/trips/{id}/manifest/amendments` | TRP-006 | `PERM-MANIFEST-AMEND` | BR-TRIP-003, BR-AUD-004 | |
 | `POST` | `/trips/{id}/staff` | STF-005 | `PERM-DUTY-ASSIGN` | BR-STAFF-006 | |
 
@@ -152,7 +152,7 @@ Records the outgoing and incoming crew and the handover time (BR-STAFF-006). Bot
 
 # Boarding 🔴
 
-## `POST /trips/{tripId}/boarding-events`
+## `POST /trips/{tripId}/boarding-events` ✅
 
 **Feature:** BRD-001, BRD-002, BRD-003, BRD-004 · **Permission:** `PERM-BOARDING-RECORD`
 
@@ -218,7 +218,7 @@ There is **no** `PUT`, `PATCH`, or `DELETE` on boarding events. Any such attempt
 
 Creates a **new** record with `correctsEventId` pointing at the original. Both remain visible — a mis-scan and its correction are two facts, and overwriting would destroy the second.
 
-## `POST /trips/{tripId}/boarding-events/batch`
+## `POST /trips/{tripId}/boarding-events/batch` ✅
 
 **Feature:** BRD-004 · Offline sync (ADR-0008)
 
@@ -242,6 +242,14 @@ Creates a **new** record with `correctsEventId` pointing at the original. Both r
 ```
 
 **`FLAGGED_FOR_REVIEW`, never rejected** (BR-SAFE-005 🔴). Where a client action contradicts server state, the record is accepted and flagged — losing a real safety record is worse than storing a questionable one.
+
+This inverts the single-event path deliberately, and the inversion is the design. Online, a refusal is useful: the crew is standing in front of the child and can fix it now — scan the right one, tap override, call the office. Offline, the event happened hours ago. The child boarded; refusing the record does not un-board them, it only destroys the evidence that they did. So every conflict here becomes a written row with `sync_state = 'FLAGGED_FOR_REVIEW'`, the refusing error code as its `reason`, and a person's problem.
+
+Each event commits on its own. One conflicting event in a batch of forty never discards the thirty-nine good ones — a stop produces a dozen records in under two minutes, and a busload syncing together is the case this endpoint exists for.
+
+### Device position
+
+`latitude`/`longitude` are stored on the event (V23, BR-BOARD-002) and are **optional**. A handset can have location off, be indoors, or be in a basement car park; refusing to record a child boarding because there is no GPS fix would trade a complete safety record for a precise one. Half a coordinate is refused by a database constraint — a row that looks located and is not is worse than an honestly empty one.
 
 ---
 

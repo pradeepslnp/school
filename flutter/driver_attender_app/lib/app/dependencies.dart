@@ -143,6 +143,10 @@ class AppDependencies {
       syncEngine: syncEngine,
       tripRepository: TripRepository(
         dataProvider: TripDataProvider(client: restClient),
+        // Boarding events are queued, never posted directly (ADR-0008) — the same queue the
+        // sync engine drains, so a record survives the app being killed at a kerb.
+        outboundQueue: outboundQueue,
+        clock: clock,
       ),
       localeController: localeController,
     );

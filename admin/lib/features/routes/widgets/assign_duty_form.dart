@@ -41,12 +41,30 @@ class _AssignDutyFormState extends State<AssignDutyForm> {
   String _role = 'DRIVER';
   String _direction = 'BOTH';
 
+  /// Only the staff who *are* the selected role. A driver cannot be rostered as an attendant or
+  /// the reverse: `transport_staff.staff_type` is what the person is, and the licence check at
+  /// trip start (BR-STAFF-001) only ever runs against the driver duty.
+  List<CreatedStaff> get _candidates =>
+      widget.staffOptions.where((staff) => staff.staffType == _role).toList(growable: false);
+
   @override
   void initState() {
     super.initState();
-    if (widget.staffOptions.length == 1) {
-      _staffId = widget.staffOptions.first.id;
-    }
+    _autoSelectSingleCandidate();
+  }
+
+  void _autoSelectSingleCandidate() {
+    final candidates = _candidates;
+    _staffId = candidates.length == 1 ? candidates.first.id : null;
+  }
+
+  /// Changing the role clears the person. Keeping a stale id would submit a driver as the
+  /// attendant — the exact mistake this form now exists to prevent.
+  void _onRoleChanged(String role) {
+    setState(() {
+      _role = role;
+      _autoSelectSingleCandidate();
+    });
   }
 
   void _submit() {
@@ -63,6 +81,7 @@ class _AssignDutyFormState extends State<AssignDutyForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final candidates = _candidates;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -70,6 +89,18 @@ class _AssignDutyFormState extends State<AssignDutyForm> {
       children: [
         Text(context.l10n.routeCrewAssignButton, style: theme.textTheme.titleLarge),
         const SizedBox(height: AdminSpacing.sm),
+        SegmentedButton<String>(
+          key: const Key('duty_form_role_field'),
+          segments: [
+            ButtonSegment(value: 'DRIVER', label: Text(context.l10n.staffTypeDriver)),
+            ButtonSegment(value: 'ATTENDANT', label: Text(context.l10n.staffTypeAttendant)),
+          ],
+          selected: {_role},
+          onSelectionChanged: widget.isSubmitting
+              ? null
+              : (selection) => _onRoleChanged(selection.first),
+        ),
+        const SizedBox(height: AdminSpacing.md),
         DropdownButtonFormField<String>(
           key: const Key('duty_form_staff_id_field'),
           initialValue: _staffId,
@@ -80,33 +111,21 @@ class _AssignDutyFormState extends State<AssignDutyForm> {
             constraints: const BoxConstraints(minHeight: kAdminTouchTarget),
           ),
           hint: Text(
-            widget.staffOptions.isEmpty
-                ? context.l10n.dutyFormNoRosterHint
+            candidates.isEmpty
+                ? (_role == 'DRIVER'
+                    ? context.l10n.dutyFormNoDriversHint
+                    : context.l10n.dutyFormNoAttendantsHint)
                 : context.l10n.dutyFormSelectPersonHint,
           ),
           items: [
-            for (final staff in widget.staffOptions)
-              DropdownMenuItem(
-                value: staff.id,
-                child: Text(
-                  context.l10n.dutyFormStaffOption(staff.displayName, _staffTypeLabel(context, staff.staffType)),
-                ),
-              ),
+            // No staff-type suffix on the option any more: every name in this list is the role
+            // already selected above, so repeating it is noise the operator has to read past.
+            for (final staff in candidates)
+              DropdownMenuItem(value: staff.id, child: Text(staff.displayName)),
           ],
-          onChanged: widget.isSubmitting || widget.staffOptions.isEmpty
+          onChanged: widget.isSubmitting || candidates.isEmpty
               ? null
               : (value) => setState(() => _staffId = value),
-        ),
-        const SizedBox(height: AdminSpacing.md),
-        SegmentedButton<String>(
-          key: const Key('duty_form_role_field'),
-          segments: [
-            ButtonSegment(value: 'DRIVER', label: Text(context.l10n.staffTypeDriver)),
-            ButtonSegment(value: 'ATTENDANT', label: Text(context.l10n.staffTypeAttendant)),
-          ],
-          selected: {_role},
-          onSelectionChanged:
-              widget.isSubmitting ? null : (selection) => setState(() => _role = selection.first),
         ),
         const SizedBox(height: AdminSpacing.md),
         SegmentedButton<String>(
@@ -145,14 +164,5 @@ class _AssignDutyFormState extends State<AssignDutyForm> {
         ),
       ],
     );
-  }
-
-  String _staffTypeLabel(BuildContext context, String staffType) {
-    final l10n = context.l10n;
-    return switch (staffType) {
-      'DRIVER' => l10n.staffTypeDriver,
-      'ATTENDANT' => l10n.staffTypeAttendant,
-      _ => staffType,
-    };
   }
 }

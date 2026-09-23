@@ -4032,6 +4032,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit this route'**
   String get routeListEditTooltip;
+
+  /// Shown when the role is Driver and the school's roster has no driver. Names the fix, not just the absence.
+  ///
+  /// In en, this message translates to:
+  /// **'No drivers at this school yet — add one under Staff first.'**
+  String get dutyFormNoDriversHint;
+
+  /// No description provided for @dutyFormNoAttendantsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No attendants at this school yet — add one under Staff first.'**
+  String get dutyFormNoAttendantsHint;
 }
 
 class _AppLocalizationsDelegate

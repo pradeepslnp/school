@@ -5,7 +5,7 @@ real source of truth. `lib/l10n/app_kn.arb` currently carries the **same English
 explicit, tracked placeholder for every key — not a silent gap, not an inline `TODO`. This
 file is that tracking. Every key below has `pending-kn-translation` unless noted otherwise.
 
-**Total resource keys: 74.** Both ARB files carry all 74 (verified: `app_kn.arb` mirrors
+**Total resource keys: 90.** Both ARB files carry all 90 (verified: `app_kn.arb` mirrors
 `app_en.arb` key-for-key).
 
 **When Kannada translation happens:** update the value in `app_kn.arb` and change that row's
@@ -46,6 +46,23 @@ call is documented, not hidden.
 ---
 
 ## Everything else — pending-kn-translation, standard review
+
+### Boarding capture — the manifest (MOD-09, BRD-001..004)
+
+Recording a child on and off a bus. The confirmation copy is **safety-critical**: an alight
+confirmed for the wrong child leaves a real one aboard while the platform believes they are home
+(BR-SAFE-001). "Only confirm once they are off the bus" must not soften in translation into
+something a hurried attendant reads as "confirm when they are about to get off".
+
+| Key | English value | Kannada status |
+|---|---|---|
+| `manifestConfirmAlightTitle` | `Let {name} off?` | pending-kn-translation — native-speaker review required |
+| `manifestConfirmAlightBody` | `Only confirm once they are off the bus.` | pending-kn-translation — native-speaker review required |
+| `manifestConfirmAlightAtStop` | `Only confirm once they are off the bus at {stop}.` | pending-kn-translation — native-speaker review required |
+| `manifestUnavailable` | `The children on this run could not be loaded… anything you record is saved on this device either way.` | pending-kn-translation — native-speaker review required |
+| `manifestAboardCount` | `{aboard} aboard of {expected}` | pending-kn-translation — native-speaker review required |
+| `manifestBoardAction` · `manifestAlightAction` | `On` / `Off` | pending-kn-translation |
+| `manifestStatus*` · `manifestPendingSync` · `manifestOpenAction` · `manifestConfirmAlightConfirm` | list labels | pending-kn-translation |
 
 ### Crew's day — trips (MOD-08, TRP-002/004)
 

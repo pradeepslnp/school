@@ -34,6 +34,8 @@ An immutable record that a student boarded or alighted.
 | `latitude`, `longitude` | `NUMERIC(9,6)` | Device position at recording |
 | `occurred_at` | `TIMESTAMPTZ` | `NOT NULL` — device clock |
 | `recorded_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT now()` — server receipt |
+| `device_latitude` | `NUMERIC(9,6)` | Where the recording device was (BR-BOARD-002). Null when the handset had no fix — a boarding event without a position still counts (V23) |
+| `device_longitude` | `NUMERIC(9,6)` | Given with the latitude or not at all (`ck_boarding_position_complete`) |
 | `clock_skew_seconds` | `INTEGER` | Measured at sync |
 | `sync_state` | `VARCHAR(16)` | `NOT NULL`, `SYNCED` / `FLAGGED_FOR_REVIEW` |
 

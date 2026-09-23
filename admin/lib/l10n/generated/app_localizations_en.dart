@@ -2311,4 +2311,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get routeListEditTooltip => 'Edit this route';
+
+  @override
+  String get dutyFormNoDriversHint => 'No drivers at this school yet — add one under Staff first.';
+
+  @override
+  String get dutyFormNoAttendantsHint => 'No attendants at this school yet — add one under Staff first.';
 }

@@ -668,5 +668,10 @@
   "routeListOperatingDaysColumn": "Runs",
   "routeEditTitle": "Edit route",
   "routeEditSubmitButton": "Save changes",
-  "routeListEditTooltip": "Edit this route"
+  "routeListEditTooltip": "Edit this route",
+  "dutyFormNoDriversHint": "No drivers at this school yet — add one under Staff first.",
+  "@dutyFormNoDriversHint": {
+    "description": "Shown when the role is Driver and the school's roster has no driver. Names the fix, not just the absence."
+  },
+  "dutyFormNoAttendantsHint": "No attendants at this school yet — add one under Staff first."
 }

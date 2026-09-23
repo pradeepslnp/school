@@ -145,6 +145,7 @@ catalogue (`STUDENT_ADMISSION_NO_EXISTS`, `VALIDATION_INVALID_FORMAT`,
 | `STAFF_NOT_VERIFIED` | 422 | BR-STAFF-002 🔴 |
 | `STAFF_VERIFICATION_LAPSED` | 422 | BR-STAFF-002 🔴 |
 | `STAFF_ALREADY_ON_ACTIVE_TRIP` | 409 | BR-STAFF-004 |
+| `STAFF_ROLE_MISMATCH` | 422 | | Data-integrity constraint, not a documented BR — same treatment as `STAFF_EMPLOYEE_CODE_EXISTS`. A duty assignment named a role the staff member is not (rostering an attendant as the driver). It matters because BR-STAFF-001's licence check only runs against the `DRIVER` duty, so the mismatch would otherwise surface at trip start, to a driver at the kerb, instead of to the office a week earlier |
 | `ROUTE_CODE_ALREADY_EXISTS` | 409 | BR-ROUTE-001 |
 | `ROUTE_NOT_FOUND` | 404 | | Not found, or not visible to the caller at all |
 | `ROUTE_MINIMUM_STOPS_REQUIRED` | 422 | BR-ROUTE-001 |

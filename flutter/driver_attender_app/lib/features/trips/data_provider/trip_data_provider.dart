@@ -40,6 +40,14 @@ class TripDataProvider {
     );
   }
 
+  /// `GET /trips/{id}/manifest` — the children this run expects, in stop order.
+  ///
+  /// Read online only. The list is cached in memory for the run once fetched, so a lost signal
+  /// mid-route does not blank the crew's screen; persisting it across a restart belongs with the
+  /// offline manifest cache ADR-0008 describes and is not built.
+  Future<ApiResponse> fetchManifest({required String tripId}) =>
+      client.get('/trips/$tripId/manifest');
+
   /// `POST /trips/{id}/end` (`PERM-TRIP-END`) — the crew has finished driving.
   ///
   /// This is not "closed": closing additionally asserts every child is accounted for, which needs

@@ -17,12 +17,18 @@ class TripCard extends StatelessWidget {
     required this.isSubmitting,
     required this.onStart,
     required this.onEnd,
+    required this.onOpenManifest,
   });
 
   final CrewTrip trip;
   final bool isSubmitting;
   final void Function(String vehicleId) onStart;
   final VoidCallback onEnd;
+
+  /// Opens the children on this run. Offered only once it is running: before that there is
+  /// nothing to record against, and a manifest the crew can open but not act on invites them to
+  /// try (BR-TRIP-003).
+  final VoidCallback onOpenManifest;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +59,18 @@ class TripCard extends StatelessWidget {
             const SizedBox(height: DriverSpacing.sm),
             _StatusLine(trip: trip),
             const SizedBox(height: DriverSpacing.md),
+            if (trip.status.canEnd) ...[
+              OutlinedButton.icon(
+                key: Key('trip_manifest_${trip.id}'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(kDriverTouchTarget),
+                ),
+                onPressed: onOpenManifest,
+                icon: const Icon(Icons.groups_outlined),
+                label: Text(l10n.manifestOpenAction),
+              ),
+              const SizedBox(height: DriverSpacing.sm),
+            ],
             _action(context, l10n),
           ],
         ),

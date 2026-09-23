@@ -151,6 +151,12 @@ public enum ErrorCode {
   STAFF_VERIFICATION_LAPSED(422),
   // BR-STAFF-004: already crewed on a trip that is running right now.
   STAFF_ALREADY_ON_ACTIVE_TRIP(409),
+  // A duty assignment named a role the staff member is not: rostering an attendant as the
+  // driver, or the reverse. Data-integrity, not a documented business rule — the same footing
+  // STAFF_EMPLOYEE_CODE_EXISTS sits on. It matters because BR-STAFF-001's licence check only
+  // runs against the DRIVER duty, so an attendant rostered as driver would reach trip start
+  // and be refused there, with no explanation the office could act on a week earlier.
+  STAFF_ROLE_MISMATCH(422),
   // BR-STAFF-005: tenant configuration requires an attendant on this run and none is assigned.
   ATTENDANT_REQUIRED(422),
 
@@ -192,6 +198,33 @@ public enum ErrorCode {
   // BR-TRIP-007: cancelling requires a reason — an unexplained cancelled run is a safety gap
   // nobody can account for afterwards.
   TRIP_CANCELLATION_REASON_REQUIRED(422),
+
+  // --- Boarding & Attendance (MOD-09) --------------------------------------------------------
+  //
+  // Names and statuses follow ERROR_CATALOG.md §Boarding exactly. Every one of these except
+  // BOARDING_ALREADY_BOARDED and BOARDING_WRONG_VEHICLE has an override path: the crew is a
+  // person at a kerb with a child in front of them, and a rule they cannot get past is a rule
+  // they will work around by not recording anything at all.
+  TRIP_NOT_STARTED(422),
+  // BR-BOARD-003: not on this trip's manifest. Overridable with a reason.
+  BOARDING_STUDENT_NOT_ON_MANIFEST(422),
+  // BR-BOARD-005: boarded already, with no alight between. NOT overridable — a second board is
+  // a double tap or a record of something that cannot have happened, and neither is fixed by a
+  // reason.
+  BOARDING_ALREADY_BOARDED(409),
+  // BR-BOARD-006: alighting from a trip they never boarded. Overridable — a missed board scan
+  // is real, and refusing the alight would lose the more important of the two records.
+  BOARDING_NOT_BOARDED(422),
+  // BR-BOARD-004 🔴: alighting somewhere other than their own stop. Overridable, and the
+  // override notifies guardians.
+  BOARDING_WRONG_STOP(422),
+  // BR-SAFE-003 🔴: the child is expected on another trip that is running right now. NEVER
+  // overridable. Every other refusal here has a legitimate real-world version; this one is the
+  // mistake the platform exists to catch, and a reason field would make the catch a formality.
+  BOARDING_WRONG_VEHICLE(422),
+  BOARDING_OVERRIDE_REASON_REQUIRED(422),
+  // BR-BOARD-001 🔴: the append-only guarantee, surfaced to the client.
+  BOARDING_EVENT_IMMUTABLE(422),
 
   // --- Absence ----------------------------------------------------------------------------
   // The manifest is already materialised and immutable; a change after this point is a

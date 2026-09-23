@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../app/dependencies.dart';
 import '../../../app/theme.dart';
 import '../../../core/domain.dart';
 import '../../../l10n/l10n_extensions.dart';
+import '../../../core/time/clock.dart';
 import '../bloc/duty_bloc.dart';
 import '../bloc/duty_event.dart';
 import '../bloc/duty_state.dart';
+import '../bloc/manifest_bloc.dart';
+import '../domain/trip_models.dart';
+import '../repository/trip_repository.dart';
 import '../widgets/trip_card.dart';
+import 'manifest_screen.dart';
 
 /// The crew's day — the screen the driver app opens onto (TRP-004).
 ///
@@ -51,6 +57,7 @@ class _DutyBodyState extends State<DutyBody> {
                       .add(TripStartRequested(tripId: trip.id, vehicleId: vehicleId)),
                   onEnd: () =>
                       context.read<DutyBloc>().add(TripEndRequested(tripId: trip.id)),
+                  onOpenManifest: () => _openManifest(context, trip),
                 ),
             ],
           ),
@@ -58,6 +65,30 @@ class _DutyBodyState extends State<DutyBody> {
       },
     );
   }
+}
+
+/// Opens a run's manifest.
+///
+/// The bloc is created here, per trip, rather than held for the whole screen: a crew runs one
+/// route at a time, and a manifest bloc that outlived the screen would keep a stale list of
+/// children in memory for a run that has ended.
+void _openManifest(BuildContext context, CrewTrip trip) {
+  final dependencies = DependencyScope.of(context);
+  final TripRepository repository = dependencies.tripRepository;
+  final Clock clock = dependencies.clock;
+
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => BlocProvider<ManifestBloc>(
+        create: (_) => ManifestBloc(
+          repository: repository,
+          clock: clock,
+          tripId: trip.id,
+        ),
+        child: ManifestScreen(trip: trip),
+      ),
+    ),
+  );
 }
 
 /// Why a refusal happened, in the crew's own terms.

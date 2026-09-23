@@ -37,7 +37,7 @@ that lands it updates this file — that is part of the
 | MOD-06 Transport Staff | `com.guardian.staff` | ✅ | Staff, credentials, verification, duty assignments, eligibility |
 | MOD-07 Routes & Stops | `com.guardian.routes` | ✅ | Routes (create **and edit**), stops with timetable, student assignment, operating days (V22). `school_calendar_exceptions` exists but has **no endpoint and no screen** — holidays can only be set in SQL today. Route *deactivation* is still unbuilt (BR-ROUTE-007) |
 | **MOD-08 Trip Execution** | `com.guardian.trip` | 🟡 | **Generation, start, end, cancel and manifest materialisation are built.** No `close` — closing requires reconciliation, which is MOD-09. No `trip_staff` table, so per-trip crew substitution (BR-STAFF-006) is unsupported; the standing roster is used instead |
-| MOD-09 Boarding | `com.guardian.boarding` | 🟡 | Handover **code issuance** only (P-12). Boarding and alighting events, handover redemption, and trip-close reconciliation are **not built** — this is the largest remaining gap |
+| MOD-09 Boarding | `com.guardian.boarding` | 🟡 | **Boarding and alighting events are built**, with the manifest read, the offline sync batch (BR-SAFE-005), wrong-vehicle detection (BR-SAFE-003) and the override paths. Handover **code issuance** only for P-12. Still unbuilt: handover redemption (BR-HAND-*) and trip-close reconciliation (BR-SAFE-001), which is what MOD-08's `close` waits on |
 | MOD-10 Tracking | — | ⛔ | No module. No position ingestion, no live position, no ETA, no history. ADR-0004 is still `Proposed` |
 | MOD-11 Geofencing & Alerts | — | ⛔ | No module |
 | MOD-12 Notification | `com.guardian.notification` | 🟡 | **Read side only.** `GET /notifications/me` and mark-as-read work; nothing in the platform ever *writes* a notification row, and there is no push, SMS or email dispatch for them |
@@ -58,10 +58,10 @@ that lands it updates this file — that is part of the
 | Screen | Status | Notes |
 |---|---|---|
 | P-01 Login | ✅ | Phone + OTP |
-| P-02 Home | 🟡 | Children list is live; journey state is derived from trips and boarding events, so it will read `AT_REST` until MOD-09's write path lands |
-| P-03 Child detail | 🟡 | Child, class, route, stop, bus and crew are live; journey legs come from boarding events |
+| P-02 Home | ✅ | Children list and live journey state — trips (MOD-08) and boarding events (MOD-09) both exist now |
+| P-03 Child detail | ✅ | Child, class, route, stop, bus, crew and journey legs |
 | P-04 Live trip map | ⛔ | UI built, **data provider returns fixtures** — no tracking backend exists. Stop coordinates are also absent from the documented contract |
-| P-05 Journey history | 🟡 | Endpoint is live; reads `boarding_events`, which nothing writes yet |
+| P-05 Journey history | ✅ | Endpoint is live and `boarding_events` are now written by MOD-09 |
 | P-06 Declare absence | ✅ | |
 | P-07 Pickup persons | ✅ | |
 | P-08 Notification centre | 🟡 | Endpoint is live; reads `notifications`, which nothing writes yet |
@@ -76,13 +76,17 @@ safety-critical copy are drafted and **held pending native-speaker sign-off** �
 
 ### Driver & attendant app (`flutter/driver_attender_app`)
 
-🟡 **Sign-in, sync scaffolding, and the crew's day.** `GET /trips/mine` is wired to a Today screen
-that lists the crew's runs and can **start** and **end** them, with the eligibility refusals shown
-one by one rather than as a generic "cannot start".
+🟡 **Sign-in, sync, the crew's day, and boarding capture.** The Today screen lists the crew's runs
+and starts and ends them; opening a running trip shows its **manifest**, and a board or an alight
+is one tap. Boarding events go through the existing durable outbound queue rather than straight to
+the network (ADR-0008), so a record survives no signal and the app being killed at a kerb — the
+row moves the instant the crew taps and carries a "not yet sent" marker until the server
+acknowledges it.
 
-Still ⛔: **no manifest screen and no boarding capture** — a crew can start a run and end it, but
-cannot record a single child boarding or alighting. That is the client half of the MOD-09 gap and
-it is what stands between the platform and its core safety claim.
+Still ⛔: **handover** (the afternoon release of a child to an adult, BR-HAND-*), **corrections**
+(BRD-005 — the compensating-record path), and **SOS**. Wrong-stop and off-manifest overrides are
+accepted by the server but the app has no screen to enter the reason yet, so in practice the crew
+can only record the ordinary cases.
 
 ### Admin console (`admin`)
 
@@ -144,15 +148,18 @@ Recorded here rather than resolved by quietly editing the lower-tier document (`
 ## What blocks what
 
 ```
-MOD-09 boarding write path  ──┬──►  P-02 / P-03 journey state
-                              ├──►  P-05 journey history
-  (+ driver app capture)      └──►  trip close, reconciliation, no-show detection
-                                          │
-MOD-12 dispatch  ◄────────────────────────┘   ──►  P-08 notification centre, BR-TRIP-007
+MOD-08 trips ✅ ──► MOD-09 boarding ✅ ──┬──►  P-02 / P-03 journey state ✅
+                                        └──►  P-05 journey history ✅
+                                                    │
+reconciliation (BR-SAFE-001) ⛔  ──►  trip close, left-behind detection
+                                                    │
+MOD-12 dispatch ⛔  ◄───────────────────────────────┘  ──►  P-08, NTF-BOARD-*, BR-TRIP-007
 
-MOD-10 tracking  ─────────────────────────────►  P-04 live map, ETA, geofence alerts (MOD-11)
+MOD-10 tracking ⛔  ────────────────────────────────►  P-04 live map, ETA, MOD-11 alerts
 ```
 
-MOD-08 is built, so the top of that chain now has trips to anchor to. The next piece of work that
-changes what a parent sees is **MOD-09's write path plus the driver app's capture screens** — and
-it needs no new infrastructure, unlike MOD-10.
+The journey chain is now closed end to end: a trip is generated, a crew starts it, children are
+recorded on and off, and a parent sees it. **What the platform still cannot do is tell anyone**
+— every notification in `NOTIFICATION_CATALOG.md`, including the 🔴 wrong-vehicle alert MOD-09 now
+detects, has nowhere to go. MOD-12's dispatch side is the next thing that changes what a parent
+experiences, and it needs no new infrastructure.

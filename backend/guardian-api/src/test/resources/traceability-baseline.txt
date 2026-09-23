@@ -16,8 +16,6 @@
 # the platform does not keep.
 
 # --- Areas with no module yet -------------------------------------------------------
-BR-BOARD
-BR-SAFE
 BR-ALERT
 BR-NTF
 BR-INC
@@ -35,6 +33,24 @@ BR-GRD-002
 BR-GRD-003
 BR-GRD-004
 BR-GRD-008
+
+# --- MOD-09 Boarding: recording a board or an alight is enforced ----------------------
+# (BR-BOARD-001/002/003/004/005/006/008/009, BR-SAFE-003, BR-SAFE-005). What remains needs
+# parts of the platform that are not built:
+#   BOARD-007  "boarded despite a declared absence" raises an alert and lifts the absence —
+#              the alert is MOD-11/MOD-12, neither of which exists
+#   BOARD-010  handover override escalation is the handover flow (BR-HAND-*), unbuilt
+#   SAFE-001   left-behind detection runs at trip close, which ships with reconciliation
+#   SAFE-002   no-show detection needs to know the vehicle passed the stop — that is MOD-10
+#   SAFE-004   emergency-contact escalation is MOD-13
+#   SAFE-006   / 007 depend on MOD-11 alerting
+BR-BOARD-007
+BR-BOARD-010
+BR-SAFE-001
+BR-SAFE-002
+BR-SAFE-004
+BR-SAFE-006
+BR-SAFE-007
 
 # --- MOD-08 Trip Execution: generation, start, end and cancel are enforced ------------
 # (BR-TRIP-001/002/003/004/005/006/007/008/011). What remains needs work that is not built:
