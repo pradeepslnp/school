@@ -25,7 +25,9 @@ class LoginDataProvider {
   Future<ApiResponse> requestOtp({required String phone}) {
     return client.post(
       '/auth/otp/request',
-      body: {'phone': phone},
+      // See parent_app's LoginDataProvider: a hint the server uses only on a magic-OTP build,
+      // to pick the crew account when the number also exists in another organization.
+      body: {'phone': phone, 'clientType': 'DRIVER_APP'},
       // No session exists yet, so no Authorization header should be sent.
       authenticated: false,
     );

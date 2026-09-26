@@ -12,144 +12,145 @@ class AppLocalizationsKn extends AppLocalizations {
   String get appTitle => 'Guardian';
 
   @override
-  String get tryAgainButton => 'Try again';
+  String get tryAgainButton => 'ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ';
 
   @override
-  String get cancelButton => 'Cancel';
+  String get cancelButton => 'ರದ್ದುಮಾಡಿ';
 
   @override
-  String get retryButton => 'Retry';
+  String get retryButton => 'ಮರುಪ್ರಯತ್ನ';
 
   @override
-  String get whichChildLabel => 'Which child?';
+  String get whichChildLabel => 'ಯಾವ ಮಗು?';
 
   @override
-  String get trackBusButton => 'Track bus';
+  String get trackBusButton => 'ಬಸ್ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ';
 
   @override
-  String get mapViewLabel => 'Map view';
+  String get mapViewLabel => 'ನಕ್ಷೆ ನೋಟ';
 
   @override
   String get errorDependencyUnavailable =>
-      'Your device cannot reach the school right now. Check your connection and try again.';
+      'ಈಗ ನಿಮ್ಮ ಸಾಧನಕ್ಕೆ ಶಾಲೆಯನ್ನು ತಲುಪಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ನಿಮ್ಮ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
   String get errorRateLimited =>
-      'Too many attempts just now. Wait a moment and try again.';
+      'ಈಗಷ್ಟೇ ಹಲವು ಪ್ರಯತ್ನಗಳಾಗಿವೆ. ಸ್ವಲ್ಪ ಕಾದು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
-  String get errorGenericTryAgain => 'Something went wrong. Please try again.';
+  String get errorGenericTryAgain =>
+      'ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
-  String get noChildrenLinkedTitle => 'No children linked yet';
+  String get noChildrenLinkedTitle => 'ಇನ್ನೂ ಯಾವ ಮಗುವೂ ಜೋಡಿಸಿಲ್ಲ';
 
   @override
   String get noChildrenLinkedDetail =>
-      'Your school links your children to your account.';
+      'ನಿಮ್ಮ ಶಾಲೆ ನಿಮ್ಮ ಮಕ್ಕಳನ್ನು ನಿಮ್ಮ ಖಾತೆಗೆ ಜೋಡಿಸುತ್ತದೆ.';
 
   @override
-  String get dayLabelToday => 'Today';
+  String get dayLabelToday => 'ಇಂದು';
 
   @override
-  String get dayLabelYesterday => 'Yesterday';
+  String get dayLabelYesterday => 'ನಿನ್ನೆ';
 
   @override
-  String get relativeDayToday => 'today';
+  String get relativeDayToday => 'ಇಂದು';
 
   @override
-  String get relativeDayTomorrow => 'tomorrow';
+  String get relativeDayTomorrow => 'ನಾಳೆ';
 
   @override
   String durationSeconds(int seconds) {
-    return '${seconds}s';
+    return '$seconds ಸೆ';
   }
 
   @override
   String durationMinutes(int minutes) {
-    return '$minutes min';
+    return '$minutes ನಿ';
   }
 
   @override
   String durationHours(int hours) {
-    return '$hours h';
+    return '$hours ಗಂ';
   }
 
   @override
   String atTimeFragment(String time) {
-    return 'at $time';
+    return '$time ಕ್ಕೆ';
   }
 
   @override
-  String get themeModeSystem => 'Match device';
+  String get themeModeSystem => 'ಸಾಧನದಂತೆ';
 
   @override
-  String get themeModeLight => 'Light';
+  String get themeModeLight => 'ತಿಳಿ';
 
   @override
-  String get themeModeDark => 'Dark';
+  String get themeModeDark => 'ಕಡು';
 
   @override
   String themeToggleTooltip(String mode) {
-    return 'Appearance: $mode';
+    return 'ಗೋಚರತೆ: $mode';
   }
 
   @override
-  String get languageSwitcherTooltip => 'Language';
+  String get languageSwitcherTooltip => 'ಭಾಷೆ';
 
   @override
-  String get languageSwitcherDialogTitle => 'Choose language';
+  String get languageSwitcherDialogTitle => 'ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ';
 
   @override
-  String get navHomeTab => 'Home';
+  String get navHomeTab => 'ಮುಖಪುಟ';
 
   @override
-  String get navJourneysTab => 'Journeys';
+  String get navJourneysTab => 'ಪ್ರಯಾಣಗಳು';
 
   @override
-  String get navAlertsTab => 'Alerts';
+  String get navAlertsTab => 'ಎಚ್ಚರಿಕೆಗಳು';
 
   @override
-  String get navPickupTab => 'Pickup';
+  String get navPickupTab => 'ಕರೆದೊಯ್ಯುವಿಕೆ';
 
   @override
-  String get homeAppBarTitle => 'My children';
+  String get homeAppBarTitle => 'ನನ್ನ ಮಕ್ಕಳು';
 
   @override
-  String get refreshTooltip => 'Refresh';
+  String get refreshTooltip => 'ರಿಫ್ರೆಶ್';
 
   @override
-  String get homeLoadFailureTitle => 'Cannot reach the school right now';
+  String get homeLoadFailureTitle => 'ಈಗ ಶಾಲೆಯನ್ನು ತಲುಪಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ';
 
   @override
   String get homeNoChildrenDetail =>
-      'Your school links your children to your account. Contact the school office if you expect to see someone here.';
+      'ನಿಮ್ಮ ಶಾಲೆ ನಿಮ್ಮ ಮಕ್ಕಳನ್ನು ನಿಮ್ಮ ಖಾತೆಗೆ ಜೋಡಿಸುತ್ತದೆ. ಇಲ್ಲಿ ಯಾರಾದರೂ ಕಾಣಿಸಬೇಕೆಂದು ನೀವು ನಿರೀಕ್ಷಿಸಿದರೆ ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.';
 
   @override
   String get homeGenericLoadFailure =>
-      'Something went wrong loading your children. Please try again.';
+      'ನಿಮ್ಮ ಮಕ್ಕಳ ಮಾಹಿತಿ ಲೋಡ್ ಮಾಡುವಾಗ ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
-  String get fallbackVehicleName => 'the bus';
+  String get fallbackVehicleName => 'ಬಸ್';
 
   @override
-  String get fallbackStopName => 'your stop';
+  String get fallbackStopName => 'ನಿಮ್ಮ ನಿಲ್ದಾಣ';
 
   @override
-  String get connectionBannerNoData => 'Not connected. Nothing has loaded yet.';
+  String get connectionBannerNoData => 'ಸಂಪರ್ಕವಿಲ್ಲ. ಇನ್ನೂ ಏನೂ ಲೋಡ್ ಆಗಿಲ್ಲ.';
 
   @override
   String connectionBannerLastUpdated(String time) {
-    return 'Not connected · last updated $time';
+    return 'ಸಂಪರ್ಕವಿಲ್ಲ · ಕೊನೆಯ ಅಪ್‌ಡೇಟ್ $time';
   }
 
   @override
-  String get greetingMorning => 'Good morning';
+  String get greetingMorning => 'ಶುಭೋದಯ';
 
   @override
-  String get greetingAfternoon => 'Good afternoon';
+  String get greetingAfternoon => 'ಶುಭ ಮಧ್ಯಾಹ್ನ';
 
   @override
-  String get greetingEvening => 'Good evening';
+  String get greetingEvening => 'ಶುಭ ಸಂಜೆ';
 
   @override
   String dashboardGreeting(String greeting, String name) {
@@ -158,245 +159,245 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String schoolTimeZoneSemanticLabel(String zone) {
-    return 'All times are shown in school time, $zone.';
+    return 'ಎಲ್ಲಾ ಸಮಯಗಳನ್ನು ಶಾಲಾ ಸಮಯದಲ್ಲಿ ತೋರಿಸಲಾಗಿದೆ, $zone.';
   }
 
   @override
   String schoolTimeLabel(String zone) {
-    return 'School time · $zone';
+    return 'ಶಾಲಾ ಸಮಯ · $zone';
   }
 
   @override
   String arrivalEstimateWithAge(String eta, String age) {
-    return 'Arriving at school about $eta · estimated $age ago';
+    return 'ಸುಮಾರು $eta ಕ್ಕೆ ಶಾಲೆ ತಲುಪುತ್ತದೆ · $age ಹಿಂದೆ ಅಂದಾಜಿಸಲಾಗಿದೆ';
   }
 
   @override
   String arrivalEstimateNoAge(String eta) {
-    return 'Arriving at school about $eta · estimate';
+    return 'ಸುಮಾರು $eta ಕ್ಕೆ ಶಾಲೆ ತಲುಪುತ್ತದೆ · ಅಂದಾಜು';
   }
 
   @override
   String detailAtRestNextBus(String time) {
-    return 'At school. Next bus at $time.';
+    return 'ಶಾಲೆಯಲ್ಲಿ. ಮುಂದಿನ ಬಸ್ $time ಕ್ಕೆ.';
   }
 
   @override
   String get detailAtRestNoBus =>
-      'At school. No bus scheduled for the rest of today.';
+      'ಶಾಲೆಯಲ್ಲಿ. ಇಂದು ಉಳಿದ ಸಮಯಕ್ಕೆ ಬಸ್ ನಿಗದಿಯಾಗಿಲ್ಲ.';
 
   @override
   String detailAbsent(String name) {
-    return 'You marked $name as not travelling today.';
+    return '$name ಇಂದು ಪ್ರಯಾಣಿಸುವುದಿಲ್ಲ ಎಂದು ನೀವು ಗುರುತಿಸಿದ್ದೀರಿ.';
   }
 
   @override
   String detailScheduledVehicle(String vehicle) {
-    return '$vehicle is scheduled';
+    return '$vehicle ನಿಗದಿಯಾಗಿದೆ';
   }
 
   @override
   String detailFromStop(String stop) {
-    return 'from $stop';
+    return '$stop ಇಂದ';
   }
 
   @override
   String detailAtEta(String eta) {
-    return 'at about $eta';
+    return 'ಸುಮಾರು $eta ಕ್ಕೆ';
   }
 
   @override
   String detailVehicleOnWay(String vehicle) {
-    return '$vehicle is on the way';
+    return '$vehicle ದಾರಿಯಲ್ಲಿದೆ';
   }
 
   @override
   String detailToStop(String stop) {
-    return 'to $stop';
+    return '$stop ಕಡೆಗೆ';
   }
 
   @override
   String detailArrivingAbout(String eta) {
-    return '· arriving about $eta';
+    return '· ಸುಮಾರು $eta ಕ್ಕೆ ತಲುಪುತ್ತದೆ';
   }
 
   @override
-  String get detailBoardedWord => 'Boarded';
+  String get detailBoardedWord => 'ಬಸ್ ಹತ್ತಿದ್ದಾರೆ';
 
   @override
   String detailAtStop(String stop) {
-    return 'at $stop';
+    return '$stop ನಲ್ಲಿ';
   }
 
   @override
   String detailArrivedAtTime(String time) {
-    return 'Arrived at school at $time.';
+    return '$time ಕ್ಕೆ ಶಾಲೆ ತಲುಪಿದ್ದಾರೆ.';
   }
 
   @override
-  String get detailArrivedNoTime => 'Arrived at school.';
+  String get detailArrivedNoTime => 'ಶಾಲೆ ತಲುಪಿದ್ದಾರೆ.';
 
   @override
-  String get detailHandedOverWord => 'Handed over';
+  String get detailHandedOverWord => 'ಹಸ್ತಾಂತರಿಸಲಾಗಿದೆ';
 
   @override
-  String get detailDidNotBoardWord => 'Did not board';
+  String get detailDidNotBoardWord => 'ಬಸ್ ಹತ್ತಲಿಲ್ಲ';
 
   @override
   String detailBusDepartedAt(String time) {
-    return '· bus departed $time';
+    return '· ಬಸ್ $time ಕ್ಕೆ ಹೊರಟಿದೆ';
   }
 
   @override
   String detailUnaccounted(String name) {
-    return 'No record of $name getting off the bus. The school has been alerted and is checking now.';
+    return '$name ಬಸ್‌ನಿಂದ ಇಳಿದ ದಾಖಲೆ ಇಲ್ಲ. ಶಾಲೆಗೆ ಎಚ್ಚರಿಕೆ ನೀಡಲಾಗಿದೆ ಮತ್ತು ಅವರು ಈಗ ಪರಿಶೀಲಿಸುತ್ತಿದ್ದಾರೆ.';
   }
 
   @override
   String detailUnknown(String name) {
-    return 'This version of the app cannot read $name\'\'s current status. Update the app, or contact the school office to check.';
+    return 'ಈ ಆವೃತ್ತಿಯ ಆ್ಯಪ್‌ಗೆ $name ಅವರ ಪ್ರಸ್ತುತ ಸ್ಥಿತಿಯನ್ನು ಓದಲು ಸಾಧ್ಯವಿಲ್ಲ. ಆ್ಯಪ್ ಅಪ್‌ಡೇಟ್ ಮಾಡಿ, ಅಥವಾ ಪರಿಶೀಲಿಸಲು ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.';
   }
 
   @override
   String criticalBannerMessage(String name) {
-    return '$name has not been accounted for. The school has been alerted and staff are checking now.';
+    return '$name ಅವರ ಬಗ್ಗೆ ಇನ್ನೂ ಲೆಕ್ಕ ಸಿಕ್ಕಿಲ್ಲ. ಶಾಲೆಗೆ ಎಚ್ಚರಿಕೆ ನೀಡಲಾಗಿದೆ ಮತ್ತು ಸಿಬ್ಬಂದಿ ಈಗ ಪರಿಶೀಲಿಸುತ್ತಿದ್ದಾರೆ.';
   }
 
   @override
   String criticalBannerUrgentSemanticLabel(String message) {
-    return 'Urgent. $message';
+    return 'ತುರ್ತು. $message';
   }
 
   @override
-  String get criticalBannerActionNeeded => 'ACTION NEEDED NOW';
+  String get criticalBannerActionNeeded => 'ಈಗಲೇ ಕ್ರಮ ಅಗತ್ಯ';
 
   @override
-  String get criticalBannerNotAccountedTitle => 'Not yet accounted for';
+  String get criticalBannerNotAccountedTitle => 'ಇನ್ನೂ ಲೆಕ್ಕ ಸಿಕ್ಕಿಲ್ಲ';
 
   @override
-  String get criticalBannerCallSchoolButton => 'Call the school';
+  String get criticalBannerCallSchoolButton => 'ಶಾಲೆಗೆ ಕರೆ ಮಾಡಿ';
 
   @override
-  String get criticalBannerSeeWhatHappenedButton => 'See what happened';
+  String get criticalBannerSeeWhatHappenedButton => 'ಏನಾಯಿತು ನೋಡಿ';
 
   @override
-  String get quickActionsTitle => 'Quick actions';
+  String get quickActionsTitle => 'ತ್ವರಿತ ಕ್ರಮಗಳು';
 
   @override
-  String get quickActionDeclareAbsence => 'Declare absence';
+  String get quickActionDeclareAbsence => 'ಗೈರು ತಿಳಿಸಿ';
 
   @override
-  String get quickActionPickupPersons => 'Pickup persons';
+  String get quickActionPickupPersons => 'ಕರೆದೊಯ್ಯುವವರು';
 
   @override
-  String get freshnessNoSignal => 'No signal';
+  String get freshnessNoSignal => 'ಸಿಗ್ನಲ್ ಇಲ್ಲ';
 
   @override
   String freshnessNoSignalFor(String age) {
-    return 'No signal for $age';
+    return '$age ಇಂದ ಸಿಗ್ನಲ್ ಇಲ್ಲ';
   }
 
   @override
   String freshnessLastSeen(String age) {
-    return 'Last seen $age ago';
+    return '$age ಹಿಂದೆ ಕೊನೆಯದಾಗಿ ಕಂಡಿದೆ';
   }
 
   @override
   String freshnessLive(String age) {
-    return 'Live · updated $age ago';
+    return 'ನೇರ · $age ಹಿಂದೆ ಅಪ್‌ಡೇಟ್ ಆಗಿದೆ';
   }
 
   @override
-  String get journeyStateAtSchool => 'At school';
+  String get journeyStateAtSchool => 'ಶಾಲೆಯಲ್ಲಿ';
 
   @override
-  String get journeyStateBusScheduled => 'Bus scheduled';
+  String get journeyStateBusScheduled => 'ಬಸ್ ನಿಗದಿಯಾಗಿದೆ';
 
   @override
-  String get journeyStateBusOnWay => 'Bus on the way';
+  String get journeyStateBusOnWay => 'ಬಸ್ ದಾರಿಯಲ್ಲಿದೆ';
 
   @override
-  String get journeyStateOnBus => 'On the bus';
+  String get journeyStateOnBus => 'ಬಸ್‌ನಲ್ಲಿ';
 
   @override
-  String get journeyStateArrivedAtSchool => 'Arrived at school';
+  String get journeyStateArrivedAtSchool => 'ಶಾಲೆ ತಲುಪಿದ್ದಾರೆ';
 
   @override
-  String get journeyStateHandedOver => 'Handed over';
+  String get journeyStateHandedOver => 'ಹಸ್ತಾಂತರಿಸಲಾಗಿದೆ';
 
   @override
-  String get journeyStateDidNotBoard => 'Did not board';
+  String get journeyStateDidNotBoard => 'ಬಸ್ ಹತ್ತಲಿಲ್ಲ';
 
   @override
-  String get journeyStateNotTravelling => 'Not travelling today';
+  String get journeyStateNotTravelling => 'ಇಂದು ಪ್ರಯಾಣವಿಲ್ಲ';
 
   @override
-  String get journeyStateNotAccountedFor => 'Not yet accounted for';
+  String get journeyStateNotAccountedFor => 'ಇನ್ನೂ ಲೆಕ್ಕ ಸಿಕ್ಕಿಲ್ಲ';
 
   @override
-  String get journeyStateUnavailable => 'Status unavailable';
+  String get journeyStateUnavailable => 'ಸ್ಥಿತಿ ಲಭ್ಯವಿಲ್ಲ';
 
   @override
-  String get absenceAppBarTitle => 'Declare absence';
+  String get absenceAppBarTitle => 'ಗೈರು ತಿಳಿಸಿ';
 
   @override
-  String get absenceWhenLabel => 'When?';
+  String get absenceWhenLabel => 'ಯಾವಾಗ?';
 
   @override
-  String get absenceWhenToday => 'Today';
+  String get absenceWhenToday => 'ಇಂದು';
 
   @override
-  String get absenceWhenTomorrow => 'Tomorrow';
+  String get absenceWhenTomorrow => 'ನಾಳೆ';
 
   @override
-  String get absenceWhenDateRange => 'Date range';
+  String get absenceWhenDateRange => 'ದಿನಾಂಕ ವ್ಯಾಪ್ತಿ';
 
   @override
-  String get absenceWhichJourney => 'Which journey?';
+  String get absenceWhichJourney => 'ಯಾವ ಪ್ರಯಾಣ?';
 
   @override
-  String get absenceJourneyBoth => 'Both';
+  String get absenceJourneyBoth => 'ಎರಡೂ';
 
   @override
-  String get absenceJourneyMorning => 'Morning';
+  String get absenceJourneyMorning => 'ಬೆಳಿಗ್ಗೆ';
 
   @override
-  String get absenceJourneyAfternoon => 'Afternoon';
+  String get absenceJourneyAfternoon => 'ಮಧ್ಯಾಹ್ನ';
 
   @override
-  String get absenceReasonLabel => 'Reason (optional)';
+  String get absenceReasonLabel => 'ಕಾರಣ (ಐಚ್ಛಿಕ)';
 
   @override
-  String get absenceReasonHint => 'Not required';
+  String get absenceReasonHint => 'ಅಗತ್ಯವಿಲ್ಲ';
 
   @override
-  String get absenceConfirmButton => 'Confirm';
+  String get absenceConfirmButton => 'ದೃಢೀಕರಿಸಿ';
 
   @override
-  String get absenceUpcomingTitle => 'Upcoming absences';
+  String get absenceUpcomingTitle => 'ಮುಂಬರುವ ಗೈರುಗಳು';
 
   @override
-  String get absenceNoneDeclared => 'No absences declared for this child.';
+  String get absenceNoneDeclared => 'ಈ ಮಗುವಿಗೆ ಯಾವುದೇ ಗೈರು ತಿಳಿಸಿಲ್ಲ.';
 
   @override
-  String get absenceDateRangeChoose => 'Choose dates';
+  String get absenceDateRangeChoose => 'ದಿನಾಂಕಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ';
 
   @override
-  String get absenceTileJourneyBoth => 'Both journeys';
+  String get absenceTileJourneyBoth => 'ಎರಡೂ ಪ್ರಯಾಣಗಳು';
 
   @override
-  String get absenceTileJourneyMorning => 'Morning only';
+  String get absenceTileJourneyMorning => 'ಬೆಳಿಗ್ಗೆ ಮಾತ್ರ';
 
   @override
-  String get absenceTileJourneyAfternoon => 'Afternoon only';
+  String get absenceTileJourneyAfternoon => 'ಮಧ್ಯಾಹ್ನ ಮಾತ್ರ';
 
   @override
   String get absenceNoChildrenLinked =>
-      'Your school links your children to your account before you can declare an absence.';
+      'ಗೈರು ತಿಳಿಸುವ ಮೊದಲು ನಿಮ್ಮ ಶಾಲೆ ನಿಮ್ಮ ಮಕ್ಕಳನ್ನು ನಿಮ್ಮ ಖಾತೆಗೆ ಜೋಡಿಸಬೇಕು.';
 
   @override
   String get absenceErrorTripStarted =>
-      'This trip has already started, so this absence cannot be declared. Contact the school office instead.';
+      'ಈ ಪ್ರಯಾಣ ಈಗಾಗಲೇ ಆರಂಭವಾಗಿದೆ, ಆದ್ದರಿಂದ ಈ ಗೈರು ತಿಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ. ಬದಲಾಗಿ ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.';
 
   @override
   String absenceConfirmationMessage(
@@ -405,343 +406,342 @@ class AppLocalizationsKn extends AppLocalizations {
     String direction,
   ) {
     String _temp0 = intl.Intl.selectLogic(direction, {
-      'morningOnly': ' in the morning',
-      'afternoonOnly': ' in the afternoon',
+      'morningOnly': ' ಬೆಳಿಗ್ಗೆ',
+      'afternoonOnly': ' ಮಧ್ಯಾಹ್ನ',
       'other': '',
     });
-    return '$childName will not be expected $when$_temp0.';
+    return '$childName ಅವರನ್ನು $when$_temp0 ನಿರೀಕ್ಷಿಸಲಾಗುವುದಿಲ್ಲ.';
   }
 
   @override
   String absenceConfirmationRange(String from, String to) {
-    return 'from $from to $to';
+    return '$from ಇಂದ $to ವರೆಗೆ';
   }
 
   @override
-  String get journeyHistoryAppBarTitle => 'Journey history';
+  String get journeyHistoryAppBarTitle => 'ಪ್ರಯಾಣ ಇತಿಹಾಸ';
 
   @override
   String get journeyHistoryScopeDenied =>
-      'This child is no longer linked to your account. Contact the school office if you think that is wrong.';
+      'ಈ ಮಗು ಇನ್ನು ನಿಮ್ಮ ಖಾತೆಗೆ ಜೋಡಿಸಿಲ್ಲ. ಇದು ತಪ್ಪು ಎಂದು ನೀವು ಭಾವಿಸಿದರೆ ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.';
 
   @override
   String get journeyHistoryGenericFailure =>
-      'Something went wrong loading journey history. Please try again.';
+      'ಪ್ರಯಾಣ ಇತಿಹಾಸ ಲೋಡ್ ಮಾಡುವಾಗ ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
   String get journeyHistoryLoadFailureTitle =>
-      'Cannot load journey history right now';
+      'ಈಗ ಪ್ರಯಾಣ ಇತಿಹಾಸ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ';
 
   @override
-  String get journeyHistoryEmptyTitle => 'No journeys recorded yet';
+  String get journeyHistoryEmptyTitle => 'ಇನ್ನೂ ಯಾವುದೇ ಪ್ರಯಾಣ ದಾಖಲಾಗಿಲ್ಲ';
 
   @override
   String get journeyHistoryEmptyDetail =>
-      'Past trips will appear here once your child has traveled.';
+      'ನಿಮ್ಮ ಮಗು ಪ್ರಯಾಣಿಸಿದ ನಂತರ ಹಿಂದಿನ ಪ್ರಯಾಣಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.';
 
   @override
-  String get legDirectionMorning => 'Morning';
+  String get legDirectionMorning => 'ಬೆಳಿಗ್ಗೆ';
 
   @override
-  String get legDirectionAfternoon => 'Afternoon';
+  String get legDirectionAfternoon => 'ಮಧ್ಯಾಹ್ನ';
 
   @override
-  String get legMarkedAbsent => 'Marked absent';
+  String get legMarkedAbsent => 'ಗೈರು ಎಂದು ಗುರುತಿಸಲಾಗಿದೆ';
 
   @override
-  String get legNoRecordForLeg => 'No record for this leg';
+  String get legNoRecordForLeg => 'ಈ ಹಂತಕ್ಕೆ ದಾಖಲೆ ಇಲ್ಲ';
 
   @override
-  String get legNoScheduleForLeg => 'No schedule for this leg';
+  String get legNoScheduleForLeg => 'ಈ ಹಂತಕ್ಕೆ ವೇಳಾಪಟ್ಟಿ ಇಲ್ಲ';
 
   @override
   String legScheduledAt(String time) {
-    return 'Scheduled at $time';
+    return '$time ಕ್ಕೆ ನಿಗದಿಯಾಗಿದೆ';
   }
 
   @override
   String legBoardedAt(String time) {
-    return 'Boarded at $time';
+    return '$time ಕ್ಕೆ ಬಸ್ ಹತ್ತಿದ್ದಾರೆ';
   }
 
   @override
   String legArrivedAt(String time) {
-    return 'Arrived at $time';
+    return '$time ಕ್ಕೆ ತಲುಪಿದ್ದಾರೆ';
   }
 
   @override
   String legHandedOverAt(String time) {
-    return 'Handed over at $time';
+    return '$time ಕ್ಕೆ ಹಸ್ತಾಂತರಿಸಲಾಗಿದೆ';
   }
 
   @override
   String legBusDepartedAt(String time) {
-    return 'Bus departed at $time';
+    return 'ಬಸ್ $time ಕ್ಕೆ ಹೊರಟಿದೆ';
   }
 
   @override
-  String get childDetailNoDetailAvailable =>
-      'No detail available for this child.';
+  String get childDetailNoDetailAvailable => 'ಈ ಮಗುವಿಗೆ ವಿವರ ಲಭ್ಯವಿಲ್ಲ.';
 
   @override
-  String get childDetailTodayLabel => 'Today';
+  String get childDetailTodayLabel => 'ಇಂದು';
 
   @override
-  String get childDetailNoTripsToday => 'No trips scheduled for today.';
+  String get childDetailNoTripsToday => 'ಇಂದು ಯಾವುದೇ ಪ್ರಯಾಣ ನಿಗದಿಯಾಗಿಲ್ಲ.';
 
   @override
-  String get childDetailShowPickupCodeButton => 'Show pickup code';
+  String get childDetailShowPickupCodeButton => 'ಕರೆದೊಯ್ಯುವ ಕೋಡ್ ತೋರಿಸಿ';
 
   @override
   String get childDetailScopeDenied =>
-      'This child is no longer linked to your account. Contact the school office if you think that is wrong.';
+      'ಈ ಮಗು ಇನ್ನು ನಿಮ್ಮ ಖಾತೆಗೆ ಜೋಡಿಸಿಲ್ಲ. ಇದು ತಪ್ಪು ಎಂದು ನೀವು ಭಾವಿಸಿದರೆ ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.';
 
   @override
   String get childDetailGenericFailure =>
-      'Something went wrong loading this child\'\'s detail. Please try again.';
+      'ಈ ಮಗುವಿನ ವಿವರ ಲೋಡ್ ಮಾಡುವಾಗ ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
   String get liveTripGenericFailure =>
-      'Something went wrong loading this trip. Please try again.';
+      'ಈ ಪ್ರಯಾಣ ಲೋಡ್ ಮಾಡುವಾಗ ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
-  String get liveTripAppBarTitle => 'Live trip';
+  String get liveTripAppBarTitle => 'ನೇರ ಪ್ರಯಾಣ';
 
   @override
-  String get liveTripUnavailableTitle => 'Tracking is not available right now';
+  String get liveTripUnavailableTitle => 'ಈಗ ಟ್ರ್ಯಾಕಿಂಗ್ ಲಭ್ಯವಿಲ್ಲ';
 
   @override
   String get liveTripUnavailableDetail =>
-      'Live tracking only runs while the bus is on a trip (docs/05-ui/PARENT_APP.md, BR-TRACK-001). Check back once the trip has started.';
+      'ಬಸ್ ಪ್ರಯಾಣದಲ್ಲಿದ್ದಾಗ ಮಾತ್ರ ನೇರ ಟ್ರ್ಯಾಕಿಂಗ್ ನಡೆಯುತ್ತದೆ. ಪ್ರಯಾಣ ಆರಂಭವಾದ ಮೇಲೆ ಮತ್ತೆ ನೋಡಿ.';
 
   @override
-  String get liveTripCannotLoadTitle => 'Cannot load this trip right now';
+  String get liveTripCannotLoadTitle => 'ಈಗ ಈ ಪ್ರಯಾಣ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ';
 
   @override
-  String get liveTripNoTripTitle => 'No trip to show';
+  String get liveTripNoTripTitle => 'ತೋರಿಸಲು ಪ್ರಯಾಣವಿಲ್ಲ';
 
   @override
-  String get liveTripNoTripDetail => 'This child has no active trip right now.';
+  String get liveTripNoTripDetail => 'ಈ ಮಗುವಿಗೆ ಈಗ ಯಾವುದೇ ಸಕ್ರಿಯ ಪ್ರಯಾಣವಿಲ್ಲ.';
 
   @override
   String liveTripSummaryStopsAway(int stops) {
     String _temp0 = intl.Intl.pluralLogic(
       stops,
       locale: localeName,
-      other: 'stops',
-      one: 'stop',
+      other: 'ನಿಲ್ದಾಣಗಳು',
+      one: 'ನಿಲ್ದಾಣ',
     );
-    return '$stops $_temp0 away';
+    return '$stops $_temp0 ದೂರ';
   }
 
   @override
   String liveTripSummaryEtaToStop(int eta, String stop) {
-    return '~$eta min to $stop';
+    return '$stop ಗೆ ಸುಮಾರು $eta ನಿ';
   }
 
   @override
-  String get liveTripEtaConfidenceModerate => ' · moderate confidence';
+  String get liveTripEtaConfidenceModerate => ' · ಮಧ್ಯಮ ವಿಶ್ವಾಸ';
 
   @override
   String get liveTripEtaConfidenceLow =>
-      ' · low confidence — routing unavailable';
+      ' · ಕಡಿಮೆ ವಿಶ್ವಾಸ — ಮಾರ್ಗ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ';
 
   @override
-  String get liveTripEtaJustNow => 'just now';
+  String get liveTripEtaJustNow => 'ಈಗಷ್ಟೇ';
 
   @override
   String liveTripEtaSecondsAgo(int seconds) {
-    return '${seconds}s ago';
+    return '$seconds ಸೆ ಹಿಂದೆ';
   }
 
   @override
   String liveTripEtaMinutesAgo(int minutes) {
-    return '$minutes min ago';
+    return '$minutes ನಿ ಹಿಂದೆ';
   }
 
   @override
   String liveTripEstimateCalculated(String ago, String confidence) {
-    return 'Estimate calculated $ago$confidence.';
+    return 'ಅಂದಾಜನ್ನು $ago ಲೆಕ್ಕ ಹಾಕಲಾಗಿದೆ$confidence.';
   }
 
   @override
-  String get handoverCollectChildTitleNoName => 'Collect your child';
+  String get handoverCollectChildTitleNoName => 'ನಿಮ್ಮ ಮಗುವನ್ನು ಕರೆದೊಯ್ಯಿರಿ';
 
   @override
   String handoverCollectChildTitleWithName(String name) {
-    return 'Collect $name';
+    return '$name ಅವರನ್ನು ಕರೆದೊಯ್ಯಿರಿ';
   }
 
   @override
-  String get handoverShowToAttendant => 'Show this to the bus attendant';
+  String get handoverShowToAttendant => 'ಇದನ್ನು ಬಸ್ ಸಹಾಯಕರಿಗೆ ತೋರಿಸಿ';
 
   @override
   String handoverQrSemanticLabel(String name) {
-    return 'Verification QR code for $name';
+    return '$name ಅವರಿಗಾಗಿ ಪರಿಶೀಲನಾ QR ಕೋಡ್';
   }
 
   @override
-  String get handoverQrSemanticsLabelPlain => 'Verification QR code';
+  String get handoverQrSemanticsLabelPlain => 'ಪರಿಶೀಲನಾ QR ಕೋಡ್';
 
   @override
-  String get handoverIfCannotScan => 'If the attendant cannot scan';
+  String get handoverIfCannotScan => 'ಸಹಾಯಕರಿಗೆ ಸ್ಕ್ಯಾನ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗದಿದ್ದರೆ';
 
   @override
-  String get handoverGenerateNewCode => 'Generate a new code';
+  String get handoverGenerateNewCode => 'ಹೊಸ ಕೋಡ್ ರಚಿಸಿ';
 
   @override
-  String get handoverCodeExpired => 'This code has expired';
+  String get handoverCodeExpired => 'ಈ ಕೋಡ್ ಅವಧಿ ಮುಗಿದಿದೆ';
 
   @override
   String handoverExpiresInMinSec(int minutes, String seconds) {
-    return 'Expires in $minutes:$seconds';
+    return '$minutes:$seconds ರಲ್ಲಿ ಅವಧಿ ಮುಗಿಯುತ್ತದೆ';
   }
 
   @override
   String handoverExpiresInSeconds(int seconds) {
-    return 'Expires in ${seconds}s';
+    return '$seconds ಸೆ ರಲ್ಲಿ ಅವಧಿ ಮುಗಿಯುತ್ತದೆ';
   }
 
   @override
   String get handoverErrorNotAuthorised =>
-      'You do not hold the right to collect this child (BR-GRD-006). Contact another guardian who does, or the school office.';
+      'ಈ ಮಗುವನ್ನು ಕರೆದೊಯ್ಯುವ ಹಕ್ಕು ನಿಮಗಿಲ್ಲ. ಆ ಹಕ್ಕು ಇರುವ ಇನ್ನೊಬ್ಬ ಪೋಷಕರನ್ನು ಅಥವಾ ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.';
 
   @override
   String get handoverGenericFailure =>
-      'Something went wrong requesting a code. Please try again.';
+      'ಕೋಡ್ ಕೋರುವಾಗ ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
-  String get pickupPersonsAppBarTitle => 'Pickup persons';
+  String get pickupPersonsAppBarTitle => 'ಕರೆದೊಯ್ಯುವವರು';
 
   @override
-  String get pickupPersonsAddButton => 'Add pickup person';
+  String get pickupPersonsAddButton => 'ಕರೆದೊಯ್ಯುವವರನ್ನು ಸೇರಿಸಿ';
 
   @override
   String get pickupPersonsNoneAuthorised =>
-      'No pickup persons authorised for this child.';
+      'ಈ ಮಗುವಿಗೆ ಯಾರಿಗೂ ಕರೆದೊಯ್ಯುವ ಅನುಮತಿ ಇಲ್ಲ.';
 
   @override
-  String get pickupPersonsRevokeButton => 'Revoke';
+  String get pickupPersonsRevokeButton => 'ರದ್ದುಗೊಳಿಸಿ';
 
   @override
   String pickupPersonsValidRange(String from, String to) {
-    return 'Valid $from – $to';
+    return 'ಮಾನ್ಯತೆ $from – $to';
   }
 
   @override
-  String get pickupPersonsExpiredSuffix => ' · expired';
+  String get pickupPersonsExpiredSuffix => ' · ಅವಧಿ ಮುಗಿದಿದೆ';
 
   @override
-  String get pickupPersonsNewPersonTitle => 'New pickup person';
+  String get pickupPersonsNewPersonTitle => 'ಹೊಸ ಕರೆದೊಯ್ಯುವವರು';
 
   @override
-  String get pickupPersonsFullNameLabel => 'Full name';
+  String get pickupPersonsFullNameLabel => 'ಪೂರ್ಣ ಹೆಸರು';
 
   @override
-  String get pickupPersonsPhoneLabel => 'Phone number';
+  String get pickupPersonsPhoneLabel => 'ದೂರವಾಣಿ ಸಂಖ್ಯೆ';
 
   @override
-  String get pickupPersonsRelationshipLabel => 'Relationship (optional)';
+  String get pickupPersonsRelationshipLabel => 'ಸಂಬಂಧ (ಐಚ್ಛಿಕ)';
 
   @override
-  String get pickupPersonsRelationshipHint => 'e.g. Uncle';
+  String get pickupPersonsRelationshipHint => 'ಉದಾ. ಚಿಕ್ಕಪ್ಪ';
 
   @override
-  String get pickupPersonsValidityChoose => 'Choose validity window';
+  String get pickupPersonsValidityChoose => 'ಮಾನ್ಯತೆ ಅವಧಿ ಆಯ್ಕೆಮಾಡಿ';
 
   @override
-  String get pickupPersonsNominateButton => 'Nominate';
+  String get pickupPersonsNominateButton => 'ನಾಮನಿರ್ದೇಶನ ಮಾಡಿ';
 
   @override
   String get pickupPersonsErrorNotAuthorised =>
-      'You do not hold the right to authorise pickups for this child (BR-GRD-006). Contact another guardian who does, or the school office.';
+      'ಈ ಮಗುವನ್ನು ಕರೆದೊಯ್ಯಲು ಅನುಮತಿ ನೀಡುವ ಹಕ್ಕು ನಿಮಗಿಲ್ಲ. ಆ ಹಕ್ಕು ಇರುವ ಇನ್ನೊಬ್ಬ ಪೋಷಕರನ್ನು ಅಥವಾ ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.';
 
   @override
   String get pickupPersonsErrorOutsideValidity =>
-      'That validity window has already passed.';
+      'ಆ ಮಾನ್ಯತೆ ಅವಧಿ ಈಗಾಗಲೇ ಮುಗಿದಿದೆ.';
 
   @override
   String get pickupPersonsNoChildrenLinked =>
-      'Your school links your children to your account before you can manage pickup persons.';
+      'ಕರೆದೊಯ್ಯುವವರನ್ನು ನಿರ್ವಹಿಸುವ ಮೊದಲು ನಿಮ್ಮ ಶಾಲೆ ನಿಮ್ಮ ಮಕ್ಕಳನ್ನು ನಿಮ್ಮ ಖಾತೆಗೆ ಜೋಡಿಸಬೇಕು.';
 
   @override
-  String get notificationsAppBarTitle => 'Notifications';
+  String get notificationsAppBarTitle => 'ಅಧಿಸೂಚನೆಗಳು';
 
   @override
   String get notificationsGenericFailure =>
-      'Something went wrong loading your notifications. Please try again.';
+      'ನಿಮ್ಮ ಅಧಿಸೂಚನೆಗಳನ್ನು ಲೋಡ್ ಮಾಡುವಾಗ ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
   String get notificationsLoadFailureTitle =>
-      'Cannot load notifications right now';
+      'ಈಗ ಅಧಿಸೂಚನೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ';
 
   @override
-  String get notificationsEmptyTitle => 'No notifications yet';
+  String get notificationsEmptyTitle => 'ಇನ್ನೂ ಯಾವುದೇ ಅಧಿಸೂಚನೆ ಇಲ್ಲ';
 
   @override
   String get notificationsEmptyDetail =>
-      'You\'\'ll see updates about your children here.';
+      'ನಿಮ್ಮ ಮಕ್ಕಳ ಕುರಿತ ಅಪ್‌ಡೇಟ್‌ಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.';
 
   @override
-  String get otpAppBarTitle => 'Enter code';
+  String get otpAppBarTitle => 'ಕೋಡ್ ನಮೂದಿಸಿ';
 
   @override
-  String get otpHeading => 'Enter the code';
+  String get otpHeading => 'ಕೋಡ್ ನಮೂದಿಸಿ';
 
   @override
   String otpSentTo(String phone) {
-    return 'We sent a code to $phone.';
+    return '$phone ಗೆ ನಾವು ಕೋಡ್ ಕಳುಹಿಸಿದ್ದೇವೆ.';
   }
 
   @override
-  String get otpCodeLabel => 'Code';
+  String get otpCodeLabel => 'ಕೋಡ್';
 
   @override
-  String get otpVerifyButton => 'Verify';
+  String get otpVerifyButton => 'ಪರಿಶೀಲಿಸಿ';
 
   @override
-  String get otpEntryChangeNumberButton => 'Change number';
+  String get otpEntryChangeNumberButton => 'ಸಂಖ್ಯೆ ಬದಲಾಯಿಸಿ';
 
   @override
-  String get otpEntrySendNewCodeButton => 'Send a new code';
+  String get otpEntrySendNewCodeButton => 'ಹೊಸ ಕೋಡ್ ಕಳುಹಿಸಿ';
 
   @override
-  String get loginHeading => 'Sign in';
+  String get loginHeading => 'ಸೈನ್ ಇನ್';
 
   @override
-  String get simpleLoginParentHeading => 'Parent sign in';
+  String get simpleLoginParentHeading => 'ಪೋಷಕರ ಸೈನ್ ಇನ್';
 
   @override
   String get loginInstructions =>
-      'Enter the mobile number registered with your school.';
+      'ನಿಮ್ಮ ಶಾಲೆಯಲ್ಲಿ ನೋಂದಾಯಿಸಿರುವ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ.';
 
   @override
-  String get loginMobileNumberLabel => 'Mobile number';
+  String get loginMobileNumberLabel => 'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ';
 
   @override
-  String get loginSendCodeButton => 'Send code';
+  String get loginSendCodeButton => 'ಕೋಡ್ ಕಳುಹಿಸಿ';
 
   @override
   String get loginErrorCredentialsInvalid =>
-      'That code is not correct. Please check and try again.';
+      'ಆ ಕೋಡ್ ಸರಿಯಿಲ್ಲ. ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
   String get loginErrorOtpExpired =>
-      'That code has expired. Tap “Send a new code” to get another.';
+      'ಆ ಕೋಡ್ ಅವಧಿ ಮುಗಿದಿದೆ. ಹೊಸದನ್ನು ಪಡೆಯಲು “ಹೊಸ ಕೋಡ್ ಕಳುಹಿಸಿ” ಒತ್ತಿ.';
 
   @override
   String get loginErrorOtpAlreadyUsed =>
-      'That code has already been used. Tap “Send a new code”.';
+      'ಆ ಕೋಡ್ ಈಗಾಗಲೇ ಬಳಕೆಯಾಗಿದೆ. “ಹೊಸ ಕೋಡ್ ಕಳುಹಿಸಿ” ಒತ್ತಿ.';
 
   @override
   String get loginErrorAccountLocked =>
-      'This account is locked. Please contact the school office.';
+      'ಈ ಖಾತೆ ಲಾಕ್ ಆಗಿದೆ. ದಯವಿಟ್ಟು ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.';
 
   @override
   String get loginErrorRateLimited =>
-      'Too many attempts. Please wait a minute before trying again.';
+      'ಹಲವು ಪ್ರಯತ್ನಗಳಾಗಿವೆ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸುವ ಮೊದಲು ಒಂದು ನಿಮಿಷ ಕಾಯಿರಿ.';
 
   @override
   String get loginErrorDependencyUnavailable =>
-      'Cannot reach the school right now. Check your connection and try again.';
+      'ಈಗ ಶಾಲೆಯನ್ನು ತಲುಪಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ನಿಮ್ಮ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 }

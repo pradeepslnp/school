@@ -71,6 +71,8 @@ Flyway applies migrations on startup. The API listens on `http://localhost:8080`
 
 **`SPRING_PROFILES_ACTIVE=demo` is not optional for a usable local backend.** It is the only thing that adds `classpath:db/seed` to `spring.flyway.locations` (`application-demo.yml`), and without it Flyway runs `db/migration` only — an empty schema with no accounts, so nothing can sign in. The profile also sets the fixed OTP (`123123`) and raises the OTP/email logger so codes and links are readable in the log. It is refused structurally by any deployment that does not name it.
 
+**One phone in two organizations signs in locally, and only locally.** BR-IAM-003 treats the same number in two organizations as a data defect, and production refuses the sign-in — with the generic "invalid code", so it reads like a broken OTP. A local database collects that defect the moment you reuse a seeded parent's number (`8050602046`, `8711865011`) in your own organization. On the `demo` profile the client signing in picks the account instead: the parent app gets the `GUARDIAN`, the driver app the `DRIVER`/`ATTENDANT`. Two accounts of the same kind are settled by id, stably, and every such sign-in logs a `WARN` naming the organization chosen. See `AmbiguousPhoneResolver`; the apps send `clientType` on `POST /auth/otp/request` for this.
+
 ### Configuration
 
 Local defaults live in `application.yml` itself; there is no `application-local.yml`. **Secrets never are committed.** The two database passwords above match `infrastructure/db/init/01-roles.sql` (`local_app`) and the compose default (`local_owner`); override anything via environment, e.g. `GUARDIAN_DB_PASSWORD`, `GUARDIAN_PORT`.

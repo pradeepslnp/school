@@ -5,6 +5,7 @@ import com.guardian.common.audit.AuditPort;
 import com.guardian.common.audit.AuditRecord;
 import com.guardian.common.error.ErrorCode;
 import com.guardian.common.tenant.TenantScopedTransaction;
+import com.guardian.identity.application.AmbiguousPhoneResolver;
 import com.guardian.identity.application.AuthenticationFailedException;
 import com.guardian.identity.application.command.VerifyOtpCommand;
 import com.guardian.identity.application.port.OtpCredentialRepository;
@@ -57,6 +58,7 @@ public class VerifyOtpUseCase {
   private final SessionFactory sessionFactory;
   private final AuditPort auditPort;
   private final TenantScopedTransaction tenantScoped;
+  private final AmbiguousPhoneResolver ambiguousPhones;
 
   public VerifyOtpUseCase(
       PreAuthenticationDirectory directory,
@@ -65,7 +67,8 @@ public class VerifyOtpUseCase {
       SecretHasher secretHasher,
       SessionFactory sessionFactory,
       AuditPort auditPort,
-      TenantScopedTransaction tenantScoped) {
+      TenantScopedTransaction tenantScoped,
+      AmbiguousPhoneResolver ambiguousPhones) {
     this.directory = directory;
     this.otpCredentials = otpCredentials;
     this.users = users;
@@ -73,6 +76,7 @@ public class VerifyOtpUseCase {
     this.sessionFactory = sessionFactory;
     this.auditPort = auditPort;
     this.tenantScoped = tenantScoped;
+    this.ambiguousPhones = ambiguousPhones;
   }
 
   /**
@@ -86,7 +90,7 @@ public class VerifyOtpUseCase {
     ClientType clientType = parseClientType(command.clientType());
     OtpCode submitted = parseOtp(command.otp());
 
-    PhoneMatch match = resolveSingleActiveUser(phone);
+    PhoneMatch match = resolveSingleActiveUser(phone, clientType);
 
     Outcome outcome =
         tenantScoped.execute(
@@ -194,11 +198,16 @@ public class VerifyOtpUseCase {
     return Outcome.succeeded(issued.response());
   }
 
-  private PhoneMatch resolveSingleActiveUser(PhoneNumber phone) {
+  private PhoneMatch resolveSingleActiveUser(PhoneNumber phone, ClientType clientType) {
     List<PhoneMatch> matches = directory.findByPhone(phone);
 
     if (matches.size() > 1) {
-      // BR-IAM-003, as in RequestOtpUseCase: refuse rather than pick a tenant at random.
+      // BR-IAM-003, as in RequestOtpUseCase: refuse rather than pick a tenant at random — unless
+      // this is a magic-OTP build, where the client signing in picks (demo only).
+      Optional<PhoneMatch> chosen = ambiguousPhones.resolve(phone, matches, clientType);
+      if (chosen.isPresent()) {
+        return chosen.get();
+      }
       log.error(
           "Phone {} resolves to {} users across tenants; refusing to guess (BR-IAM-003)",
           phone.masked(),

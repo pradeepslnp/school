@@ -125,7 +125,8 @@ public class AuthController {
   public ResponseEntity<OtpRequestedResponse> requestOtp(
       @Valid @RequestBody OtpRequestRequest request, HttpServletRequest httpRequest) {
 
-    requestOtp.execute(new RequestOtpCommand(request.phone(), sourceIp(httpRequest)));
+    requestOtp.execute(
+        new RequestOtpCommand(request.phone(), sourceIp(httpRequest), request.clientType()));
 
     return ResponseEntity.accepted()
         .body(OtpRequestedResponse.of(OtpCredential.LIFETIME.toSeconds()));

@@ -3,11 +3,18 @@
 Generated for ADR-0013 (interim client-bundled localisation, English/Kannada). Every
 resource key in `app_en.arb` is listed here with its English value and status.
 
-**Current status for every key below: `pending-kn-translation`.** `app_kn.arb` currently
-holds the English value as an explicit, tracked placeholder for every key — not a real
-Kannada translation, and not silently missing either. This is deliberate per ADR-0013: an
-honest, reviewable gap rather than an unreviewed machine translation, especially for
-safety-critical copy.
+**Current status (2026-09-23): every key carries a Kannada value, drafted by an AI assistant
+at the product owner's request — not yet reviewed by a native speaker.** `app_kn.arb` previously
+held the English value as a tracked placeholder, so the app showed English when a parent chose
+Kannada; that is what prompted this pass.
+
+Two keys stay in English deliberately: `appTitle` (the product name) and `dashboardGreeting`
+(placeholders only, no words of its own).
+
+**The safety-critical table below is not cleared by this pass.** ADR-0013's rule stands: a
+Kannada value for wrong-bus, no-show, unaccounted-for, handover-authorisation or staleness copy
+must be read by a native speaker before it reaches a real family. Until then these strings are a
+draft for testing, not shippable copy.
 
 ## Safety-critical / child-safety-relevant copy — needs native-speaker sign-off before a Kannada value ships
 
@@ -19,24 +26,24 @@ of safety-relevant copy is a real safety risk in this product, not a cosmetic on
 
 | Key | English value | Status |
 |---|---|---|
-| `detailUnaccounted` | No record of {name} getting off the bus. The school has been alerted and is checking now. | pending-kn-translation — native-speaker sign-off required |
-| `criticalBannerMessage` | {name} has not been accounted for. The school has been alerted and staff are checking now. | pending-kn-translation — native-speaker sign-off required |
-| `criticalBannerUrgentSemanticLabel` | Urgent. {message} | pending-kn-translation — native-speaker sign-off required |
-| `criticalBannerActionNeeded` | ACTION NEEDED NOW | pending-kn-translation — native-speaker sign-off required |
-| `criticalBannerNotAccountedTitle` | Not yet accounted for | pending-kn-translation — native-speaker sign-off required |
-| `criticalBannerCallSchoolButton` | Call the school | pending-kn-translation — native-speaker sign-off required |
-| `criticalBannerSeeWhatHappenedButton` | See what happened | pending-kn-translation — native-speaker sign-off required |
-| `freshnessNoSignalFor` | No signal for {age} | pending-kn-translation — native-speaker sign-off required |
-| `freshnessLastSeen` | Last seen {age} ago | pending-kn-translation — native-speaker sign-off required |
-| `journeyStateDidNotBoard` | Did not board | pending-kn-translation — native-speaker sign-off required |
-| `journeyStateNotAccountedFor` | Not yet accounted for | pending-kn-translation — native-speaker sign-off required |
-| `legBusDepartedAt` | Bus departed at {time} | pending-kn-translation — native-speaker sign-off required |
-| `liveTripEstimateCalculated` | Estimate calculated {ago}{confidence}. | pending-kn-translation — native-speaker sign-off required |
-| `handoverQrSemanticLabel` | Verification QR code for {name} | pending-kn-translation — native-speaker sign-off required |
-| `handoverErrorNotAuthorised` | You do not hold the right to collect this child (BR-GRD-006). Contact another guardian who does, or the school office. | pending-kn-translation — native-speaker sign-off required |
-| `handoverGenericFailure` | Something went wrong requesting a code. Please try again. | pending-kn-translation — native-speaker sign-off required |
-| `pickupPersonsExpiredSuffix` |  · expired | pending-kn-translation — native-speaker sign-off required |
-| `pickupPersonsErrorNotAuthorised` | You do not hold the right to authorise pickups for this child (BR-GRD-006). Contact another guardian who does, or the school office. | pending-kn-translation — native-speaker sign-off required |
+| `detailUnaccounted` | No record of {name} getting off the bus. The school has been alerted and is checking now. | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `criticalBannerMessage` | {name} has not been accounted for. The school has been alerted and staff are checking now. | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `criticalBannerUrgentSemanticLabel` | Urgent. {message} | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `criticalBannerActionNeeded` | ACTION NEEDED NOW | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `criticalBannerNotAccountedTitle` | Not yet accounted for | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `criticalBannerCallSchoolButton` | Call the school | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `criticalBannerSeeWhatHappenedButton` | See what happened | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `freshnessNoSignalFor` | No signal for {age} | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `freshnessLastSeen` | Last seen {age} ago | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `journeyStateDidNotBoard` | Did not board | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `journeyStateNotAccountedFor` | Not yet accounted for | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `legBusDepartedAt` | Bus departed at {time} | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `liveTripEstimateCalculated` | Estimate calculated {ago}{confidence}. | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `handoverQrSemanticLabel` | Verification QR code for {name} | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `handoverErrorNotAuthorised` | You do not hold the right to collect this child (BR-GRD-006). Contact another guardian who does, or the school office. | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `handoverGenericFailure` | Something went wrong requesting a code. Please try again. | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `pickupPersonsExpiredSuffix` |  · expired | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
+| `pickupPersonsErrorNotAuthorised` | You do not hold the right to authorise pickups for this child (BR-GRD-006). Contact another guardian who does, or the school office. | kn-drafted — NATIVE-SPEAKER SIGN-OFF REQUIRED |
 
 (18 keys)
 
@@ -44,186 +51,186 @@ of safety-relevant copy is a real safety risk in this product, not a cosmetic on
 
 | Key | English value | Status |
 |---|---|---|
-| `appTitle` | Guardian | pending-kn-translation |
-| `tryAgainButton` | Try again | pending-kn-translation |
-| `cancelButton` | Cancel | pending-kn-translation |
-| `retryButton` | Retry | pending-kn-translation |
-| `whichChildLabel` | Which child? | pending-kn-translation |
-| `trackBusButton` | Track bus | pending-kn-translation |
-| `mapViewLabel` | Map view | pending-kn-translation |
-| `errorDependencyUnavailable` | Your device cannot reach the school right now. Check your connection and try again. | pending-kn-translation |
-| `errorRateLimited` | Too many attempts just now. Wait a moment and try again. | pending-kn-translation |
-| `errorGenericTryAgain` | Something went wrong. Please try again. | pending-kn-translation |
-| `noChildrenLinkedTitle` | No children linked yet | pending-kn-translation |
-| `noChildrenLinkedDetail` | Your school links your children to your account. | pending-kn-translation |
-| `dayLabelToday` | Today | pending-kn-translation |
-| `dayLabelYesterday` | Yesterday | pending-kn-translation |
-| `relativeDayToday` | today | pending-kn-translation |
-| `relativeDayTomorrow` | tomorrow | pending-kn-translation |
-| `durationSeconds` | {seconds}s | pending-kn-translation |
-| `durationMinutes` | {minutes} min | pending-kn-translation |
-| `durationHours` | {hours} h | pending-kn-translation |
-| `atTimeFragment` | at {time} | pending-kn-translation |
-| `themeModeSystem` | Match device | pending-kn-translation |
-| `themeModeLight` | Light | pending-kn-translation |
-| `themeModeDark` | Dark | pending-kn-translation |
-| `themeToggleTooltip` | Appearance: {mode} | pending-kn-translation |
-| `languageSwitcherTooltip` | Language | pending-kn-translation |
-| `languageSwitcherDialogTitle` | Choose language | pending-kn-translation |
-| `navHomeTab` | Home | pending-kn-translation |
-| `navJourneysTab` | Journeys | pending-kn-translation |
-| `navAlertsTab` | Alerts | pending-kn-translation |
-| `navPickupTab` | Pickup | pending-kn-translation |
-| `homeAppBarTitle` | My children | pending-kn-translation |
-| `refreshTooltip` | Refresh | pending-kn-translation |
-| `homeLoadFailureTitle` | Cannot reach the school right now | pending-kn-translation |
-| `homeNoChildrenDetail` | Your school links your children to your account. Contact the school office if you expect to see someone here. | pending-kn-translation |
-| `homeGenericLoadFailure` | Something went wrong loading your children. Please try again. | pending-kn-translation |
-| `fallbackVehicleName` | the bus | pending-kn-translation |
-| `fallbackStopName` | your stop | pending-kn-translation |
-| `connectionBannerNoData` | Not connected. Nothing has loaded yet. | pending-kn-translation |
-| `connectionBannerLastUpdated` | Not connected · last updated {time} | pending-kn-translation |
-| `greetingMorning` | Good morning | pending-kn-translation |
-| `greetingAfternoon` | Good afternoon | pending-kn-translation |
-| `greetingEvening` | Good evening | pending-kn-translation |
-| `dashboardGreeting` | {greeting}, {name} | pending-kn-translation |
-| `schoolTimeZoneSemanticLabel` | All times are shown in school time, {zone}. | pending-kn-translation |
-| `schoolTimeLabel` | School time · {zone} | pending-kn-translation |
-| `arrivalEstimateWithAge` | Arriving at school about {eta} · estimated {age} ago | pending-kn-translation |
-| `arrivalEstimateNoAge` | Arriving at school about {eta} · estimate | pending-kn-translation |
-| `detailAtRestNextBus` | At school. Next bus at {time}. | pending-kn-translation |
-| `detailAtRestNoBus` | At school. No bus scheduled for the rest of today. | pending-kn-translation |
-| `detailAbsent` | You marked {name} as not travelling today. | pending-kn-translation |
-| `detailScheduledVehicle` | {vehicle} is scheduled | pending-kn-translation |
-| `detailFromStop` | from {stop} | pending-kn-translation |
-| `detailAtEta` | at about {eta} | pending-kn-translation |
-| `detailVehicleOnWay` | {vehicle} is on the way | pending-kn-translation |
-| `detailToStop` | to {stop} | pending-kn-translation |
-| `detailArrivingAbout` | · arriving about {eta} | pending-kn-translation |
-| `detailBoardedWord` | Boarded | pending-kn-translation |
-| `detailAtStop` | at {stop} | pending-kn-translation |
-| `detailArrivedAtTime` | Arrived at school at {time}. | pending-kn-translation |
-| `detailArrivedNoTime` | Arrived at school. | pending-kn-translation |
-| `detailHandedOverWord` | Handed over | pending-kn-translation |
-| `detailDidNotBoardWord` | Did not board | pending-kn-translation |
-| `detailBusDepartedAt` | · bus departed {time} | pending-kn-translation |
-| `detailUnknown` | This version of the app cannot read {name}''s current status. Update the app, or contact the school office to check. | pending-kn-translation |
-| `quickActionsTitle` | Quick actions | pending-kn-translation |
-| `quickActionDeclareAbsence` | Declare absence | pending-kn-translation |
-| `quickActionPickupPersons` | Pickup persons | pending-kn-translation |
-| `freshnessNoSignal` | No signal | pending-kn-translation |
-| `freshnessLive` | Live · updated {age} ago | pending-kn-translation |
-| `journeyStateAtSchool` | At school | pending-kn-translation |
-| `journeyStateBusScheduled` | Bus scheduled | pending-kn-translation |
-| `journeyStateBusOnWay` | Bus on the way | pending-kn-translation |
-| `journeyStateOnBus` | On the bus | pending-kn-translation |
-| `journeyStateArrivedAtSchool` | Arrived at school | pending-kn-translation |
-| `journeyStateHandedOver` | Handed over | pending-kn-translation |
-| `journeyStateNotTravelling` | Not travelling today | pending-kn-translation |
-| `journeyStateUnavailable` | Status unavailable | pending-kn-translation |
-| `absenceAppBarTitle` | Declare absence | pending-kn-translation |
-| `absenceWhenLabel` | When? | pending-kn-translation |
-| `absenceWhenToday` | Today | pending-kn-translation |
-| `absenceWhenTomorrow` | Tomorrow | pending-kn-translation |
-| `absenceWhenDateRange` | Date range | pending-kn-translation |
-| `absenceWhichJourney` | Which journey? | pending-kn-translation |
-| `absenceJourneyBoth` | Both | pending-kn-translation |
-| `absenceJourneyMorning` | Morning | pending-kn-translation |
-| `absenceJourneyAfternoon` | Afternoon | pending-kn-translation |
-| `absenceReasonLabel` | Reason (optional) | pending-kn-translation |
-| `absenceReasonHint` | Not required | pending-kn-translation |
-| `absenceConfirmButton` | Confirm | pending-kn-translation |
-| `absenceUpcomingTitle` | Upcoming absences | pending-kn-translation |
-| `absenceNoneDeclared` | No absences declared for this child. | pending-kn-translation |
-| `absenceDateRangeChoose` | Choose dates | pending-kn-translation |
-| `absenceTileJourneyBoth` | Both journeys | pending-kn-translation |
-| `absenceTileJourneyMorning` | Morning only | pending-kn-translation |
-| `absenceTileJourneyAfternoon` | Afternoon only | pending-kn-translation |
-| `absenceNoChildrenLinked` | Your school links your children to your account before you can declare an absence. | pending-kn-translation |
-| `absenceErrorTripStarted` | This trip has already started, so this absence cannot be declared. Contact the school office instead. | pending-kn-translation |
-| `absenceConfirmationMessage` | {childName} will not be expected {when}{direction, select, morningOnly{ in the morning} afternoonOnly{ in the afternoon} other{}}. | pending-kn-translation |
-| `absenceConfirmationRange` | from {from} to {to} | pending-kn-translation |
-| `journeyHistoryAppBarTitle` | Journey history | pending-kn-translation |
-| `journeyHistoryScopeDenied` | This child is no longer linked to your account. Contact the school office if you think that is wrong. | pending-kn-translation |
-| `journeyHistoryGenericFailure` | Something went wrong loading journey history. Please try again. | pending-kn-translation |
-| `journeyHistoryLoadFailureTitle` | Cannot load journey history right now | pending-kn-translation |
-| `journeyHistoryEmptyTitle` | No journeys recorded yet | pending-kn-translation |
-| `journeyHistoryEmptyDetail` | Past trips will appear here once your child has traveled. | pending-kn-translation |
-| `legDirectionMorning` | Morning | pending-kn-translation |
-| `legDirectionAfternoon` | Afternoon | pending-kn-translation |
-| `legMarkedAbsent` | Marked absent | pending-kn-translation |
-| `legNoRecordForLeg` | No record for this leg | pending-kn-translation |
-| `legNoScheduleForLeg` | No schedule for this leg | pending-kn-translation |
-| `legScheduledAt` | Scheduled at {time} | pending-kn-translation |
-| `legBoardedAt` | Boarded at {time} | pending-kn-translation |
-| `legArrivedAt` | Arrived at {time} | pending-kn-translation |
-| `legHandedOverAt` | Handed over at {time} | pending-kn-translation |
-| `childDetailNoDetailAvailable` | No detail available for this child. | pending-kn-translation |
-| `childDetailTodayLabel` | Today | pending-kn-translation |
-| `childDetailNoTripsToday` | No trips scheduled for today. | pending-kn-translation |
-| `childDetailShowPickupCodeButton` | Show pickup code | pending-kn-translation |
-| `childDetailScopeDenied` | This child is no longer linked to your account. Contact the school office if you think that is wrong. | pending-kn-translation |
-| `childDetailGenericFailure` | Something went wrong loading this child''s detail. Please try again. | pending-kn-translation |
-| `liveTripGenericFailure` | Something went wrong loading this trip. Please try again. | pending-kn-translation |
-| `liveTripAppBarTitle` | Live trip | pending-kn-translation |
-| `liveTripUnavailableTitle` | Tracking is not available right now | pending-kn-translation |
-| `liveTripUnavailableDetail` | Live tracking only runs while the bus is on a trip (docs/05-ui/PARENT_APP.md, BR-TRACK-001). Check back once the trip has started. | pending-kn-translation |
-| `liveTripCannotLoadTitle` | Cannot load this trip right now | pending-kn-translation |
-| `liveTripNoTripTitle` | No trip to show | pending-kn-translation |
-| `liveTripNoTripDetail` | This child has no active trip right now. | pending-kn-translation |
-| `liveTripSummaryStopsAway` | {stops} {stops, plural, one{stop} other{stops}} away | pending-kn-translation |
-| `liveTripSummaryEtaToStop` | ~{eta} min to {stop} | pending-kn-translation |
-| `liveTripEtaConfidenceModerate` |  · moderate confidence | pending-kn-translation |
-| `liveTripEtaConfidenceLow` |  · low confidence — routing unavailable | pending-kn-translation |
-| `liveTripEtaJustNow` | just now | pending-kn-translation |
-| `liveTripEtaSecondsAgo` | {seconds}s ago | pending-kn-translation |
-| `liveTripEtaMinutesAgo` | {minutes} min ago | pending-kn-translation |
-| `handoverCollectChildTitleNoName` | Collect your child | pending-kn-translation |
-| `handoverCollectChildTitleWithName` | Collect {name} | pending-kn-translation |
-| `handoverShowToAttendant` | Show this to the bus attendant | pending-kn-translation |
-| `handoverQrSemanticsLabelPlain` | Verification QR code | pending-kn-translation |
-| `handoverIfCannotScan` | If the attendant cannot scan | pending-kn-translation |
-| `handoverGenerateNewCode` | Generate a new code | pending-kn-translation |
-| `handoverCodeExpired` | This code has expired | pending-kn-translation |
-| `handoverExpiresInMinSec` | Expires in {minutes}:{seconds} | pending-kn-translation |
-| `handoverExpiresInSeconds` | Expires in {seconds}s | pending-kn-translation |
-| `pickupPersonsAppBarTitle` | Pickup persons | pending-kn-translation |
-| `pickupPersonsAddButton` | Add pickup person | pending-kn-translation |
-| `pickupPersonsNoneAuthorised` | No pickup persons authorised for this child. | pending-kn-translation |
-| `pickupPersonsRevokeButton` | Revoke | pending-kn-translation |
-| `pickupPersonsValidRange` | Valid {from} – {to} | pending-kn-translation |
-| `pickupPersonsNewPersonTitle` | New pickup person | pending-kn-translation |
-| `pickupPersonsFullNameLabel` | Full name | pending-kn-translation |
-| `pickupPersonsPhoneLabel` | Phone number | pending-kn-translation |
-| `pickupPersonsRelationshipLabel` | Relationship (optional) | pending-kn-translation |
-| `pickupPersonsRelationshipHint` | e.g. Uncle | pending-kn-translation |
-| `pickupPersonsValidityChoose` | Choose validity window | pending-kn-translation |
-| `pickupPersonsNominateButton` | Nominate | pending-kn-translation |
-| `pickupPersonsErrorOutsideValidity` | That validity window has already passed. | pending-kn-translation |
-| `pickupPersonsNoChildrenLinked` | Your school links your children to your account before you can manage pickup persons. | pending-kn-translation |
-| `notificationsAppBarTitle` | Notifications | pending-kn-translation |
-| `notificationsGenericFailure` | Something went wrong loading your notifications. Please try again. | pending-kn-translation |
-| `notificationsLoadFailureTitle` | Cannot load notifications right now | pending-kn-translation |
-| `notificationsEmptyTitle` | No notifications yet | pending-kn-translation |
-| `notificationsEmptyDetail` | You''ll see updates about your children here. | pending-kn-translation |
-| `otpAppBarTitle` | Enter code | pending-kn-translation |
-| `otpHeading` | Enter the code | pending-kn-translation |
-| `otpSentTo` | We sent a code to {phone}. | pending-kn-translation |
-| `otpCodeLabel` | Code | pending-kn-translation |
-| `otpVerifyButton` | Verify | pending-kn-translation |
-| `otpEntryChangeNumberButton` | Change number | pending-kn-translation |
-| `otpEntrySendNewCodeButton` | Send a new code | pending-kn-translation |
-| `loginHeading` | Sign in | pending-kn-translation |
-| `simpleLoginParentHeading` | Parent sign in | pending-kn-translation |
-| `loginInstructions` | Enter the mobile number registered with your school. | pending-kn-translation |
-| `loginMobileNumberLabel` | Mobile number | pending-kn-translation |
-| `loginSendCodeButton` | Send code | pending-kn-translation |
-| `loginErrorCredentialsInvalid` | That code is not correct. Please check and try again. | pending-kn-translation |
-| `loginErrorOtpExpired` | That code has expired. Tap “Send a new code” to get another. | pending-kn-translation |
-| `loginErrorOtpAlreadyUsed` | That code has already been used. Tap “Send a new code”. | pending-kn-translation |
-| `loginErrorAccountLocked` | This account is locked. Please contact the school office. | pending-kn-translation |
-| `loginErrorRateLimited` | Too many attempts. Please wait a minute before trying again. | pending-kn-translation |
-| `loginErrorDependencyUnavailable` | Cannot reach the school right now. Check your connection and try again. | pending-kn-translation |
+| `appTitle` | Guardian | kn-drafted — review welcome |
+| `tryAgainButton` | Try again | kn-drafted — review welcome |
+| `cancelButton` | Cancel | kn-drafted — review welcome |
+| `retryButton` | Retry | kn-drafted — review welcome |
+| `whichChildLabel` | Which child? | kn-drafted — review welcome |
+| `trackBusButton` | Track bus | kn-drafted — review welcome |
+| `mapViewLabel` | Map view | kn-drafted — review welcome |
+| `errorDependencyUnavailable` | Your device cannot reach the school right now. Check your connection and try again. | kn-drafted — review welcome |
+| `errorRateLimited` | Too many attempts just now. Wait a moment and try again. | kn-drafted — review welcome |
+| `errorGenericTryAgain` | Something went wrong. Please try again. | kn-drafted — review welcome |
+| `noChildrenLinkedTitle` | No children linked yet | kn-drafted — review welcome |
+| `noChildrenLinkedDetail` | Your school links your children to your account. | kn-drafted — review welcome |
+| `dayLabelToday` | Today | kn-drafted — review welcome |
+| `dayLabelYesterday` | Yesterday | kn-drafted — review welcome |
+| `relativeDayToday` | today | kn-drafted — review welcome |
+| `relativeDayTomorrow` | tomorrow | kn-drafted — review welcome |
+| `durationSeconds` | {seconds}s | kn-drafted — review welcome |
+| `durationMinutes` | {minutes} min | kn-drafted — review welcome |
+| `durationHours` | {hours} h | kn-drafted — review welcome |
+| `atTimeFragment` | at {time} | kn-drafted — review welcome |
+| `themeModeSystem` | Match device | kn-drafted — review welcome |
+| `themeModeLight` | Light | kn-drafted — review welcome |
+| `themeModeDark` | Dark | kn-drafted — review welcome |
+| `themeToggleTooltip` | Appearance: {mode} | kn-drafted — review welcome |
+| `languageSwitcherTooltip` | Language | kn-drafted — review welcome |
+| `languageSwitcherDialogTitle` | Choose language | kn-drafted — review welcome |
+| `navHomeTab` | Home | kn-drafted — review welcome |
+| `navJourneysTab` | Journeys | kn-drafted — review welcome |
+| `navAlertsTab` | Alerts | kn-drafted — review welcome |
+| `navPickupTab` | Pickup | kn-drafted — review welcome |
+| `homeAppBarTitle` | My children | kn-drafted — review welcome |
+| `refreshTooltip` | Refresh | kn-drafted — review welcome |
+| `homeLoadFailureTitle` | Cannot reach the school right now | kn-drafted — review welcome |
+| `homeNoChildrenDetail` | Your school links your children to your account. Contact the school office if you expect to see someone here. | kn-drafted — review welcome |
+| `homeGenericLoadFailure` | Something went wrong loading your children. Please try again. | kn-drafted — review welcome |
+| `fallbackVehicleName` | the bus | kn-drafted — review welcome |
+| `fallbackStopName` | your stop | kn-drafted — review welcome |
+| `connectionBannerNoData` | Not connected. Nothing has loaded yet. | kn-drafted — review welcome |
+| `connectionBannerLastUpdated` | Not connected · last updated {time} | kn-drafted — review welcome |
+| `greetingMorning` | Good morning | kn-drafted — review welcome |
+| `greetingAfternoon` | Good afternoon | kn-drafted — review welcome |
+| `greetingEvening` | Good evening | kn-drafted — review welcome |
+| `dashboardGreeting` | {greeting}, {name} | kn-drafted — review welcome |
+| `schoolTimeZoneSemanticLabel` | All times are shown in school time, {zone}. | kn-drafted — review welcome |
+| `schoolTimeLabel` | School time · {zone} | kn-drafted — review welcome |
+| `arrivalEstimateWithAge` | Arriving at school about {eta} · estimated {age} ago | kn-drafted — review welcome |
+| `arrivalEstimateNoAge` | Arriving at school about {eta} · estimate | kn-drafted — review welcome |
+| `detailAtRestNextBus` | At school. Next bus at {time}. | kn-drafted — review welcome |
+| `detailAtRestNoBus` | At school. No bus scheduled for the rest of today. | kn-drafted — review welcome |
+| `detailAbsent` | You marked {name} as not travelling today. | kn-drafted — review welcome |
+| `detailScheduledVehicle` | {vehicle} is scheduled | kn-drafted — review welcome |
+| `detailFromStop` | from {stop} | kn-drafted — review welcome |
+| `detailAtEta` | at about {eta} | kn-drafted — review welcome |
+| `detailVehicleOnWay` | {vehicle} is on the way | kn-drafted — review welcome |
+| `detailToStop` | to {stop} | kn-drafted — review welcome |
+| `detailArrivingAbout` | · arriving about {eta} | kn-drafted — review welcome |
+| `detailBoardedWord` | Boarded | kn-drafted — review welcome |
+| `detailAtStop` | at {stop} | kn-drafted — review welcome |
+| `detailArrivedAtTime` | Arrived at school at {time}. | kn-drafted — review welcome |
+| `detailArrivedNoTime` | Arrived at school. | kn-drafted — review welcome |
+| `detailHandedOverWord` | Handed over | kn-drafted — review welcome |
+| `detailDidNotBoardWord` | Did not board | kn-drafted — review welcome |
+| `detailBusDepartedAt` | · bus departed {time} | kn-drafted — review welcome |
+| `detailUnknown` | This version of the app cannot read {name}''s current status. Update the app, or contact the school office to check. | kn-drafted — review welcome |
+| `quickActionsTitle` | Quick actions | kn-drafted — review welcome |
+| `quickActionDeclareAbsence` | Declare absence | kn-drafted — review welcome |
+| `quickActionPickupPersons` | Pickup persons | kn-drafted — review welcome |
+| `freshnessNoSignal` | No signal | kn-drafted — review welcome |
+| `freshnessLive` | Live · updated {age} ago | kn-drafted — review welcome |
+| `journeyStateAtSchool` | At school | kn-drafted — review welcome |
+| `journeyStateBusScheduled` | Bus scheduled | kn-drafted — review welcome |
+| `journeyStateBusOnWay` | Bus on the way | kn-drafted — review welcome |
+| `journeyStateOnBus` | On the bus | kn-drafted — review welcome |
+| `journeyStateArrivedAtSchool` | Arrived at school | kn-drafted — review welcome |
+| `journeyStateHandedOver` | Handed over | kn-drafted — review welcome |
+| `journeyStateNotTravelling` | Not travelling today | kn-drafted — review welcome |
+| `journeyStateUnavailable` | Status unavailable | kn-drafted — review welcome |
+| `absenceAppBarTitle` | Declare absence | kn-drafted — review welcome |
+| `absenceWhenLabel` | When? | kn-drafted — review welcome |
+| `absenceWhenToday` | Today | kn-drafted — review welcome |
+| `absenceWhenTomorrow` | Tomorrow | kn-drafted — review welcome |
+| `absenceWhenDateRange` | Date range | kn-drafted — review welcome |
+| `absenceWhichJourney` | Which journey? | kn-drafted — review welcome |
+| `absenceJourneyBoth` | Both | kn-drafted — review welcome |
+| `absenceJourneyMorning` | Morning | kn-drafted — review welcome |
+| `absenceJourneyAfternoon` | Afternoon | kn-drafted — review welcome |
+| `absenceReasonLabel` | Reason (optional) | kn-drafted — review welcome |
+| `absenceReasonHint` | Not required | kn-drafted — review welcome |
+| `absenceConfirmButton` | Confirm | kn-drafted — review welcome |
+| `absenceUpcomingTitle` | Upcoming absences | kn-drafted — review welcome |
+| `absenceNoneDeclared` | No absences declared for this child. | kn-drafted — review welcome |
+| `absenceDateRangeChoose` | Choose dates | kn-drafted — review welcome |
+| `absenceTileJourneyBoth` | Both journeys | kn-drafted — review welcome |
+| `absenceTileJourneyMorning` | Morning only | kn-drafted — review welcome |
+| `absenceTileJourneyAfternoon` | Afternoon only | kn-drafted — review welcome |
+| `absenceNoChildrenLinked` | Your school links your children to your account before you can declare an absence. | kn-drafted — review welcome |
+| `absenceErrorTripStarted` | This trip has already started, so this absence cannot be declared. Contact the school office instead. | kn-drafted — review welcome |
+| `absenceConfirmationMessage` | {childName} will not be expected {when}{direction, select, morningOnly{ in the morning} afternoonOnly{ in the afternoon} other{}}. | kn-drafted — review welcome |
+| `absenceConfirmationRange` | from {from} to {to} | kn-drafted — review welcome |
+| `journeyHistoryAppBarTitle` | Journey history | kn-drafted — review welcome |
+| `journeyHistoryScopeDenied` | This child is no longer linked to your account. Contact the school office if you think that is wrong. | kn-drafted — review welcome |
+| `journeyHistoryGenericFailure` | Something went wrong loading journey history. Please try again. | kn-drafted — review welcome |
+| `journeyHistoryLoadFailureTitle` | Cannot load journey history right now | kn-drafted — review welcome |
+| `journeyHistoryEmptyTitle` | No journeys recorded yet | kn-drafted — review welcome |
+| `journeyHistoryEmptyDetail` | Past trips will appear here once your child has traveled. | kn-drafted — review welcome |
+| `legDirectionMorning` | Morning | kn-drafted — review welcome |
+| `legDirectionAfternoon` | Afternoon | kn-drafted — review welcome |
+| `legMarkedAbsent` | Marked absent | kn-drafted — review welcome |
+| `legNoRecordForLeg` | No record for this leg | kn-drafted — review welcome |
+| `legNoScheduleForLeg` | No schedule for this leg | kn-drafted — review welcome |
+| `legScheduledAt` | Scheduled at {time} | kn-drafted — review welcome |
+| `legBoardedAt` | Boarded at {time} | kn-drafted — review welcome |
+| `legArrivedAt` | Arrived at {time} | kn-drafted — review welcome |
+| `legHandedOverAt` | Handed over at {time} | kn-drafted — review welcome |
+| `childDetailNoDetailAvailable` | No detail available for this child. | kn-drafted — review welcome |
+| `childDetailTodayLabel` | Today | kn-drafted — review welcome |
+| `childDetailNoTripsToday` | No trips scheduled for today. | kn-drafted — review welcome |
+| `childDetailShowPickupCodeButton` | Show pickup code | kn-drafted — review welcome |
+| `childDetailScopeDenied` | This child is no longer linked to your account. Contact the school office if you think that is wrong. | kn-drafted — review welcome |
+| `childDetailGenericFailure` | Something went wrong loading this child''s detail. Please try again. | kn-drafted — review welcome |
+| `liveTripGenericFailure` | Something went wrong loading this trip. Please try again. | kn-drafted — review welcome |
+| `liveTripAppBarTitle` | Live trip | kn-drafted — review welcome |
+| `liveTripUnavailableTitle` | Tracking is not available right now | kn-drafted — review welcome |
+| `liveTripUnavailableDetail` | Live tracking only runs while the bus is on a trip (docs/05-ui/PARENT_APP.md, BR-TRACK-001). Check back once the trip has started. | kn-drafted — review welcome |
+| `liveTripCannotLoadTitle` | Cannot load this trip right now | kn-drafted — review welcome |
+| `liveTripNoTripTitle` | No trip to show | kn-drafted — review welcome |
+| `liveTripNoTripDetail` | This child has no active trip right now. | kn-drafted — review welcome |
+| `liveTripSummaryStopsAway` | {stops} {stops, plural, one{stop} other{stops}} away | kn-drafted — review welcome |
+| `liveTripSummaryEtaToStop` | ~{eta} min to {stop} | kn-drafted — review welcome |
+| `liveTripEtaConfidenceModerate` |  · moderate confidence | kn-drafted — review welcome |
+| `liveTripEtaConfidenceLow` |  · low confidence — routing unavailable | kn-drafted — review welcome |
+| `liveTripEtaJustNow` | just now | kn-drafted — review welcome |
+| `liveTripEtaSecondsAgo` | {seconds}s ago | kn-drafted — review welcome |
+| `liveTripEtaMinutesAgo` | {minutes} min ago | kn-drafted — review welcome |
+| `handoverCollectChildTitleNoName` | Collect your child | kn-drafted — review welcome |
+| `handoverCollectChildTitleWithName` | Collect {name} | kn-drafted — review welcome |
+| `handoverShowToAttendant` | Show this to the bus attendant | kn-drafted — review welcome |
+| `handoverQrSemanticsLabelPlain` | Verification QR code | kn-drafted — review welcome |
+| `handoverIfCannotScan` | If the attendant cannot scan | kn-drafted — review welcome |
+| `handoverGenerateNewCode` | Generate a new code | kn-drafted — review welcome |
+| `handoverCodeExpired` | This code has expired | kn-drafted — review welcome |
+| `handoverExpiresInMinSec` | Expires in {minutes}:{seconds} | kn-drafted — review welcome |
+| `handoverExpiresInSeconds` | Expires in {seconds}s | kn-drafted — review welcome |
+| `pickupPersonsAppBarTitle` | Pickup persons | kn-drafted — review welcome |
+| `pickupPersonsAddButton` | Add pickup person | kn-drafted — review welcome |
+| `pickupPersonsNoneAuthorised` | No pickup persons authorised for this child. | kn-drafted — review welcome |
+| `pickupPersonsRevokeButton` | Revoke | kn-drafted — review welcome |
+| `pickupPersonsValidRange` | Valid {from} – {to} | kn-drafted — review welcome |
+| `pickupPersonsNewPersonTitle` | New pickup person | kn-drafted — review welcome |
+| `pickupPersonsFullNameLabel` | Full name | kn-drafted — review welcome |
+| `pickupPersonsPhoneLabel` | Phone number | kn-drafted — review welcome |
+| `pickupPersonsRelationshipLabel` | Relationship (optional) | kn-drafted — review welcome |
+| `pickupPersonsRelationshipHint` | e.g. Uncle | kn-drafted — review welcome |
+| `pickupPersonsValidityChoose` | Choose validity window | kn-drafted — review welcome |
+| `pickupPersonsNominateButton` | Nominate | kn-drafted — review welcome |
+| `pickupPersonsErrorOutsideValidity` | That validity window has already passed. | kn-drafted — review welcome |
+| `pickupPersonsNoChildrenLinked` | Your school links your children to your account before you can manage pickup persons. | kn-drafted — review welcome |
+| `notificationsAppBarTitle` | Notifications | kn-drafted — review welcome |
+| `notificationsGenericFailure` | Something went wrong loading your notifications. Please try again. | kn-drafted — review welcome |
+| `notificationsLoadFailureTitle` | Cannot load notifications right now | kn-drafted — review welcome |
+| `notificationsEmptyTitle` | No notifications yet | kn-drafted — review welcome |
+| `notificationsEmptyDetail` | You''ll see updates about your children here. | kn-drafted — review welcome |
+| `otpAppBarTitle` | Enter code | kn-drafted — review welcome |
+| `otpHeading` | Enter the code | kn-drafted — review welcome |
+| `otpSentTo` | We sent a code to {phone}. | kn-drafted — review welcome |
+| `otpCodeLabel` | Code | kn-drafted — review welcome |
+| `otpVerifyButton` | Verify | kn-drafted — review welcome |
+| `otpEntryChangeNumberButton` | Change number | kn-drafted — review welcome |
+| `otpEntrySendNewCodeButton` | Send a new code | kn-drafted — review welcome |
+| `loginHeading` | Sign in | kn-drafted — review welcome |
+| `simpleLoginParentHeading` | Parent sign in | kn-drafted — review welcome |
+| `loginInstructions` | Enter the mobile number registered with your school. | kn-drafted — review welcome |
+| `loginMobileNumberLabel` | Mobile number | kn-drafted — review welcome |
+| `loginSendCodeButton` | Send code | kn-drafted — review welcome |
+| `loginErrorCredentialsInvalid` | That code is not correct. Please check and try again. | kn-drafted — review welcome |
+| `loginErrorOtpExpired` | That code has expired. Tap “Send a new code” to get another. | kn-drafted — review welcome |
+| `loginErrorOtpAlreadyUsed` | That code has already been used. Tap “Send a new code”. | kn-drafted — review welcome |
+| `loginErrorAccountLocked` | This account is locked. Please contact the school office. | kn-drafted — review welcome |
+| `loginErrorRateLimited` | Too many attempts. Please wait a minute before trying again. | kn-drafted — review welcome |
+| `loginErrorDependencyUnavailable` | Cannot reach the school right now. Check your connection and try again. | kn-drafted — review welcome |
 
 (180 keys)
 

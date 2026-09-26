@@ -12,4 +12,8 @@ import jakarta.validation.constraints.Size;
  * differently from a {@code 202} for an unregistered one, which is the enumeration this endpoint
  * exists to prevent.
  */
-public record OtpRequestRequest(@NotBlank @Size(max = 32) String phone) {}
+public record OtpRequestRequest(
+    @NotBlank @Size(max = 32) String phone,
+    // Optional. Only a build with the magic OTP configured uses it, to pick between accounts when
+    // a number exists in two organizations (a local-data defect, BR-IAM-003). Absent is fine.
+    @Size(max = 32) String clientType) {}

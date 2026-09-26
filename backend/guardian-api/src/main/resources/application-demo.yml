@@ -21,6 +21,11 @@ guardian:
     # handset. It is read from configuration rather than compiled in precisely so it cannot
     # exist outside this profile.
     magic-otp: ${GUARDIAN_MAGIC_OTP:123123}
+    # Setting the magic OTP also relaxes one refusal, in this profile only: a phone number that
+    # exists in two organizations (BR-IAM-003 calls that a data defect, and a local database
+    # collects it — the seed's parents on numbers a developer reuses) would otherwise fail every
+    # sign-in with "invalid code". Here the client signing in picks the account: parent app the
+    # guardian, driver app the crew member. See AmbiguousPhoneResolver. Production still refuses.
 
 logging:
   level:

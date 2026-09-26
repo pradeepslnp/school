@@ -4,22 +4,22 @@
   "@appTitle": {
     "description": "App title, used for the OS task switcher via onGenerateTitle."
   },
-  "tryAgainButton": "Try again",
-  "cancelButton": "Cancel",
-  "retryButton": "Retry",
-  "whichChildLabel": "Which child?",
-  "trackBusButton": "Track bus",
-  "mapViewLabel": "Map view",
-  "errorDependencyUnavailable": "Your device cannot reach the school right now. Check your connection and try again.",
-  "errorRateLimited": "Too many attempts just now. Wait a moment and try again.",
-  "errorGenericTryAgain": "Something went wrong. Please try again.",
-  "noChildrenLinkedTitle": "No children linked yet",
-  "noChildrenLinkedDetail": "Your school links your children to your account.",
-  "dayLabelToday": "Today",
-  "dayLabelYesterday": "Yesterday",
-  "relativeDayToday": "today",
-  "relativeDayTomorrow": "tomorrow",
-  "durationSeconds": "{seconds}s",
+  "tryAgainButton": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
+  "cancelButton": "ರದ್ದುಮಾಡಿ",
+  "retryButton": "ಮರುಪ್ರಯತ್ನ",
+  "whichChildLabel": "ಯಾವ ಮಗು?",
+  "trackBusButton": "ಬಸ್ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ",
+  "mapViewLabel": "ನಕ್ಷೆ ನೋಟ",
+  "errorDependencyUnavailable": "ಈಗ ನಿಮ್ಮ ಸಾಧನಕ್ಕೆ ಶಾಲೆಯನ್ನು ತಲುಪಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ನಿಮ್ಮ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "errorRateLimited": "ಈಗಷ್ಟೇ ಹಲವು ಪ್ರಯತ್ನಗಳಾಗಿವೆ. ಸ್ವಲ್ಪ ಕಾದು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "errorGenericTryAgain": "ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "noChildrenLinkedTitle": "ಇನ್ನೂ ಯಾವ ಮಗುವೂ ಜೋಡಿಸಿಲ್ಲ",
+  "noChildrenLinkedDetail": "ನಿಮ್ಮ ಶಾಲೆ ನಿಮ್ಮ ಮಕ್ಕಳನ್ನು ನಿಮ್ಮ ಖಾತೆಗೆ ಜೋಡಿಸುತ್ತದೆ.",
+  "dayLabelToday": "ಇಂದು",
+  "dayLabelYesterday": "ನಿನ್ನೆ",
+  "relativeDayToday": "ಇಂದು",
+  "relativeDayTomorrow": "ನಾಳೆ",
+  "durationSeconds": "{seconds} ಸೆ",
   "@durationSeconds": {
     "placeholders": {
       "seconds": {
@@ -27,7 +27,7 @@
       }
     }
   },
-  "durationMinutes": "{minutes} min",
+  "durationMinutes": "{minutes} ನಿ",
   "@durationMinutes": {
     "placeholders": {
       "minutes": {
@@ -35,7 +35,7 @@
       }
     }
   },
-  "durationHours": "{hours} h",
+  "durationHours": "{hours} ಗಂ",
   "@durationHours": {
     "placeholders": {
       "hours": {
@@ -43,7 +43,7 @@
       }
     }
   },
-  "atTimeFragment": "at {time}",
+  "atTimeFragment": "{time} ಕ್ಕೆ",
   "@atTimeFragment": {
     "placeholders": {
       "time": {
@@ -51,10 +51,10 @@
       }
     }
   },
-  "themeModeSystem": "Match device",
-  "themeModeLight": "Light",
-  "themeModeDark": "Dark",
-  "themeToggleTooltip": "Appearance: {mode}",
+  "themeModeSystem": "ಸಾಧನದಂತೆ",
+  "themeModeLight": "ತಿಳಿ",
+  "themeModeDark": "ಕಡು",
+  "themeToggleTooltip": "ಗೋಚರತೆ: {mode}",
   "@themeToggleTooltip": {
     "placeholders": {
       "mode": {
@@ -62,27 +62,27 @@
       }
     }
   },
-  "languageSwitcherTooltip": "Language",
-  "languageSwitcherDialogTitle": "Choose language",
-  "navHomeTab": "Home",
-  "navJourneysTab": "Journeys",
-  "navAlertsTab": "Alerts",
-  "navPickupTab": "Pickup",
-  "homeAppBarTitle": "My children",
-  "refreshTooltip": "Refresh",
-  "homeLoadFailureTitle": "Cannot reach the school right now",
-  "homeNoChildrenDetail": "Your school links your children to your account. Contact the school office if you expect to see someone here.",
-  "homeGenericLoadFailure": "Something went wrong loading your children. Please try again.",
-  "fallbackVehicleName": "the bus",
+  "languageSwitcherTooltip": "ಭಾಷೆ",
+  "languageSwitcherDialogTitle": "ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ",
+  "navHomeTab": "ಮುಖಪುಟ",
+  "navJourneysTab": "ಪ್ರಯಾಣಗಳು",
+  "navAlertsTab": "ಎಚ್ಚರಿಕೆಗಳು",
+  "navPickupTab": "ಕರೆದೊಯ್ಯುವಿಕೆ",
+  "homeAppBarTitle": "ನನ್ನ ಮಕ್ಕಳು",
+  "refreshTooltip": "ರಿಫ್ರೆಶ್",
+  "homeLoadFailureTitle": "ಈಗ ಶಾಲೆಯನ್ನು ತಲುಪಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ",
+  "homeNoChildrenDetail": "ನಿಮ್ಮ ಶಾಲೆ ನಿಮ್ಮ ಮಕ್ಕಳನ್ನು ನಿಮ್ಮ ಖಾತೆಗೆ ಜೋಡಿಸುತ್ತದೆ. ಇಲ್ಲಿ ಯಾರಾದರೂ ಕಾಣಿಸಬೇಕೆಂದು ನೀವು ನಿರೀಕ್ಷಿಸಿದರೆ ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+  "homeGenericLoadFailure": "ನಿಮ್ಮ ಮಕ್ಕಳ ಮಾಹಿತಿ ಲೋಡ್ ಮಾಡುವಾಗ ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "fallbackVehicleName": "ಬಸ್",
   "@fallbackVehicleName": {
     "description": "Used when a specific vehicle display name is not yet known."
   },
-  "fallbackStopName": "your stop",
+  "fallbackStopName": "ನಿಮ್ಮ ನಿಲ್ದಾಣ",
   "@fallbackStopName": {
     "description": "Used when a specific stop name is not yet known."
   },
-  "connectionBannerNoData": "Not connected. Nothing has loaded yet.",
-  "connectionBannerLastUpdated": "Not connected · last updated {time}",
+  "connectionBannerNoData": "ಸಂಪರ್ಕವಿಲ್ಲ. ಇನ್ನೂ ಏನೂ ಲೋಡ್ ಆಗಿಲ್ಲ.",
+  "connectionBannerLastUpdated": "ಸಂಪರ್ಕವಿಲ್ಲ · ಕೊನೆಯ ಅಪ್‌ಡೇಟ್ {time}",
   "@connectionBannerLastUpdated": {
     "placeholders": {
       "time": {
@@ -90,9 +90,9 @@
       }
     }
   },
-  "greetingMorning": "Good morning",
-  "greetingAfternoon": "Good afternoon",
-  "greetingEvening": "Good evening",
+  "greetingMorning": "ಶುಭೋದಯ",
+  "greetingAfternoon": "ಶುಭ ಮಧ್ಯಾಹ್ನ",
+  "greetingEvening": "ಶುಭ ಸಂಜೆ",
   "dashboardGreeting": "{greeting}, {name}",
   "@dashboardGreeting": {
     "placeholders": {
@@ -104,7 +104,7 @@
       }
     }
   },
-  "schoolTimeZoneSemanticLabel": "All times are shown in school time, {zone}.",
+  "schoolTimeZoneSemanticLabel": "ಎಲ್ಲಾ ಸಮಯಗಳನ್ನು ಶಾಲಾ ಸಮಯದಲ್ಲಿ ತೋರಿಸಲಾಗಿದೆ, {zone}.",
   "@schoolTimeZoneSemanticLabel": {
     "placeholders": {
       "zone": {
@@ -112,7 +112,7 @@
       }
     }
   },
-  "schoolTimeLabel": "School time · {zone}",
+  "schoolTimeLabel": "ಶಾಲಾ ಸಮಯ · {zone}",
   "@schoolTimeLabel": {
     "placeholders": {
       "zone": {
@@ -120,7 +120,7 @@
       }
     }
   },
-  "arrivalEstimateWithAge": "Arriving at school about {eta} · estimated {age} ago",
+  "arrivalEstimateWithAge": "ಸುಮಾರು {eta} ಕ್ಕೆ ಶಾಲೆ ತಲುಪುತ್ತದೆ · {age} ಹಿಂದೆ ಅಂದಾಜಿಸಲಾಗಿದೆ",
   "@arrivalEstimateWithAge": {
     "placeholders": {
       "eta": {
@@ -131,7 +131,7 @@
       }
     }
   },
-  "arrivalEstimateNoAge": "Arriving at school about {eta} · estimate",
+  "arrivalEstimateNoAge": "ಸುಮಾರು {eta} ಕ್ಕೆ ಶಾಲೆ ತಲುಪುತ್ತದೆ · ಅಂದಾಜು",
   "@arrivalEstimateNoAge": {
     "placeholders": {
       "eta": {
@@ -139,7 +139,7 @@
       }
     }
   },
-  "detailAtRestNextBus": "At school. Next bus at {time}.",
+  "detailAtRestNextBus": "ಶಾಲೆಯಲ್ಲಿ. ಮುಂದಿನ ಬಸ್ {time} ಕ್ಕೆ.",
   "@detailAtRestNextBus": {
     "placeholders": {
       "time": {
@@ -147,8 +147,8 @@
       }
     }
   },
-  "detailAtRestNoBus": "At school. No bus scheduled for the rest of today.",
-  "detailAbsent": "You marked {name} as not travelling today.",
+  "detailAtRestNoBus": "ಶಾಲೆಯಲ್ಲಿ. ಇಂದು ಉಳಿದ ಸಮಯಕ್ಕೆ ಬಸ್ ನಿಗದಿಯಾಗಿಲ್ಲ.",
+  "detailAbsent": "{name} ಇಂದು ಪ್ರಯಾಣಿಸುವುದಿಲ್ಲ ಎಂದು ನೀವು ಗುರುತಿಸಿದ್ದೀರಿ.",
   "@detailAbsent": {
     "placeholders": {
       "name": {
@@ -156,7 +156,7 @@
       }
     }
   },
-  "detailScheduledVehicle": "{vehicle} is scheduled",
+  "detailScheduledVehicle": "{vehicle} ನಿಗದಿಯಾಗಿದೆ",
   "@detailScheduledVehicle": {
     "placeholders": {
       "vehicle": {
@@ -164,7 +164,7 @@
       }
     }
   },
-  "detailFromStop": "from {stop}",
+  "detailFromStop": "{stop} ಇಂದ",
   "@detailFromStop": {
     "placeholders": {
       "stop": {
@@ -172,7 +172,7 @@
       }
     }
   },
-  "detailAtEta": "at about {eta}",
+  "detailAtEta": "ಸುಮಾರು {eta} ಕ್ಕೆ",
   "@detailAtEta": {
     "placeholders": {
       "eta": {
@@ -180,7 +180,7 @@
       }
     }
   },
-  "detailVehicleOnWay": "{vehicle} is on the way",
+  "detailVehicleOnWay": "{vehicle} ದಾರಿಯಲ್ಲಿದೆ",
   "@detailVehicleOnWay": {
     "placeholders": {
       "vehicle": {
@@ -188,7 +188,7 @@
       }
     }
   },
-  "detailToStop": "to {stop}",
+  "detailToStop": "{stop} ಕಡೆಗೆ",
   "@detailToStop": {
     "placeholders": {
       "stop": {
@@ -196,7 +196,7 @@
       }
     }
   },
-  "detailArrivingAbout": "· arriving about {eta}",
+  "detailArrivingAbout": "· ಸುಮಾರು {eta} ಕ್ಕೆ ತಲುಪುತ್ತದೆ",
   "@detailArrivingAbout": {
     "placeholders": {
       "eta": {
@@ -204,8 +204,8 @@
       }
     }
   },
-  "detailBoardedWord": "Boarded",
-  "detailAtStop": "at {stop}",
+  "detailBoardedWord": "ಬಸ್ ಹತ್ತಿದ್ದಾರೆ",
+  "detailAtStop": "{stop} ನಲ್ಲಿ",
   "@detailAtStop": {
     "placeholders": {
       "stop": {
@@ -213,7 +213,7 @@
       }
     }
   },
-  "detailArrivedAtTime": "Arrived at school at {time}.",
+  "detailArrivedAtTime": "{time} ಕ್ಕೆ ಶಾಲೆ ತಲುಪಿದ್ದಾರೆ.",
   "@detailArrivedAtTime": {
     "placeholders": {
       "time": {
@@ -221,10 +221,10 @@
       }
     }
   },
-  "detailArrivedNoTime": "Arrived at school.",
-  "detailHandedOverWord": "Handed over",
-  "detailDidNotBoardWord": "Did not board",
-  "detailBusDepartedAt": "· bus departed {time}",
+  "detailArrivedNoTime": "ಶಾಲೆ ತಲುಪಿದ್ದಾರೆ.",
+  "detailHandedOverWord": "ಹಸ್ತಾಂತರಿಸಲಾಗಿದೆ",
+  "detailDidNotBoardWord": "ಬಸ್ ಹತ್ತಲಿಲ್ಲ",
+  "detailBusDepartedAt": "· ಬಸ್ {time} ಕ್ಕೆ ಹೊರಟಿದೆ",
   "@detailBusDepartedAt": {
     "placeholders": {
       "time": {
@@ -232,7 +232,7 @@
       }
     }
   },
-  "detailUnaccounted": "No record of {name} getting off the bus. The school has been alerted and is checking now.",
+  "detailUnaccounted": "{name} ಬಸ್‌ನಿಂದ ಇಳಿದ ದಾಖಲೆ ಇಲ್ಲ. ಶಾಲೆಗೆ ಎಚ್ಚರಿಕೆ ನೀಡಲಾಗಿದೆ ಮತ್ತು ಅವರು ಈಗ ಪರಿಶೀಲಿಸುತ್ತಿದ್ದಾರೆ.",
   "@detailUnaccounted": {
     "description": "Safety-critical: BR-SAFE-001 unaccounted-for child copy.",
     "placeholders": {
@@ -241,7 +241,7 @@
       }
     }
   },
-  "detailUnknown": "This version of the app cannot read {name}''s current status. Update the app, or contact the school office to check.",
+  "detailUnknown": "ಈ ಆವೃತ್ತಿಯ ಆ್ಯಪ್‌ಗೆ {name} ಅವರ ಪ್ರಸ್ತುತ ಸ್ಥಿತಿಯನ್ನು ಓದಲು ಸಾಧ್ಯವಿಲ್ಲ. ಆ್ಯಪ್ ಅಪ್‌ಡೇಟ್ ಮಾಡಿ, ಅಥವಾ ಪರಿಶೀಲಿಸಲು ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.",
   "@detailUnknown": {
     "placeholders": {
       "name": {
@@ -249,7 +249,7 @@
       }
     }
   },
-  "criticalBannerMessage": "{name} has not been accounted for. The school has been alerted and staff are checking now.",
+  "criticalBannerMessage": "{name} ಅವರ ಬಗ್ಗೆ ಇನ್ನೂ ಲೆಕ್ಕ ಸಿಕ್ಕಿಲ್ಲ. ಶಾಲೆಗೆ ಎಚ್ಚರಿಕೆ ನೀಡಲಾಗಿದೆ ಮತ್ತು ಸಿಬ್ಬಂದಿ ಈಗ ಪರಿಶೀಲಿಸುತ್ತಿದ್ದಾರೆ.",
   "@criticalBannerMessage": {
     "description": "Safety-critical: BR-SAFE-001 critical banner body.",
     "placeholders": {
@@ -258,7 +258,7 @@
       }
     }
   },
-  "criticalBannerUrgentSemanticLabel": "Urgent. {message}",
+  "criticalBannerUrgentSemanticLabel": "ತುರ್ತು. {message}",
   "@criticalBannerUrgentSemanticLabel": {
     "description": "Safety-critical.",
     "placeholders": {
@@ -267,27 +267,27 @@
       }
     }
   },
-  "criticalBannerActionNeeded": "ACTION NEEDED NOW",
+  "criticalBannerActionNeeded": "ಈಗಲೇ ಕ್ರಮ ಅಗತ್ಯ",
   "@criticalBannerActionNeeded": {
     "description": "Safety-critical."
   },
-  "criticalBannerNotAccountedTitle": "Not yet accounted for",
+  "criticalBannerNotAccountedTitle": "ಇನ್ನೂ ಲೆಕ್ಕ ಸಿಕ್ಕಿಲ್ಲ",
   "@criticalBannerNotAccountedTitle": {
     "description": "Safety-critical."
   },
-  "criticalBannerCallSchoolButton": "Call the school",
+  "criticalBannerCallSchoolButton": "ಶಾಲೆಗೆ ಕರೆ ಮಾಡಿ",
   "@criticalBannerCallSchoolButton": {
     "description": "Safety-critical."
   },
-  "criticalBannerSeeWhatHappenedButton": "See what happened",
+  "criticalBannerSeeWhatHappenedButton": "ಏನಾಯಿತು ನೋಡಿ",
   "@criticalBannerSeeWhatHappenedButton": {
     "description": "Safety-critical."
   },
-  "quickActionsTitle": "Quick actions",
-  "quickActionDeclareAbsence": "Declare absence",
-  "quickActionPickupPersons": "Pickup persons",
-  "freshnessNoSignal": "No signal",
-  "freshnessNoSignalFor": "No signal for {age}",
+  "quickActionsTitle": "ತ್ವರಿತ ಕ್ರಮಗಳು",
+  "quickActionDeclareAbsence": "ಗೈರು ತಿಳಿಸಿ",
+  "quickActionPickupPersons": "ಕರೆದೊಯ್ಯುವವರು",
+  "freshnessNoSignal": "ಸಿಗ್ನಲ್ ಇಲ್ಲ",
+  "freshnessNoSignalFor": "{age} ಇಂದ ಸಿಗ್ನಲ್ ಇಲ್ಲ",
   "@freshnessNoSignalFor": {
     "description": "Safety-relevant: staleness of live position (BR-TRACK-003).",
     "placeholders": {
@@ -296,7 +296,7 @@
       }
     }
   },
-  "freshnessLastSeen": "Last seen {age} ago",
+  "freshnessLastSeen": "{age} ಹಿಂದೆ ಕೊನೆಯದಾಗಿ ಕಂಡಿದೆ",
   "@freshnessLastSeen": {
     "description": "Safety-relevant: staleness of live position (BR-TRACK-003).",
     "placeholders": {
@@ -305,7 +305,7 @@
       }
     }
   },
-  "freshnessLive": "Live · updated {age} ago",
+  "freshnessLive": "ನೇರ · {age} ಹಿಂದೆ ಅಪ್‌ಡೇಟ್ ಆಗಿದೆ",
   "@freshnessLive": {
     "placeholders": {
       "age": {
@@ -313,43 +313,43 @@
       }
     }
   },
-  "journeyStateAtSchool": "At school",
-  "journeyStateBusScheduled": "Bus scheduled",
-  "journeyStateBusOnWay": "Bus on the way",
-  "journeyStateOnBus": "On the bus",
-  "journeyStateArrivedAtSchool": "Arrived at school",
-  "journeyStateHandedOver": "Handed over",
-  "journeyStateDidNotBoard": "Did not board",
+  "journeyStateAtSchool": "ಶಾಲೆಯಲ್ಲಿ",
+  "journeyStateBusScheduled": "ಬಸ್ ನಿಗದಿಯಾಗಿದೆ",
+  "journeyStateBusOnWay": "ಬಸ್ ದಾರಿಯಲ್ಲಿದೆ",
+  "journeyStateOnBus": "ಬಸ್‌ನಲ್ಲಿ",
+  "journeyStateArrivedAtSchool": "ಶಾಲೆ ತಲುಪಿದ್ದಾರೆ",
+  "journeyStateHandedOver": "ಹಸ್ತಾಂತರಿಸಲಾಗಿದೆ",
+  "journeyStateDidNotBoard": "ಬಸ್ ಹತ್ತಲಿಲ್ಲ",
   "@journeyStateDidNotBoard": {
     "description": "Safety-relevant: BR-SAFE-002 no-show state."
   },
-  "journeyStateNotTravelling": "Not travelling today",
-  "journeyStateNotAccountedFor": "Not yet accounted for",
+  "journeyStateNotTravelling": "ಇಂದು ಪ್ರಯಾಣವಿಲ್ಲ",
+  "journeyStateNotAccountedFor": "ಇನ್ನೂ ಲೆಕ್ಕ ಸಿಕ್ಕಿಲ್ಲ",
   "@journeyStateNotAccountedFor": {
     "description": "Safety-critical: BR-SAFE-001 unaccounted state."
   },
-  "journeyStateUnavailable": "Status unavailable",
-  "absenceAppBarTitle": "Declare absence",
-  "absenceWhenLabel": "When?",
-  "absenceWhenToday": "Today",
-  "absenceWhenTomorrow": "Tomorrow",
-  "absenceWhenDateRange": "Date range",
-  "absenceWhichJourney": "Which journey?",
-  "absenceJourneyBoth": "Both",
-  "absenceJourneyMorning": "Morning",
-  "absenceJourneyAfternoon": "Afternoon",
-  "absenceReasonLabel": "Reason (optional)",
-  "absenceReasonHint": "Not required",
-  "absenceConfirmButton": "Confirm",
-  "absenceUpcomingTitle": "Upcoming absences",
-  "absenceNoneDeclared": "No absences declared for this child.",
-  "absenceDateRangeChoose": "Choose dates",
-  "absenceTileJourneyBoth": "Both journeys",
-  "absenceTileJourneyMorning": "Morning only",
-  "absenceTileJourneyAfternoon": "Afternoon only",
-  "absenceNoChildrenLinked": "Your school links your children to your account before you can declare an absence.",
-  "absenceErrorTripStarted": "This trip has already started, so this absence cannot be declared. Contact the school office instead.",
-  "absenceConfirmationMessage": "{childName} will not be expected {when}{direction, select, morningOnly{ in the morning} afternoonOnly{ in the afternoon} other{}}.",
+  "journeyStateUnavailable": "ಸ್ಥಿತಿ ಲಭ್ಯವಿಲ್ಲ",
+  "absenceAppBarTitle": "ಗೈರು ತಿಳಿಸಿ",
+  "absenceWhenLabel": "ಯಾವಾಗ?",
+  "absenceWhenToday": "ಇಂದು",
+  "absenceWhenTomorrow": "ನಾಳೆ",
+  "absenceWhenDateRange": "ದಿನಾಂಕ ವ್ಯಾಪ್ತಿ",
+  "absenceWhichJourney": "ಯಾವ ಪ್ರಯಾಣ?",
+  "absenceJourneyBoth": "ಎರಡೂ",
+  "absenceJourneyMorning": "ಬೆಳಿಗ್ಗೆ",
+  "absenceJourneyAfternoon": "ಮಧ್ಯಾಹ್ನ",
+  "absenceReasonLabel": "ಕಾರಣ (ಐಚ್ಛಿಕ)",
+  "absenceReasonHint": "ಅಗತ್ಯವಿಲ್ಲ",
+  "absenceConfirmButton": "ದೃಢೀಕರಿಸಿ",
+  "absenceUpcomingTitle": "ಮುಂಬರುವ ಗೈರುಗಳು",
+  "absenceNoneDeclared": "ಈ ಮಗುವಿಗೆ ಯಾವುದೇ ಗೈರು ತಿಳಿಸಿಲ್ಲ.",
+  "absenceDateRangeChoose": "ದಿನಾಂಕಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  "absenceTileJourneyBoth": "ಎರಡೂ ಪ್ರಯಾಣಗಳು",
+  "absenceTileJourneyMorning": "ಬೆಳಿಗ್ಗೆ ಮಾತ್ರ",
+  "absenceTileJourneyAfternoon": "ಮಧ್ಯಾಹ್ನ ಮಾತ್ರ",
+  "absenceNoChildrenLinked": "ಗೈರು ತಿಳಿಸುವ ಮೊದಲು ನಿಮ್ಮ ಶಾಲೆ ನಿಮ್ಮ ಮಕ್ಕಳನ್ನು ನಿಮ್ಮ ಖಾತೆಗೆ ಜೋಡಿಸಬೇಕು.",
+  "absenceErrorTripStarted": "ಈ ಪ್ರಯಾಣ ಈಗಾಗಲೇ ಆರಂಭವಾಗಿದೆ, ಆದ್ದರಿಂದ ಈ ಗೈರು ತಿಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ. ಬದಲಾಗಿ ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+  "absenceConfirmationMessage": "{childName} ಅವರನ್ನು {when}{direction, select, morningOnly{ ಬೆಳಿಗ್ಗೆ} afternoonOnly{ ಮಧ್ಯಾಹ್ನ} other{}} ನಿರೀಕ್ಷಿಸಲಾಗುವುದಿಲ್ಲ.",
   "@absenceConfirmationMessage": {
     "description": "Plain-language confirmation shown after a successful absence declaration.",
     "placeholders": {
@@ -364,7 +364,7 @@
       }
     }
   },
-  "absenceConfirmationRange": "from {from} to {to}",
+  "absenceConfirmationRange": "{from} ಇಂದ {to} ವರೆಗೆ",
   "@absenceConfirmationRange": {
     "placeholders": {
       "from": {
@@ -375,18 +375,18 @@
       }
     }
   },
-  "journeyHistoryAppBarTitle": "Journey history",
-  "journeyHistoryScopeDenied": "This child is no longer linked to your account. Contact the school office if you think that is wrong.",
-  "journeyHistoryGenericFailure": "Something went wrong loading journey history. Please try again.",
-  "journeyHistoryLoadFailureTitle": "Cannot load journey history right now",
-  "journeyHistoryEmptyTitle": "No journeys recorded yet",
-  "journeyHistoryEmptyDetail": "Past trips will appear here once your child has traveled.",
-  "legDirectionMorning": "Morning",
-  "legDirectionAfternoon": "Afternoon",
-  "legMarkedAbsent": "Marked absent",
-  "legNoRecordForLeg": "No record for this leg",
-  "legNoScheduleForLeg": "No schedule for this leg",
-  "legScheduledAt": "Scheduled at {time}",
+  "journeyHistoryAppBarTitle": "ಪ್ರಯಾಣ ಇತಿಹಾಸ",
+  "journeyHistoryScopeDenied": "ಈ ಮಗು ಇನ್ನು ನಿಮ್ಮ ಖಾತೆಗೆ ಜೋಡಿಸಿಲ್ಲ. ಇದು ತಪ್ಪು ಎಂದು ನೀವು ಭಾವಿಸಿದರೆ ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+  "journeyHistoryGenericFailure": "ಪ್ರಯಾಣ ಇತಿಹಾಸ ಲೋಡ್ ಮಾಡುವಾಗ ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "journeyHistoryLoadFailureTitle": "ಈಗ ಪ್ರಯಾಣ ಇತಿಹಾಸ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ",
+  "journeyHistoryEmptyTitle": "ಇನ್ನೂ ಯಾವುದೇ ಪ್ರಯಾಣ ದಾಖಲಾಗಿಲ್ಲ",
+  "journeyHistoryEmptyDetail": "ನಿಮ್ಮ ಮಗು ಪ್ರಯಾಣಿಸಿದ ನಂತರ ಹಿಂದಿನ ಪ್ರಯಾಣಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.",
+  "legDirectionMorning": "ಬೆಳಿಗ್ಗೆ",
+  "legDirectionAfternoon": "ಮಧ್ಯಾಹ್ನ",
+  "legMarkedAbsent": "ಗೈರು ಎಂದು ಗುರುತಿಸಲಾಗಿದೆ",
+  "legNoRecordForLeg": "ಈ ಹಂತಕ್ಕೆ ದಾಖಲೆ ಇಲ್ಲ",
+  "legNoScheduleForLeg": "ಈ ಹಂತಕ್ಕೆ ವೇಳಾಪಟ್ಟಿ ಇಲ್ಲ",
+  "legScheduledAt": "{time} ಕ್ಕೆ ನಿಗದಿಯಾಗಿದೆ",
   "@legScheduledAt": {
     "placeholders": {
       "time": {
@@ -394,7 +394,7 @@
       }
     }
   },
-  "legBoardedAt": "Boarded at {time}",
+  "legBoardedAt": "{time} ಕ್ಕೆ ಬಸ್ ಹತ್ತಿದ್ದಾರೆ",
   "@legBoardedAt": {
     "placeholders": {
       "time": {
@@ -402,7 +402,7 @@
       }
     }
   },
-  "legArrivedAt": "Arrived at {time}",
+  "legArrivedAt": "{time} ಕ್ಕೆ ತಲುಪಿದ್ದಾರೆ",
   "@legArrivedAt": {
     "placeholders": {
       "time": {
@@ -410,7 +410,7 @@
       }
     }
   },
-  "legHandedOverAt": "Handed over at {time}",
+  "legHandedOverAt": "{time} ಕ್ಕೆ ಹಸ್ತಾಂತರಿಸಲಾಗಿದೆ",
   "@legHandedOverAt": {
     "placeholders": {
       "time": {
@@ -418,7 +418,7 @@
       }
     }
   },
-  "legBusDepartedAt": "Bus departed at {time}",
+  "legBusDepartedAt": "ಬಸ್ {time} ಕ್ಕೆ ಹೊರಟಿದೆ",
   "@legBusDepartedAt": {
     "description": "Safety-relevant: BR-SAFE-002 no-show detail.",
     "placeholders": {
@@ -427,20 +427,20 @@
       }
     }
   },
-  "childDetailNoDetailAvailable": "No detail available for this child.",
-  "childDetailTodayLabel": "Today",
-  "childDetailNoTripsToday": "No trips scheduled for today.",
-  "childDetailShowPickupCodeButton": "Show pickup code",
-  "childDetailScopeDenied": "This child is no longer linked to your account. Contact the school office if you think that is wrong.",
-  "childDetailGenericFailure": "Something went wrong loading this child''s detail. Please try again.",
-  "liveTripGenericFailure": "Something went wrong loading this trip. Please try again.",
-  "liveTripAppBarTitle": "Live trip",
-  "liveTripUnavailableTitle": "Tracking is not available right now",
-  "liveTripUnavailableDetail": "Live tracking only runs while the bus is on a trip (docs/05-ui/PARENT_APP.md, BR-TRACK-001). Check back once the trip has started.",
-  "liveTripCannotLoadTitle": "Cannot load this trip right now",
-  "liveTripNoTripTitle": "No trip to show",
-  "liveTripNoTripDetail": "This child has no active trip right now.",
-  "liveTripSummaryStopsAway": "{stops} {stops, plural, one{stop} other{stops}} away",
+  "childDetailNoDetailAvailable": "ಈ ಮಗುವಿಗೆ ವಿವರ ಲಭ್ಯವಿಲ್ಲ.",
+  "childDetailTodayLabel": "ಇಂದು",
+  "childDetailNoTripsToday": "ಇಂದು ಯಾವುದೇ ಪ್ರಯಾಣ ನಿಗದಿಯಾಗಿಲ್ಲ.",
+  "childDetailShowPickupCodeButton": "ಕರೆದೊಯ್ಯುವ ಕೋಡ್ ತೋರಿಸಿ",
+  "childDetailScopeDenied": "ಈ ಮಗು ಇನ್ನು ನಿಮ್ಮ ಖಾತೆಗೆ ಜೋಡಿಸಿಲ್ಲ. ಇದು ತಪ್ಪು ಎಂದು ನೀವು ಭಾವಿಸಿದರೆ ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+  "childDetailGenericFailure": "ಈ ಮಗುವಿನ ವಿವರ ಲೋಡ್ ಮಾಡುವಾಗ ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "liveTripGenericFailure": "ಈ ಪ್ರಯಾಣ ಲೋಡ್ ಮಾಡುವಾಗ ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "liveTripAppBarTitle": "ನೇರ ಪ್ರಯಾಣ",
+  "liveTripUnavailableTitle": "ಈಗ ಟ್ರ್ಯಾಕಿಂಗ್ ಲಭ್ಯವಿಲ್ಲ",
+  "liveTripUnavailableDetail": "ಬಸ್ ಪ್ರಯಾಣದಲ್ಲಿದ್ದಾಗ ಮಾತ್ರ ನೇರ ಟ್ರ್ಯಾಕಿಂಗ್ ನಡೆಯುತ್ತದೆ. ಪ್ರಯಾಣ ಆರಂಭವಾದ ಮೇಲೆ ಮತ್ತೆ ನೋಡಿ.",
+  "liveTripCannotLoadTitle": "ಈಗ ಈ ಪ್ರಯಾಣ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ",
+  "liveTripNoTripTitle": "ತೋರಿಸಲು ಪ್ರಯಾಣವಿಲ್ಲ",
+  "liveTripNoTripDetail": "ಈ ಮಗುವಿಗೆ ಈಗ ಯಾವುದೇ ಸಕ್ರಿಯ ಪ್ರಯಾಣವಿಲ್ಲ.",
+  "liveTripSummaryStopsAway": "{stops} {stops, plural, one{ನಿಲ್ದಾಣ} other{ನಿಲ್ದಾಣಗಳು}} ದೂರ",
   "@liveTripSummaryStopsAway": {
     "placeholders": {
       "stops": {
@@ -448,7 +448,7 @@
       }
     }
   },
-  "liveTripSummaryEtaToStop": "~{eta} min to {stop}",
+  "liveTripSummaryEtaToStop": "{stop} ಗೆ ಸುಮಾರು {eta} ನಿ",
   "@liveTripSummaryEtaToStop": {
     "placeholders": {
       "eta": {
@@ -459,10 +459,10 @@
       }
     }
   },
-  "liveTripEtaConfidenceModerate": " · moderate confidence",
-  "liveTripEtaConfidenceLow": " · low confidence — routing unavailable",
-  "liveTripEtaJustNow": "just now",
-  "liveTripEtaSecondsAgo": "{seconds}s ago",
+  "liveTripEtaConfidenceModerate": " · ಮಧ್ಯಮ ವಿಶ್ವಾಸ",
+  "liveTripEtaConfidenceLow": " · ಕಡಿಮೆ ವಿಶ್ವಾಸ — ಮಾರ್ಗ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ",
+  "liveTripEtaJustNow": "ಈಗಷ್ಟೇ",
+  "liveTripEtaSecondsAgo": "{seconds} ಸೆ ಹಿಂದೆ",
   "@liveTripEtaSecondsAgo": {
     "placeholders": {
       "seconds": {
@@ -470,7 +470,7 @@
       }
     }
   },
-  "liveTripEtaMinutesAgo": "{minutes} min ago",
+  "liveTripEtaMinutesAgo": "{minutes} ನಿ ಹಿಂದೆ",
   "@liveTripEtaMinutesAgo": {
     "placeholders": {
       "minutes": {
@@ -478,7 +478,7 @@
       }
     }
   },
-  "liveTripEstimateCalculated": "Estimate calculated {ago}{confidence}.",
+  "liveTripEstimateCalculated": "ಅಂದಾಜನ್ನು {ago} ಲೆಕ್ಕ ಹಾಕಲಾಗಿದೆ{confidence}.",
   "@liveTripEstimateCalculated": {
     "description": "Safety-relevant: BR-TRACK-006 estimate-age disclosure.",
     "placeholders": {
@@ -490,8 +490,8 @@
       }
     }
   },
-  "handoverCollectChildTitleNoName": "Collect your child",
-  "handoverCollectChildTitleWithName": "Collect {name}",
+  "handoverCollectChildTitleNoName": "ನಿಮ್ಮ ಮಗುವನ್ನು ಕರೆದೊಯ್ಯಿರಿ",
+  "handoverCollectChildTitleWithName": "{name} ಅವರನ್ನು ಕರೆದೊಯ್ಯಿರಿ",
   "@handoverCollectChildTitleWithName": {
     "placeholders": {
       "name": {
@@ -499,8 +499,8 @@
       }
     }
   },
-  "handoverShowToAttendant": "Show this to the bus attendant",
-  "handoverQrSemanticLabel": "Verification QR code for {name}",
+  "handoverShowToAttendant": "ಇದನ್ನು ಬಸ್ ಸಹಾಯಕರಿಗೆ ತೋರಿಸಿ",
+  "handoverQrSemanticLabel": "{name} ಅವರಿಗಾಗಿ ಪರಿಶೀಲನಾ QR ಕೋಡ್",
   "@handoverQrSemanticLabel": {
     "description": "Safety-relevant: handover verification (BR-HAND-002).",
     "placeholders": {
@@ -509,11 +509,11 @@
       }
     }
   },
-  "handoverQrSemanticsLabelPlain": "Verification QR code",
-  "handoverIfCannotScan": "If the attendant cannot scan",
-  "handoverGenerateNewCode": "Generate a new code",
-  "handoverCodeExpired": "This code has expired",
-  "handoverExpiresInMinSec": "Expires in {minutes}:{seconds}",
+  "handoverQrSemanticsLabelPlain": "ಪರಿಶೀಲನಾ QR ಕೋಡ್",
+  "handoverIfCannotScan": "ಸಹಾಯಕರಿಗೆ ಸ್ಕ್ಯಾನ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗದಿದ್ದರೆ",
+  "handoverGenerateNewCode": "ಹೊಸ ಕೋಡ್ ರಚಿಸಿ",
+  "handoverCodeExpired": "ಈ ಕೋಡ್ ಅವಧಿ ಮುಗಿದಿದೆ",
+  "handoverExpiresInMinSec": "{minutes}:{seconds} ರಲ್ಲಿ ಅವಧಿ ಮುಗಿಯುತ್ತದೆ",
   "@handoverExpiresInMinSec": {
     "placeholders": {
       "minutes": {
@@ -524,7 +524,7 @@
       }
     }
   },
-  "handoverExpiresInSeconds": "Expires in {seconds}s",
+  "handoverExpiresInSeconds": "{seconds} ಸೆ ರಲ್ಲಿ ಅವಧಿ ಮುಗಿಯುತ್ತದೆ",
   "@handoverExpiresInSeconds": {
     "placeholders": {
       "seconds": {
@@ -532,19 +532,19 @@
       }
     }
   },
-  "handoverErrorNotAuthorised": "You do not hold the right to collect this child (BR-GRD-006). Contact another guardian who does, or the school office.",
+  "handoverErrorNotAuthorised": "ಈ ಮಗುವನ್ನು ಕರೆದೊಯ್ಯುವ ಹಕ್ಕು ನಿಮಗಿಲ್ಲ. ಆ ಹಕ್ಕು ಇರುವ ಇನ್ನೊಬ್ಬ ಪೋಷಕರನ್ನು ಅಥವಾ ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.",
   "@handoverErrorNotAuthorised": {
     "description": "Safety-critical: BR-GRD-006 handover authorisation refusal."
   },
-  "handoverGenericFailure": "Something went wrong requesting a code. Please try again.",
+  "handoverGenericFailure": "ಕೋಡ್ ಕೋರುವಾಗ ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "@handoverGenericFailure": {
     "description": "Safety-relevant: handover code request failure."
   },
-  "pickupPersonsAppBarTitle": "Pickup persons",
-  "pickupPersonsAddButton": "Add pickup person",
-  "pickupPersonsNoneAuthorised": "No pickup persons authorised for this child.",
-  "pickupPersonsRevokeButton": "Revoke",
-  "pickupPersonsValidRange": "Valid {from} – {to}",
+  "pickupPersonsAppBarTitle": "ಕರೆದೊಯ್ಯುವವರು",
+  "pickupPersonsAddButton": "ಕರೆದೊಯ್ಯುವವರನ್ನು ಸೇರಿಸಿ",
+  "pickupPersonsNoneAuthorised": "ಈ ಮಗುವಿಗೆ ಯಾರಿಗೂ ಕರೆದೊಯ್ಯುವ ಅನುಮತಿ ಇಲ್ಲ.",
+  "pickupPersonsRevokeButton": "ರದ್ದುಗೊಳಿಸಿ",
+  "pickupPersonsValidRange": "ಮಾನ್ಯತೆ {from} – {to}",
   "@pickupPersonsValidRange": {
     "placeholders": {
       "from": {
@@ -555,31 +555,31 @@
       }
     }
   },
-  "pickupPersonsExpiredSuffix": " · expired",
+  "pickupPersonsExpiredSuffix": " · ಅವಧಿ ಮುಗಿದಿದೆ",
   "@pickupPersonsExpiredSuffix": {
     "description": "Safety-relevant: nominations always expire (BR-GRD-005)."
   },
-  "pickupPersonsNewPersonTitle": "New pickup person",
-  "pickupPersonsFullNameLabel": "Full name",
-  "pickupPersonsPhoneLabel": "Phone number",
-  "pickupPersonsRelationshipLabel": "Relationship (optional)",
-  "pickupPersonsRelationshipHint": "e.g. Uncle",
-  "pickupPersonsValidityChoose": "Choose validity window",
-  "pickupPersonsNominateButton": "Nominate",
-  "pickupPersonsErrorNotAuthorised": "You do not hold the right to authorise pickups for this child (BR-GRD-006). Contact another guardian who does, or the school office.",
+  "pickupPersonsNewPersonTitle": "ಹೊಸ ಕರೆದೊಯ್ಯುವವರು",
+  "pickupPersonsFullNameLabel": "ಪೂರ್ಣ ಹೆಸರು",
+  "pickupPersonsPhoneLabel": "ದೂರವಾಣಿ ಸಂಖ್ಯೆ",
+  "pickupPersonsRelationshipLabel": "ಸಂಬಂಧ (ಐಚ್ಛಿಕ)",
+  "pickupPersonsRelationshipHint": "ಉದಾ. ಚಿಕ್ಕಪ್ಪ",
+  "pickupPersonsValidityChoose": "ಮಾನ್ಯತೆ ಅವಧಿ ಆಯ್ಕೆಮಾಡಿ",
+  "pickupPersonsNominateButton": "ನಾಮನಿರ್ದೇಶನ ಮಾಡಿ",
+  "pickupPersonsErrorNotAuthorised": "ಈ ಮಗುವನ್ನು ಕರೆದೊಯ್ಯಲು ಅನುಮತಿ ನೀಡುವ ಹಕ್ಕು ನಿಮಗಿಲ್ಲ. ಆ ಹಕ್ಕು ಇರುವ ಇನ್ನೊಬ್ಬ ಪೋಷಕರನ್ನು ಅಥವಾ ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.",
   "@pickupPersonsErrorNotAuthorised": {
     "description": "Safety-critical: BR-GRD-006 pickup-person authorisation refusal."
   },
-  "pickupPersonsErrorOutsideValidity": "That validity window has already passed.",
-  "pickupPersonsNoChildrenLinked": "Your school links your children to your account before you can manage pickup persons.",
-  "notificationsAppBarTitle": "Notifications",
-  "notificationsGenericFailure": "Something went wrong loading your notifications. Please try again.",
-  "notificationsLoadFailureTitle": "Cannot load notifications right now",
-  "notificationsEmptyTitle": "No notifications yet",
-  "notificationsEmptyDetail": "You''ll see updates about your children here.",
-  "otpAppBarTitle": "Enter code",
-  "otpHeading": "Enter the code",
-  "otpSentTo": "We sent a code to {phone}.",
+  "pickupPersonsErrorOutsideValidity": "ಆ ಮಾನ್ಯತೆ ಅವಧಿ ಈಗಾಗಲೇ ಮುಗಿದಿದೆ.",
+  "pickupPersonsNoChildrenLinked": "ಕರೆದೊಯ್ಯುವವರನ್ನು ನಿರ್ವಹಿಸುವ ಮೊದಲು ನಿಮ್ಮ ಶಾಲೆ ನಿಮ್ಮ ಮಕ್ಕಳನ್ನು ನಿಮ್ಮ ಖಾತೆಗೆ ಜೋಡಿಸಬೇಕು.",
+  "notificationsAppBarTitle": "ಅಧಿಸೂಚನೆಗಳು",
+  "notificationsGenericFailure": "ನಿಮ್ಮ ಅಧಿಸೂಚನೆಗಳನ್ನು ಲೋಡ್ ಮಾಡುವಾಗ ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "notificationsLoadFailureTitle": "ಈಗ ಅಧಿಸೂಚನೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ",
+  "notificationsEmptyTitle": "ಇನ್ನೂ ಯಾವುದೇ ಅಧಿಸೂಚನೆ ಇಲ್ಲ",
+  "notificationsEmptyDetail": "ನಿಮ್ಮ ಮಕ್ಕಳ ಕುರಿತ ಅಪ್‌ಡೇಟ್‌ಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.",
+  "otpAppBarTitle": "ಕೋಡ್ ನಮೂದಿಸಿ",
+  "otpHeading": "ಕೋಡ್ ನಮೂದಿಸಿ",
+  "otpSentTo": "{phone} ಗೆ ನಾವು ಕೋಡ್ ಕಳುಹಿಸಿದ್ದೇವೆ.",
   "@otpSentTo": {
     "placeholders": {
       "phone": {
@@ -587,19 +587,19 @@
       }
     }
   },
-  "otpCodeLabel": "Code",
-  "otpVerifyButton": "Verify",
-  "otpEntryChangeNumberButton": "Change number",
-  "otpEntrySendNewCodeButton": "Send a new code",
-  "loginHeading": "Sign in",
-  "simpleLoginParentHeading": "Parent sign in", 
-  "loginInstructions": "Enter the mobile number registered with your school.",
-  "loginMobileNumberLabel": "Mobile number",
-  "loginSendCodeButton": "Send code",
-  "loginErrorCredentialsInvalid": "That code is not correct. Please check and try again.",
-  "loginErrorOtpExpired": "That code has expired. Tap “Send a new code” to get another.",
-  "loginErrorOtpAlreadyUsed": "That code has already been used. Tap “Send a new code”.",
-  "loginErrorAccountLocked": "This account is locked. Please contact the school office.",
-  "loginErrorRateLimited": "Too many attempts. Please wait a minute before trying again.",
-  "loginErrorDependencyUnavailable": "Cannot reach the school right now. Check your connection and try again."
+  "otpCodeLabel": "ಕೋಡ್",
+  "otpVerifyButton": "ಪರಿಶೀಲಿಸಿ",
+  "otpEntryChangeNumberButton": "ಸಂಖ್ಯೆ ಬದಲಾಯಿಸಿ",
+  "otpEntrySendNewCodeButton": "ಹೊಸ ಕೋಡ್ ಕಳುಹಿಸಿ",
+  "loginHeading": "ಸೈನ್ ಇನ್",
+  "simpleLoginParentHeading": "ಪೋಷಕರ ಸೈನ್ ಇನ್",
+  "loginInstructions": "ನಿಮ್ಮ ಶಾಲೆಯಲ್ಲಿ ನೋಂದಾಯಿಸಿರುವ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ.",
+  "loginMobileNumberLabel": "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ",
+  "loginSendCodeButton": "ಕೋಡ್ ಕಳುಹಿಸಿ",
+  "loginErrorCredentialsInvalid": "ಆ ಕೋಡ್ ಸರಿಯಿಲ್ಲ. ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "loginErrorOtpExpired": "ಆ ಕೋಡ್ ಅವಧಿ ಮುಗಿದಿದೆ. ಹೊಸದನ್ನು ಪಡೆಯಲು “ಹೊಸ ಕೋಡ್ ಕಳುಹಿಸಿ” ಒತ್ತಿ.",
+  "loginErrorOtpAlreadyUsed": "ಆ ಕೋಡ್ ಈಗಾಗಲೇ ಬಳಕೆಯಾಗಿದೆ. “ಹೊಸ ಕೋಡ್ ಕಳುಹಿಸಿ” ಒತ್ತಿ.",
+  "loginErrorAccountLocked": "ಈ ಖಾತೆ ಲಾಕ್ ಆಗಿದೆ. ದಯವಿಟ್ಟು ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+  "loginErrorRateLimited": "ಹಲವು ಪ್ರಯತ್ನಗಳಾಗಿವೆ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸುವ ಮೊದಲು ಒಂದು ನಿಮಿಷ ಕಾಯಿರಿ.",
+  "loginErrorDependencyUnavailable": "ಈಗ ಶಾಲೆಯನ್ನು ತಲುಪಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ನಿಮ್ಮ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
 }

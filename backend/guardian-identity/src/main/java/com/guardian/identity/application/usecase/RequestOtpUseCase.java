@@ -4,12 +4,14 @@ import com.guardian.common.BusinessRule;
 import com.guardian.common.audit.AuditPort;
 import com.guardian.common.audit.AuditRecord;
 import com.guardian.common.tenant.TenantScopedTransaction;
+import com.guardian.identity.application.AmbiguousPhoneResolver;
 import com.guardian.identity.application.command.RequestOtpCommand;
 import com.guardian.identity.application.port.OtpCredentialRepository;
 import com.guardian.identity.application.port.OtpSender;
 import com.guardian.identity.application.port.PreAuthenticationDirectory;
 import com.guardian.identity.application.port.PreAuthenticationDirectory.PhoneMatch;
 import com.guardian.identity.application.port.SecretHasher;
+import com.guardian.identity.domain.ClientType;
 import com.guardian.identity.domain.OtpCode;
 import com.guardian.identity.domain.OtpCredential;
 import com.guardian.identity.domain.PhoneNumber;
@@ -47,6 +49,7 @@ public class RequestOtpUseCase {
   private final OtpSender otpSender;
   private final AuditPort auditPort;
   private final TenantScopedTransaction tenantScoped;
+  private final AmbiguousPhoneResolver ambiguousPhones;
   private final String magicOtp;
 
   public RequestOtpUseCase(
@@ -56,6 +59,7 @@ public class RequestOtpUseCase {
       OtpSender otpSender,
       AuditPort auditPort,
       TenantScopedTransaction tenantScoped,
+      AmbiguousPhoneResolver ambiguousPhones,
       @Value("${guardian.auth.magic-otp:}") String magicOtp) {
     this.directory = directory;
     this.otpCredentials = otpCredentials;
@@ -63,6 +67,7 @@ public class RequestOtpUseCase {
     this.otpSender = otpSender;
     this.auditPort = auditPort;
     this.tenantScoped = tenantScoped;
+    this.ambiguousPhones = ambiguousPhones;
     this.magicOtp = magicOtp;
   }
 
@@ -87,18 +92,27 @@ public class RequestOtpUseCase {
       return;
     }
 
+    PhoneMatch resolved = matches.get(0);
     if (matches.size() > 1) {
       // BR-IAM-003: a person belongs to one organization. More than one match is a data
       // defect, and signing them into whichever row sorted first would be a cross-tenant
-      // sign-in chosen at random. Refused, and loud in the log because somebody must fix it.
-      log.error(
-          "Phone {} resolves to {} users across tenants; refusing to guess (BR-IAM-003)",
-          phone.masked(),
-          matches.size());
-      return;
+      // sign-in chosen at random. Refused, and loud in the log because somebody must fix it —
+      // except on a magic-OTP build, where the client being signed into picks (demo only, see
+      // AmbiguousPhoneResolver). The code must go to the account that will verify it, so this
+      // resolves exactly as VerifyOtpUseCase does.
+      Optional<PhoneMatch> chosen =
+          ambiguousPhones.resolve(phone, matches, parseClientType(command.clientType()));
+      if (chosen.isEmpty()) {
+        log.error(
+            "Phone {} resolves to {} users across tenants; refusing to guess (BR-IAM-003)",
+            phone.masked(),
+            matches.size());
+        return;
+      }
+      resolved = chosen.get();
     }
+    final PhoneMatch match = resolved;
 
-    PhoneMatch match = matches.get(0);
     if (!match.status().canAuthenticate()) {
       // Inactive or locked. Silent for the same reason as unregistered.
       log.debug("OTP requested for a non-signable account {}", phone.masked());
@@ -116,6 +130,15 @@ public class RequestOtpUseCase {
     // Sent after the transaction commits. Inside it, a rollback would leave the guardian
     // holding a code the database never recorded — an SMS that can only ever be rejected.
     otpSender.send(phone, code, OtpCredential.LIFETIME);
+  }
+
+  /** Unknown or absent is null: the client is an optional hint, never a requirement. */
+  private static ClientType parseClientType(String raw) {
+    try {
+      return raw == null || raw.isBlank() ? null : ClientType.fromWire(raw);
+    } catch (IllegalArgumentException unknownClient) {
+      return null;
+    }
   }
 
   /** Returns the code to send, or null when no code should be issued. */

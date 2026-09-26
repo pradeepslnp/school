@@ -157,7 +157,7 @@ Puts a different person on an existing duty — the regular driver has left, or 
 - Old off and new on **in one transaction**: the route is never left with two active crew in one role, nor with none because a second call failed.
 - `reason` is required, 1–500 characters, and is audited as `DUTY_ASSIGNMENT_REPLACED` with both staff ids — every driver and attendant change is recorded with why.
 - A deactivated staff member cannot take the duty (BR-IAM-008) → `404 STAFF_NOT_FOUND`, as for an unknown one. Licence and verification are checked when a trip starts (BR-STAFF-001/002), not here.
-- Replacing someone with themselves is refused (`422`).
+- Replacing someone with themselves is refused (`400 VALIDATION_VALUE_OUT_OF_RANGE`), like any other malformed request.
 - **This is not a one-day substitution.** A stand-in for a single run belongs to that trip (`trip_staff`, BR-STAFF-006, STF-005) and needs MOD-08.
 
 ---

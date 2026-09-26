@@ -23,7 +23,10 @@ class LoginDataProvider {
   Future<ApiResponse> requestOtp({required String phone}) {
     return client.post(
       '/auth/otp/request',
-      body: {'phone': phone},
+      // `clientType` is a hint, not a credential: the server ignores it except on a
+      // magic-OTP build, where it picks the guardian account when a number also exists in
+      // another organization's records (a local-data defect, BR-IAM-003).
+      body: {'phone': phone, 'clientType': 'PARENT_APP'},
       // No session exists yet, so no Authorization header should be sent.
       authenticated: false,
     );

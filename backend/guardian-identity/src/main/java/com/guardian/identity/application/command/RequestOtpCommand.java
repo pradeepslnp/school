@@ -9,4 +9,10 @@ package com.guardian.identity.application.command;
  *     number <em>and</em> per source: limiting only by number lets one host walk a list of numbers,
  *     and limiting only by source lets a botnet hammer one number.
  */
-public record RequestOtpCommand(String phone, String sourceIp) {}
+public record RequestOtpCommand(String phone, String sourceIp, String clientType) {
+
+  /** The client is optional: an older app sends none, and the code is issued just the same. */
+  public RequestOtpCommand(String phone, String sourceIp) {
+    this(phone, sourceIp, null);
+  }
+}
